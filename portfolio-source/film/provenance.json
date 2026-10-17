@@ -1,0 +1,27 @@
+{
+  "description": "我用这些哈希核对当前影片的输入与成片，确认维护更新没有改变已发布画面、声音和字幕。",
+  "renderKey": "549fdc45fb569c8dc1f8f27f15127349fcf4fe1402d67bbe882f99615fae9154",
+  "sources": {
+    "render.py": "315201a1eb7273e555eac81272322e097f39dd7eeb37449d07e837641068568e",
+    "scenes_v3.py": "acd7e3a080dc21962877e3689fd049eed329fca5603eb603e31ce5db5c4a2ee6",
+    "optical.py": "bc623524cc86a435e06c05f22ef02108042b5e8f0533dc86ee035277b3cf0f1a",
+    "mix_v3.py": "f6521c873826e5037ebf51b37f9b0becac1e88717e01e05f694e3a78aba69e9a",
+    "inputs/narrator-v3.flac": "6170e618e7390cab338baacd80c3ab58a643235e41e1ec10f2eb5ee6f1eacca1",
+    "inputs/narrator-v3.json": "2f924b02a768681df4b062cf989d9a5ff1ae8ede68b9a10a3f0eac898238c809",
+    "inputs/game-demo.mp4": "5942a6ddd5d99344b4c4d312f16a7f08387ec3d790fb2814147806edafbbc5ab",
+    "credits.md": "3f47ae91a540ce91d8c89f19aef1bc11bf48291c2e6c7a8e3543542c3e703976"
+  },
+  "assets": {
+    "poster/poster.png": "d3b5366d25ae07bdbbf4d8368edab68b103722f8a8a93b1e22347a32e5b53b18",
+    "honor/live-honor-2026.jpeg": "4ab2bcdcd70ff97dcf086ad41560bf4e0e546ea1d28acce9d3e6524bddb51e53",
+    "assets/growth-seed-adult.01b9f733e3e8.png": "01b9f733e3e86fe99e6c5e243b1e52c93ef48b486eb3e93e19ef846bb8e38d52",
+    "assets/growth-seed-flower.3fb952bbfb40.png": "3fb952bbfb40f81bf70597bd2891a4e56033550ade89795f78bfdc749ccfa9ed",
+    "assets/growth-seed-sprout.da294e149655.png": "da294e1496553d2e8461442aec3f4e1c7417abcc231761ed9c02af444a291f37",
+    "assets/media/ambient.adb5e897f4c0.mp3": "adb5e897f4c04a3b9849ec22bd516915d270340f033deec0126b9c9a19b13207"
+  },
+  "outputs": {
+    "assets/media/intro.e4144de111ae.mp4": "e4144de111aea06abf3aab80f1a4fdc0f783cc8924cb4e0eccdee1c7681d7c1e",
+    "assets/media/intro-poster.e6568beb9448.jpg": "e6568beb9448f3a7d3057281339471f61c4efd1842b5755339f7276cb4eb1a03",
+    "assets/media/intro.710d7ea9a18a.vtt": "710d7ea9a18af75239b799787fdb5388d91c0f131a3a2767d7f45f747acf25ae"
+  }
+}
