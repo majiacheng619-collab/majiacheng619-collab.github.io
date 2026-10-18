@@ -1,0 +1,27 @@
+import {test, beforeEach} from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import worker, {ORIGIN, dayInShanghai, dayRange} from './worker.mjs';
+const token='test-admin-token-long-enough-for-tests';
+let sql, env;
+beforeEach(()=>{
+ sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('./migrations/0001_visitors.sql',import.meta.url),'utf8'));
+ env={ADMIN_TOKEN:token,DB:{prepare(query){return{bind(...params){return{query,params}},query,params:[]}},async batch(statements){sql.exec('BEGIN');try{const result=statements.map(({query,params})=>{const stmt=sql.prepare(query);return query.startsWith('SELECT')?{results:stmt.all(...params)}:{results:[],meta:stmt.run(...params)}});sql.exec('COMMIT');return result;}catch(error){sql.exec('ROLLBACK');throw error;}}}};
+});
+const visit=(id,headers={})=>worker.fetch(new Request('https://stats.test/visit',{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json',...headers},body:JSON.stringify({visitorId:id})}),env);
+const stats=(days=30,secret=token)=>worker.fetch(new Request('https://stats.test/stats?days='+days,{headers:{Origin:ORIGIN,Authorization:'Bearer '+secret}}),env);
+const count=()=>Number(sql.prepare('SELECT COUNT(*) AS n FROM visitors').get().n);
+test('Shanghai midnight and leap-year ranges',()=>{assert.equal(dayInShanghai(new Date('2026-10-16T15:59:59Z')),'2026-10-16');assert.equal(dayInShanghai(new Date('2026-10-16T16:00:00Z')),'2026-10-17');assert.deepEqual(dayRange('2024-03-01',3),['2024-02-28','2024-02-29','2024-03-01']);});
+test('refresh, reopening, case variants and 25 concurrent requests count once',async()=>{const id=crypto.randomUUID();const results=await Promise.all(Array.from({length:25},(_,i)=>visit(i%2?id:id.toUpperCase())));assert(results.every(r=>r.status===200));assert.equal(count(),1);const data=await(await stats()).json();assert.equal(data.total,1);assert.equal(data.days.at(-1).visitors,1);assert.equal(data.days.at(-1).newVisitors,1);});
+test('returning visitor counts daily but never as a new or lifetime visitor',async()=>{const id=crypto.randomUUID();await visit(id);const row=sql.prepare('SELECT visitor_hash FROM visitors').get();sql.prepare('UPDATE visitors SET first_day = ?').run('2026-01-01');sql.prepare('INSERT INTO daily_visitors VALUES (?, ?)').run('2026-01-01',row.visitor_hash);await visit(id);const data=await(await stats()).json();assert.equal(data.total,1);assert.equal(data.days.at(-1).visitors,1);assert.equal(data.days.at(-1).newVisitors,0);});
+test('distinct browsers count separately',async()=>{await visit(crypto.randomUUID());await visit(crypto.randomUUID());assert.equal(count(),2);assert.equal((await(await stats()).json()).days.at(-1).visitors,2);});
+test('only hashes and dates are persisted',async()=>{const id=crypto.randomUUID();await visit(id);const row=sql.prepare('SELECT * FROM visitors').get();assert.equal(row.visitor_hash.length,64);assert(!JSON.stringify(row).includes(id));assert.deepEqual(Object.keys(row),['visitor_hash','first_day']);});
+test('wrong or absent admin key is rejected',async()=>{assert.equal((await stats(30,'wrong')).status,401);env.ADMIN_TOKEN='';assert.equal((await stats()).status,401);});
+test('zero-filled dates and empty startup data',async()=>{const data=await(await stats(7)).json();assert.equal(data.total,0);assert.equal(data.startedAt,null);assert.equal(data.days.length,7);assert(data.days.every(d=>d.visitors===0));});
+test('invalid time ranges rejected',async()=>{for(const range of ['0','367','NaN','3.5'])assert.equal((await stats(range)).status,400);});
+test('foreign and originless writes rejected',async()=>{assert.equal((await visit(crypto.randomUUID(),{Origin:'https://other.test'})).status,403);const req=new Request('https://stats.test/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId:crypto.randomUUID()})});assert.equal((await worker.fetch(req,env)).status,403);assert.equal(count(),0);});
+test('CORS preflight accepts only website',async()=>{const response=await worker.fetch(new Request('https://stats.test/visit',{method:'OPTIONS',headers:{Origin:ORIGIN}}),env);assert.equal(response.status,204);assert.equal(response.headers.get('Access-Control-Allow-Origin'),ORIGIN);});
+test('bad IDs, JSON, oversized bodies and content types cannot insert',async()=>{for(const id of ['',null,'fake','a'.repeat(100)])assert.equal((await visit(id)).status,400);assert.equal((await visit('a'.repeat(300))).status,413);assert.equal((await visit(crypto.randomUUID(),{'Content-Type':'text/plain'})).status,415);const response=await worker.fetch(new Request('https://stats.test/visit',{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json'},body:'{'}),env);assert.equal(response.status,400);assert.equal(count(),0);});
+test('database failure returns safe explicit error',async()=>{env.DB.batch=async()=>{throw new Error('secret database details')};const response=await visit(crypto.randomUUID());assert.equal(response.status,503);assert(!(await response.text()).includes('secret'));});
+test('private stats never cached and raw records never exposed',async()=>{await visit(crypto.randomUUID());const response=await stats();assert.equal(response.headers.get('Cache-Control'),'no-store');assert(!(await response.text()).includes('visitor_hash'));});
