@@ -14,7 +14,7 @@ let layerBuses={},samples=new Map(),samplePromise=null,threat=0,lastThreat=-1,du
 // No audio context exists until unlock() runs inside the player's gesture.
 let prefs={sound:true,music:true,volume:1,soundVolume:.65,musicVolume:.2},activeState=null,mode='',world=0,nextStep=0,stepIndex=0,disposed=false,musicGate=false;
 const voices=new Set(),cooldowns=new Map();
-let eventIndex=0;
+let eventIndex=0,lastStatus='';
 const midi=n=>440*Math.pow(2,(n-69)/12),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 function time(){return ctx?ctx.currentTime:0;}
 function param(p,value,at=time(),smooth=.012){
@@ -22,7 +22,9 @@ function param(p,value,at=time(),smooth=.012){
 }
 function forget(v){if(!voices.has(v))return;voices.delete(v);for(const n of v.nodes)try{n.disconnect();}catch{}}
 function stop(v,at=time()){
- if(!voices.has(v))return;try{v.gain.gain.cancelScheduledValues(at);v.gain.gain.setTargetAtTime(.0001,at,.004);v.source.stop(at+.02);}catch{}forget(v);
+ if(!voices.has(v)||v.stopping)return;v.stopping=true;
+ // Keep the graph connected through the release; disconnecting now clicks.
+ try{if(v.gain.gain.cancelAndHoldAtTime)v.gain.gain.cancelAndHoldAtTime(at);else{v.gain.gain.cancelScheduledValues(at);v.gain.gain.setValueAtTime(Math.max(.0001,v.gain.gain.value),at);}v.gain.gain.setTargetAtTime(.0001,at,.006);v.end=at+.035;v.source.stop(v.end);}catch{forget(v);}
 }
 function stopGroup(group){for(const v of [...voices])if(v.group===group)stop(v);}
 function stopAll(){for(const v of [...voices])stop(v);}
@@ -53,7 +55,7 @@ function noise(at,duration=.16,level=.09,frequency=1200,pan=0){
  sweep();if(voices.size>=MAX_VOICES)return;
  at=Math.max(time()+.002,at);const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
  source.buffer=noiseBuffer;filter.type='bandpass';filter.frequency.setValueAtTime(frequency,at);filter.Q.value=.7;
- gain.gain.setValueAtTime(level,at);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+ gain.gain.setValueAtTime(.0001,at);gain.gain.linearRampToValueAtTime(level,at+.006);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
  source.connect(filter);filter.connect(gain);const nodes=[source,filter,gain];let output=gain;
  if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.setValueAtTime(clamp(pan,-.3,.3),at);gain.connect(p);output=p;nodes.push(p);}
  output.connect(soundBus);const v={source,gain,nodes,group:'sound',end:at+duration+.01};voices.add(v);source.onended=()=>forget(v);source.start(at);source.stop(v.end);
@@ -74,7 +76,8 @@ function samplePCM(kind){
   else if(kind==='hat')value=high*.25*Math.exp(-t*62);
   else if(kind==='brush')value=low*.42*Math.exp(-t*22);
   else value=Math.sin(t*2701)*.22*Math.exp(-t*72);
-  pcm[i]=clamp(value,-.9,.9)*Math.min(1,t/.002);
+  // A short fade at both boundaries prevents sample-edge transients.
+  pcm[i]=clamp(value,-.9,.9)*Math.min(1,t/.003)*Math.min(1,(length-1-i)/(rate*.014));
  }
  return {rate,pcm,duration};
 }
@@ -122,7 +125,13 @@ function initialize(){
  root.document?.addEventListener?.('visibilitychange',onVisibility);disposed=false;return true;
 }
 async function unlock(){
- try{if(!ctx&&!initialize())return false;if(ctx.state!=='running'&&ctx.resume)await ctx.resume();disposed=false;await prepareSamples();return !!ctx&&ctx.state==='running';}catch{return false;}
+ try{
+  if(!ctx&&!initialize())return false;const target=ctx;
+  if(target.state!=='running'&&target.resume)await target.resume();
+  // A pending gesture must never revive a disposed or replacement context.
+  if(ctx!==target||disposed)return false;
+  await prepareSamples();return ctx===target&&!disposed&&target.state==='running';
+ }catch{return false;}
 }
 function set(options={}){
  if(typeof options.sound==='boolean')prefs.sound=options.sound;
@@ -145,7 +154,12 @@ function sequence(theme,kind,index,at){
  const beat=60/(kind==='boss'?96:kind==='flag'?108:theme.bpm),step=beat*.5;
  const chord=theme.chords[Math.floor(index/16)%theme.chords.length];
  if(kind==='normal'){
-  const degree=theme.melody[index%theme.melody.length];
+  // Four phrases share a theme, with space, replies and a gentle cadence.
+  const phrase=Math.floor(index/16)%4,position=index%16;
+  let degree=theme.melody[position];
+  if(phrase===1&&position%4===2)degree=-1;
+  if(phrase===2&&degree>=0)degree=(degree+2)%theme.scale.length;
+  if(phrase===3&&position>=12)degree=position===12?0:-1;
   if(degree>=0)voice('music',theme.root+12+theme.scale[degree],at,theme.decay,.068+(index%4===0?.015:0),theme.tone,Math.sin(index*.9)*.18,undefined,'calm');
   if(index%8===0){voice('music',theme.root+theme.scale[chord],at,Math.min(2.8,beat*3),.039,'sine',-.12,undefined,'calm');voice('music',theme.root+7+theme.scale[chord],at,Math.min(2.8,beat*3),.028,'sine',.12,undefined,'calm');}
   if(index%2===0)voice('music',theme.root-12+theme.scale[chord]+(index%4===2?7:0),at,beat*.72,.09,'bass',0,undefined,'pulse');
@@ -156,6 +170,8 @@ function sequence(theme,kind,index,at){
   const motif=[0,-1,7,3,0,10,7,-1];if(motif[index%8]>=0)voice('music',theme.root-19+motif[index%8],at,.4,.112,'bass',0,undefined,'pulse');
   if(index%4===2)voice('music',theme.root+5+(index%16===14?1:0),at,.84,.06,'sine',-.16,theme.root+3,'calm');
  }
+ // Leave alternate offbeats empty so quiet garden passages can breathe.
+ if(kind==='normal'&&index%2===1)return step;
  const percussion=index%4===0?'kick':index%2===0?(theme.id==='night'?'brush':'hat'):'brush';
  if(!bufferVoice(percussion,'music',at,index%4===0?.27:.16,index%2?.1:-.1,theme.id==='dusk'?.87:1,'percussion'))voice('music',index%4===0?35:89,at,.07,.025,'sine',0,undefined,'percussion');
  return step;
@@ -168,6 +184,9 @@ function mixLayers(state){
 }
 function update(state){
  activeState=state||null;if(!ctx)return;
+ const status=state?.status||'';
+ if(status==='paused'&&lastStatus!=='paused')stopAll();
+ lastStatus=status;
  const inactive=!state||state.status!=='playing'||root.document?.hidden;
  if(inactive||!canPlay('music')){gateMusic(false);if(mode||[...voices].some(v=>v.group==='music'))stopGroup('music');mode='';nextStep=0;stepIndex=0;return;}
  gateMusic(true);
@@ -210,6 +229,9 @@ function event(ev,state=activeState){
  if(!canPlay('sound'))return;
  if(typeof ev==='string')ev={type:ev};if(!ev||typeof ev!=='object')return;
  const type=String(ev.type||''),now=time()+.005;eventIndex++;
+ // Frequent combat stays in the background; deliberate UI actions stay clear.
+ if(['shot','hit','bite','kill'].includes(type)&&!allowed('combat-budget',.032))return;
+ if(['swap','swapCard','cardSwap','reroll','shuffle'].includes(type)){if(allowed('card-change',.09)){bufferVoice('leaf','sound',now,.18,0,.88);voice('sound',62,now,.13,.058,'sine',-.1);voice('sound',69,now+.065,.18,.052,'sine',.1);}return;}
  if(['presence','warning','newzombie','newZombie','new-zombie','newEnemy','encounter','spawn','emerge','bossEntrance'].includes(type)||root.GardenEngine?.ENEMIES?.[type]){
   const id=ev.enemyType||(root.GardenEngine?.ENEMIES?.[type]?type:ev.zombieType||'moss'),hidden=type==='presence';
   if(type==='bossEntrance')duck(2.4,.36);
@@ -228,7 +250,7 @@ function event(ev,state=activeState){
  }
  if(type==='wave'){if(allowed('wave',1)){voice('sound',52,now,.24,.105,'pluck');voice('sound',59,now+.18,.32,.115,'pluck');}return;}
  if(type==='plant'||type==='upgrade'||type==='grown'){if(allowed(type,.035)){impact(ev,state,'plant');voice('sound',type==='upgrade'||type==='grown'?74:64,now+.04,.19,.082,'pluck',panFor(ev));if(type!=='plant')bufferVoice('glow','sound',now,.22,panFor(ev));if(type==='upgrade'&&ev.branch){const base=ev.branch==='b'?64:67;voice('sound',base+5,now+.085,.26,.064,'pluck',panFor(ev));voice('sound',base+9,now+.135,.26,.064,'pluck',panFor(ev));}}return;}
- if(type==='collect'){if(allowed('collect',.035)){if(!bufferVoice('coin','sound',now,.26))voice('sound',76+(eventIndex%3)*2,now,.12,.085,'sine');voice('sound',88,now+.025,.11,.033,'sine');}return;}
+ if(type==='collect'){if(allowed('collect',.09)){if(!bufferVoice('coin','sound',now,.2,0,[.94,1,1.06][eventIndex%3]))voice('sound',76+(eventIndex%3)*2,now,.12,.085,'sine');voice('sound',88,now+.025,.11,.033,'sine');}return;}
  if(type==='combo'){if(allowed('combo',.23)){const level=clamp(Number(ev.combo||ev.count||2),2,8);[0,4,7].forEach((n,i)=>voice('sound',65+level+n,now+i*.055,.22,.095,'pluck'));}return;}
  if(type==='shot'){if(allowed('shot',.14))voice('sound',ev.plantType==='frost'?86:64,now,.075,.037,'pluck',panFor(ev),ev.plantType==='frost'?77:55);return;}
  if(type==='hit'||type==='kill'||type==='bite'){if(allowed(type+':'+Math.round((ev.y||0)/86),.065))impact(ev,state,type);return;}
@@ -249,9 +271,15 @@ function event(ev,state=activeState){
  if(type==='loss'){if(allowed('loss',1)){[55,52,48,43].forEach((n,i)=>voice('sound',n,now+i*.18,.65,.12,'sine'));}return;}
 }
 async function dispose(){
- disposed=true;stopAll();mode='';activeState=null;musicGate=false;cooldowns.clear();root.document?.removeEventListener?.('visibilitychange',onVisibility);
- if(ctx){const old=ctx;ctx=null;for(const n of [master,musicBus,soundBus,musicFilter,room,roomGain,limiter,...Object.values(layerBuses)])try{n?.disconnect();}catch{}master=musicBus=soundBus=musicFilter=room=roomGain=limiter=null;try{await old.close?.();}catch{}}
+ disposed=true;stopAll();mode='';activeState=null;musicGate=false;cooldowns.clear();lastStatus='';root.document?.removeEventListener?.('visibilitychange',onVisibility);
+ const old=ctx;ctx=null;
+ for(const n of [master,musicBus,soundBus,musicFilter,room,roomGain,limiter,...Object.values(layerBuses)])try{n?.disconnect();}catch{}
+ master=musicBus=soundBus=musicFilter=room=roomGain=limiter=pluckWave=noiseBuffer=null;
+ // Clear this generation synchronously: close() may yield while a new player
+ // gesture builds the next graph. Old cleanup must never touch its resources.
+ for(const v of [...voices])forget(v);
  layerBuses={};samples=new Map();samplePromise=null;duckUntil=0;duckDepth=1;duckActive=false;threat=0;lastThreat=-1;
+ try{await old?.close?.();}catch{}
 }
 function info(){return {unlocked:!!ctx&&ctx.state==='running',...prefs,world:THEMES[world].id,mode:mode||'silent',voices:voices.size,musicVoices:[...voices].filter(v=>v.group==='music').length,threat,ducking:time()<duckUntil,buffersDecoded:samples.size,layers:Object.fromEntries(Object.entries(layerBuses).map(([id,bus])=>[id,{gain:bus.gain.value,voices:[...voices].filter(v=>v.group==='music'&&v.layer===id).length}]))};}
 root.GardenAudio=Object.freeze({unlock,set,update,event,dispose,info,THEMES,ENEMY_CUES});
