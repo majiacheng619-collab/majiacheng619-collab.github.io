@@ -47,6 +47,16 @@ test('horizontal drag tracks between items then commits exactly one nearest real
  const f=fixture();f.dock.emit('pointerdown');const move=f.dock.emit('pointermove',{clientX:226});assert.equal(move.defaultPrevented,true);assert.equal(f.captures.size,1);assert.ok(f.dock.hasAttribute('data-dragging'));
  f.dock.emit('pointerup',{clientX:226});const keyboard=f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:0});assert.ok(!keyboard.defaultPrevented,'drag must not swallow a keyboard activation');const compatibility=f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:1});assert.equal(compatibility.defaultPrevented,true,'compatibility click must not navigate a second time');f.settle();assert.deepEqual(f.navigations,['https://example.test/#section-2']);assert.equal(f.paint('--lens-x'),160);assert.equal(f.captures.size,0);assert.ok(!f.dock.hasAttribute('data-dragging'));assert.equal(f.links.filter(a=>a.hasAttribute('aria-current')).length,1);
 });
+test('drag begun over an unselected destination follows the absolute finger position before release',()=>{
+ for(const {start,move,cancel} of [{start:300,move:280,cancel:true},{start:220,move:240,cancel:false}]){
+  const f=fixture();f.dock.emit('pointerdown',{target:f.links[cancel?3:2],clientX:start});f.dock.emit('pointermove',{clientX:move});
+  for(let frame=0;frame<40;frame++)f.step();
+  const expected=move-20-80/2;assert.ok(Math.abs(f.paint('--lens-x')-expected)<1,'Lens center must reach the finger over a non-current item, independent of the previous selection');assert.equal(f.links[0].getAttribute('aria-current'),'location','A drag preview must not commit its destination');assert.equal(f.navigations.length,0);
+  if(cancel){f.dock.emit('pointercancel');f.settle();assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);}
+  else{f.dock.emit('pointerup',{clientX:move});f.settle();assert.equal(f.paint('--lens-x'),160);assert.deepEqual(f.navigations,['https://example.test/#section-2']);}
+  assert.equal(f.captures.size,0);assert.ok(!f.dock.hasAttribute('data-dragging'));
+ }
+});
 test('native anchor drag is disabled so HTML drag-and-drop cannot steal the liquid gesture',()=>{
  const f=fixture();assert.ok(f.links.every(link=>(link.getAttribute('draggable')??String(link.draggable))==='false'),'Every real dock anchor disables browser drag-and-drop');
  f.dock.emit('pointerdown',{target:f.links[0]});const nativeDrag=f.dock.emit('dragstart',{target:f.links[0]});assert.equal(nativeDrag.defaultPrevented,true,'Native dragstart must be canceled before it can cancel pointer input');

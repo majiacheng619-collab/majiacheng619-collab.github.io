@@ -132,7 +132,7 @@
   dock.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !event.isPrimary || event.target.closest('a')?.hasAttribute('download')) return;
     measure();
-    gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, start: target, dragging: false};
+    gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false};
   }, {signal, passive: true});
   dock.addEventListener('pointermove', event => {
     if (!gesture || event.pointerId !== gesture.id) return;
@@ -146,9 +146,12 @@
     }
     if (event.cancelable) event.preventDefault();
     const first = boxes[0].x, last = boxes.at(-1).x;
-    const raw = gesture.start + dx;
-    target = raw < first ? first + (raw - first) * .16 : raw > last ? last + (raw - last) * .16 : raw;
     targetWidth = boxes[nearest(event.clientX)].width;
+    // Once horizontal intent is established, the lens belongs underneath the
+    // finger even if the gesture began over an unselected destination.
+    const dockRect = dock.getBoundingClientRect();
+    const raw = event.clientX - dockRect.left - dock.clientLeft - width / 2;
+    target = raw < first ? first + (raw - first) * .16 : raw > last ? last + (raw - last) * .16 : raw;
     animate();
   }, {signal, passive: false});
   dock.addEventListener('pointerup', event => {

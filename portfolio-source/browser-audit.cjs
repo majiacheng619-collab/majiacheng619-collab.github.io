@@ -125,7 +125,9 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await dock.dispatchEvent('pointercancel',{pointerId:1});await page.mouse.up();
  await page.waitForFunction(()=>!document.querySelector('[data-glass-dock]').hasAttribute('data-dragging'));
  assert.equal(page.url(),origin+'/','Cancelled drag must not navigate');
- await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:8});
+ const other=await dockLinks.nth(3).boundingBox();
+ await page.mouse.move(other.x+other.width/2,other.y+other.height/2);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:8});
+ assert.equal(await dock.getAttribute('data-dragging'),'true','A drag may start on a non-current destination');
  await Promise.all([page.waitForURL('**/projects/index.html'),page.mouse.up()]);
  assert.equal(await page.locator('[data-dock-link][aria-current]').count(),1,'Only one current destination after drag navigation');
  await page.locator('[data-dock-link]').first().focus();await page.keyboard.press('Tab');
