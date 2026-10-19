@@ -1,7 +1,38 @@
 (function(root){'use strict';const E=GardenEngine,T=GardenCopy,SITE_URL=new URL('./',location.href).href.replace(/\/$/,'');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const paths={leaf:'M5 20C3 10 9 4 21 3c0 12-6 17-16 17ZM5 20l10-10',play:'m8 5 11 7-11 7Z',arrow:'M5 12h14m-6-6 6 6-6 6',sun:'M12 3V1m0 22v-2M3 12H1m22 0h-2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0',plus:'M12 5v14M5 12h14',shovel:'m6 20 9-9M14 4l6 6m-8-3 5-5 5 5-5 5ZM4 16l4 4-5 1Z',pause:'M8 5v14M16 5v14',book:'M12 5c-4-3-7-3-10-2v16c3-1 6-1 10 2m0-16c4-3 7-3 10-2v16c-3-1-6-1-10 2Z',person:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 22v-2a8 8 0 0 1 16 0v2',film:'M3 3h18v18H3Zm3 0v18M18 3v18M3 7h3m-3 5h3m-3 5h3m12-10h3m-3 5h3m-3 5h3',gear:'M12 3v3m0 12v3M3 12h3m12 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',expand:'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6',close:'m6 6 12 12M6 18 18 6',lock:'M6 11h12v10H6ZM8 11V7a4 4 0 0 1 8 0v4',check:'m5 12 4 4L20 5',phone:'M4 3h5l2 5-3 2c2 4 3 5 7 7l2-3 5 2v5c-10 2-20-8-18-18Z',upgrade:'m6 11 6-6 6 6M12 5v15',flag:'M5 22V3m0 0c5-4 9 4 14 0v10c-5 4-9-4-14 0',star:'m12 2 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Z',target:'M12 2v4m0 12v4M2 12h4m12 0h4M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0'};
-const icon=k=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(paths[k]||paths.leaf)+'"/></svg>';
+// A single optical grid keeps navigation, actions and resources legible at 14–24 px.
+// Icons are decorative; the surrounding button or link owns its accessible name.
+const paths=Object.freeze({
+leaf:'M5 20C2.5 11.5 8 4 20 4c0 11-5.5 17-15 16ZM5 20l9-9',
+play:'M8 5.5a.8.8 0 0 1 1.2-.7l10 6.5a.8.8 0 0 1 0 1.4l-10 6.5a.8.8 0 0 1-1.2-.7Z',
+arrow:'M4.5 12h15m-6-6 6 6-6 6',
+sun:'M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4M16.5 12a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0',
+plus:'M12 5v14M5 12h14',
+shovel:'m9 15 7-7m-.5-4.5 5 5m-5-5 2-2 5 5-2 2M9 13l3 3-4 4c-1.5 1.5-4.5 1-5 1 0-.5-.5-3.5 1-5Z',
+pause:'M7.5 5.5h2v13h-2ZM14.5 5.5h2v13h-2Z',
+book:'M12 5.5C9 3.7 5.5 3.5 3 4.5v14c3-1 6-.5 9 1.5m0-14.5c3-1.8 6.5-2 9-1v14c-3-1-6-.5-9 1.5Z',
+person:'M15.5 7.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0M4.5 20v-1a7.5 7.5 0 0 1 15 0v1Z',
+film:'M5 3.5h14a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5ZM7 3.5v17m10-17v17M3.5 8H7m-3.5 8H7m10-8h3.5M17 16h3.5',
+gear:'m10 3-.5 2a7 7 0 0 0-1.7 1L5.8 5.4l-2 3.4 1.5 1.4a7 7 0 0 0 0 2l-1.5 1.4 2 3.4 2-.6a7 7 0 0 0 1.7 1l.5 2h4l.5-2a7 7 0 0 0 1.7-1l2 .6 2-3.4-1.5-1.4a7 7 0 0 0 0-2l1.5-1.4-2-3.4-2 .6a7 7 0 0 0-1.7-1L14 3ZM15 11.2a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+expand:'M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5',
+close:'m6 6 12 12M6 18 18 6',
+lock:'M7 10h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Zm1 0V7a4 4 0 0 1 8 0v3m-4 4v3',
+check:'m5 12 4.5 4.5L19 6.5',
+phone:'M5 3.5h3l2 4.5-2 2c1.5 3 3 4.5 6 6l2-2 4.5 2v3a1.5 1.5 0 0 1-1.5 1.5C10 20.5 3.5 14 3.5 5A1.5 1.5 0 0 1 5 3.5Z',
+upgrade:'m6 10.5 6-6 6 6M12 4.5v15M5 20h14',
+flag:'M5 21V4m0 0c5-3.5 9 3.5 14 0v10c-5 3.5-9-3.5-14 0',
+star:'m12 3 2.8 5.7 6.3.9-4.5 4.4 1.1 6.3-5.7-3-5.7 3 1.1-6.3L3.2 9.6l6.3-.9Z',
+target:'M12 2v3m0 14v3M2 12h3m14 0h3M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0M14.5 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0',
+swap:'M4 8h16m-4-4 4 4-4 4M20 16H4m4-4-4 4 4 4',
+restart:'M4.5 10a8 8 0 1 1 .6 6M4 4.5V10h5.5',
+info:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M12 11v6m0-10v.1',
+help:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M9.5 8.5a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1.1-1.5 2.5m0 3v.1',
+home:'m3 10 9-7 9 7M5 9v11h5v-6h4v6h5V9',
+sound:'M4 9h4l5-4v14l-5-4H4Zm12-1a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14',
+mute:'M4 9h4l5-4v14l-5-4H4Zm13 1 4 4m-4 0 4-4',
+heart:'M12 20 4.5 12.5A5 5 0 0 1 12 6a5 5 0 0 1 7.5 6.5Z'
+});
+const icon=k=>'<svg class="garden-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="'+(Object.prototype.hasOwnProperty.call(paths,k)?paths[k]:paths.leaf)+'"/></svg>';
 function read(key,fallback,session=false){try{return JSON.parse((session?sessionStorage:localStorage).getItem(key))??fallback;}catch{return fallback;}}
 function write(key,value,session=false){try{const st=session?sessionStorage:localStorage;if(value===null)st.removeItem(key);else st.setItem(key,JSON.stringify(value));}catch{}}
 const params=new URLSearchParams(location.search),blind=params.get('blindtest')==='1';let lang=(params.get('lang')||(location.pathname?.endsWith('.en.html')?'en':null)||read('sprout-campaign-language','zh'))==='en'?'en':'zh';const t=p=>p[lang],u=k=>t(T[k]||{en:k,zh:k});
@@ -11,7 +42,23 @@ function applyPrefs(p){document.documentElement.style.setProperty('--type-scale'
 function savePrefs(p){write('sprout-settings-v5',p);applyPrefs(p);window.dispatchEvent(new Event('gardenprefs'));}
 function translate(){document.documentElement.lang=lang==='en'?'en':'zh-CN';document.documentElement.dataset.language=lang;document.documentElement.classList.add('js');document.querySelectorAll('[data-tr]').forEach(e=>e.textContent=u(e.dataset.tr));document.querySelectorAll('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon));document.querySelectorAll('.site-nav nav a').forEach(a=>{const l=a.querySelector('[data-tr]');if(l)a.setAttribute('aria-label',u(l.dataset.tr));});document.querySelectorAll('[data-close]').forEach(b=>b.setAttribute('aria-label',u('close')));const b=document.getElementById('language');if(b){b.textContent=lang==='zh'?'EN':'中文';b.setAttribute('aria-label',lang==='zh'?'Switch to English':'切换至中文');}const meta=root.GardenPages?.[document.body.dataset.page];if(meta){document.title=t(meta.title);for(const [selector,value]of [['meta[name="description"]',meta.description],['meta[property="og:title"]',meta.title],['meta[property="og:description"]',meta.description]])document.querySelector(selector)?.setAttribute('content',t(value));}applyPrefs(prefs());}
 function setLanguage(v){lang=v==='en'?'en':'zh';write('sprout-campaign-language',lang);translate();window.dispatchEvent(new Event('gardenlanguage'));}
-function progress(){const key=blind?'sprout-blind-story-v5':'sprout-story-v5',raw=read(key,null,blind),backup=read(key+'-checkpoint',null,blind);if(raw?.schema===5&&!blind){const text=JSON.stringify({version:5,build:'5.0.0',progress:raw,battle:read('sprout-battle-v5',null,true)}),code='SP5-'+E.crc(text)+'-'+(typeof Buffer!=='undefined'?Buffer.from(text).toString('base64'):(()=>{const b=new TextEncoder().encode(text);let t='';for(let i=0;i<b.length;i+=32768)t+=String.fromCharCode(...b.subarray(i,i+32768));return btoa(t);})());const old=read('sprout-backups-v5',[]);if(!old.some(v=>v.code===code))write('sprout-backups-v5',[{date:new Date().toISOString(),version:'5.0.0',code},...old].slice(0,3));}return E.sanitizeProgress(raw|| (backup&&backup.crc===E.crc(JSON.stringify(backup.data))?backup.data:blind?null:read('sprout-story-v4',null)));}
+// Validate the identity and core progress before sanitizing optional fields. Sanitizing
+// an unsupported/corrupt primary alone would silently reset a healthy checkpoint.
+function validProgress(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||![4,5,6].includes(raw.schema))return false;
+ const limit=raw.schema===4?12:20;
+ if(!Number.isInteger(raw.cleared)||raw.cleared<0||raw.cleared>limit)return false;
+ if(raw.stars!==undefined&&(!Array.isArray(raw.stars)||raw.stars.some(n=>!Number.isInteger(n)||n<0||n>3)))return false;
+ return true;
+}
+function progress(){
+ const key=blind?'sprout-blind-story-v5':'sprout-story-v5',raw=read(key,null,blind),backup=read(key+'-checkpoint',null,blind);
+ const checkpoint=backup&&backup.crc===E.crc(JSON.stringify(backup.data))&&validProgress(backup.data)?backup.data:null;
+ const legacy=blind?null:read('sprout-story-v4',null);
+ const selected=validProgress(raw)?raw:checkpoint||(validProgress(legacy)?legacy:null);
+ if(selected===raw&&raw?.schema===5&&!blind){const text=JSON.stringify({version:5,build:'5.0.0',progress:raw,battle:read('sprout-battle-v5',null,true)}),code='SP5-'+E.crc(text)+'-'+(typeof Buffer!=='undefined'?Buffer.from(text).toString('base64'):(()=>{const b=new TextEncoder().encode(text);let t='';for(let i=0;i<b.length;i+=32768)t+=String.fromCharCode(...b.subarray(i,i+32768));return btoa(t);})());const old=read('sprout-backups-v5',[]);if(!old.some(v=>v.code===code))write('sprout-backups-v5',[{date:new Date().toISOString(),version:'5.0.0',code},...old].slice(0,3));}
+ return E.sanitizeProgress(selected);
+}
 const saveProgress=p=>{const key=blind?'sprout-blind-story-v5':'sprout-story-v5';write(key,p,blind);write(key+'-checkpoint',{crc:E.crc(JSON.stringify(p)),data:p},blind);};
 const saveBattle=s=>{const snapshot=E.snapshot(s),key=blind?'sprout-blind-battle-v5':'sprout-battle-v5';write(key,snapshot,true);if(snapshot)write(key+'-checkpoint',{crc:E.crc(JSON.stringify(snapshot)),data:snapshot},blind);};
 const loadBattle=p=>{const key=blind?'sprout-blind-battle-v5':'sprout-battle-v5',a=E.restore(read(key,null,true),p);if(a)return a;const checkpoint=read(key+'-checkpoint',null,blind);return checkpoint&&checkpoint.crc===E.crc(JSON.stringify(checkpoint.data))?E.restore(checkpoint.data,p):null;};

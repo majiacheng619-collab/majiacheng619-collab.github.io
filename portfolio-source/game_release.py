@@ -4,6 +4,8 @@ import hashlib
 import json
 import re
 
+VERSION = '7.0.0'
+
 
 def fingerprint(game):
     for name in ('leaderboard.html','leaderboard.en.html'):
@@ -49,7 +51,10 @@ def fingerprint(game):
             touch=resolved.get('assets/pwa-192.458cf4f70713.png')
             if touch and 'apple-touch-icon' not in content:content=content.replace('</head>',f'<link rel="apple-touch-icon" href="{touch}"></head>')
         if page.name=='manifest.webmanifest':
-            manifest=json.loads(content);manifest['theme_color']='#edf4e9';manifest['background_color']='#f5f7f1';content=json.dumps(manifest,ensure_ascii=False,indent=2)
+            manifest=json.loads(content)
+            manifest['theme_color']='#0d1210'
+            manifest['background_color']='#0d1210'
+            content=json.dumps(manifest,ensure_ascii=False,indent=2)
         page.write_text(content)
     current=set(resolved.values())
     for base in bybase:
@@ -64,5 +69,5 @@ def fingerprint(game):
     content=worker.read_text()
     core=json.loads(re.search(r'const CORE=(\[[^;]+\])',content).group(1))
     digest=hashlib.sha256(b''.join(name.encode()+b'\0'+(game/name).read_bytes() for name in sorted(core))).hexdigest()[:12]
-    content=re.sub(r"const CACHE=PREFIX\+'[^']+'", "const CACHE=PREFIX+'6.3.0-"+digest+"'",content)
+    content=re.sub(r"const CACHE=PREFIX\+'[^']+'", "const CACHE=PREFIX+'"+VERSION+"-"+digest+"'",content)
     worker.write_text(content)

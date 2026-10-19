@@ -8,7 +8,7 @@ on:
       cleanup_history:
         description: 发布成功后清理旧记录与旧主线历史
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-engine.test.cjs
+        run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs
       - name: Verify visitor counting
         run: node --test visitor-service/*.test.mjs
       - name: Verify cleanup safeguards
@@ -69,6 +69,7 @@ jobs:
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
+          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site
           AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
       - name: Save temporary visual verification
         if: always()
@@ -98,7 +99,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   cleanup:
-    if: github.event_name == 'push' || inputs.cleanup_history
+    if: github.event_name == 'workflow_dispatch' && inputs.cleanup_history
     needs: deploy
     runs-on: ubuntu-latest
     permissions:
