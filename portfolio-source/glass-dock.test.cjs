@@ -19,7 +19,7 @@ class Surface {
 function fixture({reduced=false,sections=false,pathname='/'}={}){
  const dock=new Surface(),lens=new Surface(),media=new Surface(),doc=new Surface(),host=new Surface();
  let left=20,itemWidth=80,time=0,id=0;
- const frames=new Map(),navigations=[],captures=new Set(),observed=[],sectionNodes=new Map();
+ const frames=new Map(),navigations=[],captures=new Set(),observed=[],resizes=[],sectionNodes=new Map();
  const links=Array.from({length:4},(_,i)=>{const link=new Surface();link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-link]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
  links.forEach((link,i)=>{link.append(new Surface());link.append(new Surface());if(sections){link.href=`https://example.test/index.html${i?'#section-'+i:''}`;link.setAttribute('href',new URL(link.href).pathname+new URL(link.href).hash);sectionNodes.set('section-'+i,new Surface());}});
  links[0].setAttribute('aria-current','location');
@@ -27,11 +27,13 @@ function fixture({reduced=false,sections=false,pathname='/'}={}){
  dock.setPointerCapture=n=>captures.add(n);dock.hasPointerCapture=n=>captures.has(n);dock.releasePointerCapture=n=>{captures.delete(n);dock.emit('lostpointercapture',{pointerId:n});};
  media.matches=reduced;doc.hidden=false;doc.querySelector=()=>dock;doc.getElementById=id=>sectionNodes.get(id)||null;doc.createElement=()=>new Surface();
  class IntersectionObserver {constructor(callback){this.callback=callback;observed.push(this);}observe(node){(this.nodes??=[]).push(node);}disconnect(){this.disconnected=true;}}
+ class ResizeObserver {constructor(callback){this.callback=callback;resizes.push(this);}observe(node){this.node=node;}disconnect(){this.disconnected=true;}}
  host.IntersectionObserver=IntersectionObserver;
- const context=vm.createContext({window:host,document:doc,IntersectionObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname},scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
+ host.ResizeObserver=ResizeObserver;
+ const context=vm.createContext({window:host,document:doc,IntersectionObserver,ResizeObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname},scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
  vm.runInContext(source,context);
  function settle(){for(let n=0;frames.size&&n<600;n++){const batch=[...frames];frames.clear();time+=16.667;for(const [,fn]of batch)fn(time);}assert.equal(frames.size,0,'animation must stop after settling');}
- return {dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=16.667;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(dock.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
+ return {dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,resizes,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=16.667;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(dock.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
 }
 
 test('initial lens aligns to the current real anchor and repeated initialization adds no handlers',()=>{
@@ -82,6 +84,15 @@ test('resize cancels pointer ownership and measures fresh link widths',()=>{
 });
 test('focus previews the lens without changing destination and blur restores it',()=>{
  const f=fixture({reduced:true});f.dock.emit('focusin',{target:f.links[3]});assert.equal(f.paint('--lens-x'),240);assert.equal(f.navigations.length,0);assert.equal(f.links[0].getAttribute('aria-current'),'location');f.dock.emit('focusout',{relatedTarget:null});assert.equal(f.paint('--lens-x'),0);
+});
+test('late motion-change and ResizeObserver delivery preserve the currently focused link preview',()=>{
+ for(const mediaAlreadyUpdated of [false,true]){
+ const f=fixture();f.media.matches=mediaAlreadyUpdated;f.doc.activeElement=f.links[2];f.dock.emit('focusin',{target:f.links[2]});f.settle();assert.equal(f.paint('--lens-x'),160);
+ f.motion(true);assert.equal(f.paint('--lens-x'),160,'A delayed media change must keep the keyboard focus preview');assert.equal(f.frames.size,0);
+ assert.equal(f.resizes.length,1);f.resizes[0].callback([{target:f.dock}]);assert.equal(f.paint('--lens-x'),160,'Initial ResizeObserver delivery must not reset focus to the selected page');
+ f.resize(65);f.resizes[0].callback([{target:f.dock}]);assert.equal(f.paint('--lens-x'),130,'Focused geometry must be remeasured after a real size change');assert.equal(f.paint('--lens-width'),65);
+ assert.equal(f.links[0].getAttribute('aria-current'),'location');assert.ok(!f.links[2].hasAttribute('aria-current'),'Focus preview never changes the current page');assert.equal(f.navigations.length,0);
+ }
 });
 test('pagehide cancels animation and unregisters controller handlers',()=>{
  const f=fixture();f.links[2].click();assert.ok(f.frames.size);f.host.emit('pagehide',{persisted:false});assert.equal(f.frames.size,0);f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:250});assert.equal(f.captures.size,0);

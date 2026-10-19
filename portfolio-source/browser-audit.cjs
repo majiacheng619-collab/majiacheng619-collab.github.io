@@ -36,20 +36,6 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  if(process.env.AUDIT_OUTPUT)fs.mkdirSync(process.env.AUDIT_OUTPUT,{recursive:true});
  page.on('pageerror',e=>consoleErrors.push(`${page.url()}: ${e.message}`));
  page.on('response',r=>{if(r.url().startsWith(origin)&&r.status()>=400)httpErrors.push(`${r.status()} ${r.url()}`);});
- for(const width of [320,390,768,1440]) {
-   await page.setViewportSize({width,height:900});
-   for(const route of pages) {
-     await page.goto(`${origin}/${route}`,{waitUntil:'load'});
-     await page.evaluate(()=>document.fonts.ready);
-     await page.waitForTimeout(80);
-     const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,main:document.querySelectorAll('main').length,h1:[...document.querySelectorAll('h1')].filter(e=>!e.closest('[role="dialog"],dialog')).length,title:document.title,broken:[...document.images].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.getAttribute('src'))}));
-     if(metrics.scroll>width+1)failures.push(`${width}px ${route}: horizontal overflow ${metrics.scroll}`);
-     if(metrics.main!==1||metrics.h1!==1)failures.push(`${route}: main=${metrics.main}, h1=${metrics.h1}`);
-     if(!metrics.title)failures.push(`${route}: empty title`);
-     if(metrics.broken.length)failures.push(`${route}: broken images ${metrics.broken.join(',')}`);
-   }
-   report.viewports.push({width,pages:pages.length}); console.log(`Verified ${pages.length} pages at ${width}px`);
- }
  await page.setViewportSize({width:390,height:844});
  await page.goto(origin+'/');
  await page.locator('[data-menu-open]').click();
@@ -186,6 +172,22 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await page.evaluate(()=>scrollTo(0,0));
  await page.waitForFunction(()=>document.querySelector('.chapter-nav a[href="#selected-work"]').getAttribute('aria-current')==='location');
  report.interactions.push('chapter navigation returns to its first section when scrolling to the page top');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ for(const width of [320,390,768,1440]) {
+   await page.setViewportSize({width,height:900});
+   for(const route of pages) {
+     await page.goto(`${origin}/${route}`,{waitUntil:'load'});
+     await page.evaluate(()=>document.fonts.ready);
+     await page.waitForTimeout(80);
+     const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,main:document.querySelectorAll('main').length,h1:[...document.querySelectorAll('h1')].filter(e=>!e.closest('[role="dialog"],dialog')).length,title:document.title,broken:[...document.images].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.getAttribute('src'))}));
+     if(metrics.scroll>width+1)failures.push(`${width}px ${route}: horizontal overflow ${metrics.scroll}`);
+     if(metrics.main!==1||metrics.h1!==1)failures.push(`${route}: main=${metrics.main}, h1=${metrics.h1}`);
+     if(!metrics.title)failures.push(`${route}: empty title`);
+     if(metrics.broken.length)failures.push(`${route}: broken images ${metrics.broken.join(',')}`);
+   }
+   report.viewports.push({width,pages:pages.length}); console.log(`Verified ${pages.length} pages at ${width}px`);
+ }
+ await page.setViewportSize({width:390,height:844});
  if(process.env.AUDIT_ACCESSIBILITY==='1') {
    await page.emulateMedia({reducedMotion:'reduce'});
    const routes=['','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','honor/','updates/','privacy/','visitors/','game/guide.html','game/codex.html','game/cloud.html'];

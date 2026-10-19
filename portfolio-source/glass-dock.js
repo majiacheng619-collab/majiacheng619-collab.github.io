@@ -40,7 +40,12 @@
   let boxes = [], current = 0, target = 0, width = 0, targetWidth = 0;
   let velocity = 0, frame = 0, lastTime = 0, gesture = null;
   let scrollImpulse = 0, previousScroll = scrollY, suppressClickUntil = 0;
-  let observer = null, resizeObserver = null;
+  let observer = null, resizeObserver = null, focusedPreview = -1;
+  function previewIndex() {
+    const active = document.activeElement;
+    const actual = active ? links.indexOf(active.closest?.('[data-dock-link]')) : -1;
+    return actual >= 0 ? actual : focusedPreview;
+  }
 
   function paint(stretch = 1, squash = 1) {
     dock.style.setProperty('--lens-x', `${current.toFixed(3)}px`);
@@ -99,7 +104,8 @@
       copy.style.width = `${boxes[index].width}px`;
       links[index].style.setProperty('--dock-link-x', `${boxes[index].x}px`);
     });
-    target = boxes[selected].x; targetWidth = boxes[selected].width;
+    const geometryIndex = previewIndex() >= 0 ? previewIndex() : selected;
+    target = boxes[geometryIndex].x; targetWidth = boxes[geometryIndex].width;
     if (snap || !width) { current = target; width = targetWidth; velocity = 0; paint(); }
     else animate();
   }
@@ -186,11 +192,12 @@
   dock.addEventListener('focusin', event => {
     const index = links.indexOf(event.target.closest('[data-dock-link]'));
     if (index >= 0) {
+      focusedPreview = index;
       target = boxes[index]?.x ?? target; targetWidth = boxes[index]?.width ?? targetWidth; animate();
     }
   }, {signal});
   dock.addEventListener('focusout', event => {
-    if (!dock.contains(event.relatedTarget)) select(selected);
+    if (!dock.contains(event.relatedTarget)) { focusedPreview = -1; select(selected); }
   }, {signal});
   addEventListener('scroll', () => {
     const next = scrollY, difference = next - previousScroll; previousScroll = next;
@@ -203,7 +210,7 @@
   if ('ResizeObserver' in window) {
     resizeObserver = new ResizeObserver(onResize); resizeObserver.observe(dock);
   }
-  const onMotion = () => { cancelGesture(); scrollImpulse = 0; animate(); };
+  const onMotion = () => { cancelGesture(); scrollImpulse = 0; measure(true); animate(); };
   reduce.addEventListener('change', onMotion, {signal});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
