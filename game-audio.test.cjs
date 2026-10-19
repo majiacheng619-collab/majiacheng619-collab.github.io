@@ -108,3 +108,48 @@ test('pause releases active oscillators before disconnecting, avoiding hard audi
   assert.equal(oscillator.stopped,4.035);
  }
 });
+
+test('dewfall has a quiet pitched cue, throttles repeats and releases every voice',async()=>{
+ const {audio,contexts}=harness();await audio.unlock();
+ const context=contexts[0],before=context.nodes.length;
+ audio.event({type:'tactic',row:0},{status:'playing'});
+ const added=context.nodes.slice(before),oscillators=added.filter(n=>n.kind==='oscillator');
+ assert.ok(oscillators.length>1,'dewfall has a chord rather than a generic click');
+ assert.equal(added.some(n=>n.kind==='sample'||n.kind==='filter'),false,'no noise source is used');
+ assert.ok(oscillators.some(n=>n.frequency.calls.some(c=>c[0]==='exponential')),'droplet falls in pitch');
+ for(const oscillator of oscillators){
+  assert.equal(oscillator.type,'sine');
+  assert.ok(oscillator.stopped>oscillator.started&&oscillator.stopped-oscillator.started<.5);
+  const gain=oscillator.connections[0];
+  assert.ok(gain.gain.calls.some(c=>c[0]==='linear'&&c[1]>0&&c[1]<=.05));
+  assert.ok(gain.gain.calls.some(c=>c[0]==='exponential'&&c[1]===.0001));
+ }
+ const count=context.nodes.length;
+ audio.event({type:'tactic',row:4},{status:'playing'});
+ assert.equal(context.nodes.length,count,'repeated input cannot stack the cue');
+ for(const oscillator of oscillators)oscillator.onended();
+ assert.equal(audio.info().voices,0);
+ assert.ok(added.every(n=>n.disconnects===1),'ended voices release the entire graph');
+ context.currentTime+=1;
+ audio.event({type:'tactic',row:4},{status:'playing'});
+ assert.ok(audio.info().voices>0,'cooldown allows a later cue');
+ audio.update({status:'paused'});
+ const latest=context.nodes.slice(count).filter(n=>n.kind==='oscillator');
+ assert.ok(latest.every(n=>n.stopped===context.currentTime+.035),'pause fades active dewfall voices');
+});
+test('dewfall obeys sound, master and volume gates, and cannot start while paused',async()=>{
+ const {audio,contexts}=harness();await audio.unlock();
+ const context=contexts[0];
+ for(const options of [{sound:false},{sound:true,volume:0},{volume:1,soundVolume:0}]){
+  audio.set(options);const count=context.nodes.length;
+  audio.event({type:'tactic',row:2},{status:'playing'});
+  assert.equal(context.nodes.length,count);
+ }
+ audio.set({soundVolume:.65});
+ const count=context.nodes.length;
+ audio.update({status:'paused'});
+ audio.event({type:'tactic',row:2});
+ assert.equal(context.nodes.length,count);
+ audio.event({type:'tactic',row:2},{status:'playing'});
+ assert.ok(context.nodes.length>count,'paused events do not consume the cue cooldown');
+});

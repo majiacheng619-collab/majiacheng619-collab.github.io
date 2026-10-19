@@ -231,6 +231,16 @@ function event(ev,state=activeState){
  const type=String(ev.type||''),now=time()+.005;eventIndex++;
  // Frequent combat stays in the background; deliberate UI actions stay clear.
  if(['shot','hit','bite','kill'].includes(type)&&!allowed('combat-budget',.032))return;
+ // Dewfall is a soft falling droplet over an open chord; no noise layer.
+ if(type==='tactic'){
+  if(state?.status==='paused'||!allowed('tactic',.25))return;
+  const pan=panFor(ev);
+  voice('sound',81,now,.18,.047,'sine',pan,69);
+  voice('sound',62,now+.055,.42,.033,'sine',pan);
+  voice('sound',69,now+.085,.38,.026,'sine',pan);
+  voice('sound',76,now+.11,.32,.021,'sine',pan);
+  return;
+ }
  if(['swap','swapCard','cardSwap','reroll','shuffle'].includes(type)){if(allowed('card-change',.09)){bufferVoice('leaf','sound',now,.18,0,.88);voice('sound',62,now,.13,.058,'sine',-.1);voice('sound',69,now+.065,.18,.052,'sine',.1);}return;}
  if(['presence','warning','newzombie','newZombie','new-zombie','newEnemy','encounter','spawn','emerge','bossEntrance'].includes(type)||root.GardenEngine?.ENEMIES?.[type]){
   const id=ev.enemyType||(root.GardenEngine?.ENEMIES?.[type]?type:ev.zombieType||'moss'),hidden=type==='presence';

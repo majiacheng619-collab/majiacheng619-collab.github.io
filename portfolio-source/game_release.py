@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 
-VERSION = '6.4.0'
+VERSION = '7.0.0'
 
 
 def fingerprint(game):
@@ -52,8 +52,8 @@ def fingerprint(game):
             if touch and 'apple-touch-icon' not in content:content=content.replace('</head>',f'<link rel="apple-touch-icon" href="{touch}"></head>')
         if page.name=='manifest.webmanifest':
             manifest=json.loads(content)
-            manifest['theme_color']='#f5f7f1'
-            manifest['background_color']='#f5f7f1'
+            manifest['theme_color']='#0d1210'
+            manifest['background_color']='#0d1210'
             content=json.dumps(manifest,ensure_ascii=False,indent=2)
         page.write_text(content)
     current=set(resolved.values())
