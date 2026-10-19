@@ -460,41 +460,10 @@
     if (reduce.matches) {
       settleReveal();
       artwork.forEach(node => node.style.setProperty('--drift', '0px'));
-      all('.liquid-wave').forEach(node => node.remove());
     }
     queueScroll();
   };
   if (reduce.addEventListener) reduce.addEventListener('change', motionChanged);
   else reduce.addListener(motionChanged);
 
-  // One short surface response per gesture; it never drives page movement.
-  const surfaceSelector = '.button, .icon-button, .desktop-nav a, .chapter-nav a, [data-growth-step], [data-search-query]';
-  function wave(target, x, y) {
-    if (reduce.matches || target.matches(':disabled, [aria-disabled="true"]')) return;
-    const box = target.getBoundingClientRect();
-    const node = document.createElement('i');
-    node.className = 'liquid-wave';
-    node.setAttribute('aria-hidden', 'true');
-    node.style.setProperty('--wave-size', `${Math.max(box.width, box.height) * 1.4}px`);
-    node.style.setProperty('--wave-x', `${Math.max(0, Math.min(box.width, x - box.left))}px`);
-    node.style.setProperty('--wave-y', `${Math.max(0, Math.min(box.height, y - box.top))}px`);
-    all('.liquid-wave', target).forEach(item => item.remove());
-    target.append(node);
-    const cleanup = () => node.remove();
-    node.addEventListener('animationend', cleanup, { once: true });
-    // A missing animation or a preference change must not leave decorative nodes.
-    setTimeout(cleanup, 950);
-  }
-  document.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || !(event.target instanceof Element)) return;
-    const target = event.target.closest(surfaceSelector);
-    if (target) wave(target, event.clientX, event.clientY);
-  }, { passive: true });
-  document.addEventListener('keydown', event => {
-    if (!['Enter', ' '].includes(event.key) || event.repeat || event.isComposing || !(event.target instanceof Element)) return;
-    const target = event.target.closest(surfaceSelector);
-    if (!target || (event.key === ' ' && target.tagName === 'A')) return;
-    const box = target.getBoundingClientRect();
-    wave(target, box.left + box.width / 2, box.top + box.height / 2);
-  });
 })();

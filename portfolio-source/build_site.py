@@ -11,8 +11,8 @@ if len(music)!=1: raise RuntimeError('Expected exactly one current ambient track
 media['music']=music[0].relative_to(ROOT).as_posix()
 nav=[('首页','index.html'),('作品','projects/index.html'),('经历','experience/index.html'),('荣誉','honor/index.html'),('近况','updates/index.html')]
 detail_path=Path(__file__).parent/'detail.css'
-css=(Path(__file__).parent/'site.css').read_text()+'\n'+detail_path.read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()
-js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'liquid.js').read_text()
+css=(Path(__file__).parent/'site.css').read_text()+'\n'+detail_path.read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()
+js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'glass-dock.js').read_text()
 def asset(text,stem,ext):
  name=f'assets/{stem}.{hashlib.sha256(text.encode()).hexdigest()[:12]}.{ext}'
  (ROOT/name).write_text(text)
@@ -22,6 +22,40 @@ def img(src,alt,classes='',eager=False):
  width,height=dimensions.get(src,(1280,720))
  return f'<img class="{classes}" src="{src}" alt="{alt}" width="{width}" height="{height}" decoding="async" '+('fetchpriority="high"' if eager else 'loading="lazy"')+'/>'
 def cta(url,label,secondary=False): return f'<a class="button {"secondary" if secondary else "primary"}" href="{url}"'+(' download="马嘉程_个人简历.pdf"' if url.endswith('.pdf') else '')+f'>{label}</a>'
+from functools import lru_cache
+@lru_cache(maxsize=1)
+def glass_refraction_map():
+ import base64, io, math
+ from PIL import Image
+ image=Image.new('RGB',(128,128))
+ pixels=image.load()
+ for y in range(128):
+  for x in range(128):
+   nx=(x-63.5)/63.5; ny=(y-63.5)/63.5
+   radius=min(1,math.hypot(nx,ny))
+   curve=(1-math.sqrt(max(0,1-radius*radius)))*.65
+   pixels[x,y]=(round(128-nx*curve*126),round(128-ny*curve*126),128)
+ out=io.BytesIO(); image.save(out,format='PNG',optimize=True)
+ return 'data:image/png;base64,'+base64.b64encode(out.getvalue()).decode()
+
+def glass_dock(path):
+ icons = {
+  'home':'<path d="m3.5 10 8.5-7 8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4.5v-7h-6v7H5A1.5 1.5 0 0 1 3.5 19Z"/>',
+  'work':'<rect x="3" y="6.5" width="18" height="14" rx="3"/><path d="M8.5 6.5V5A1.5 1.5 0 0 1 10 3.5h4A1.5 1.5 0 0 1 15.5 5v1.5M3.5 11.5a24 24 0 0 0 17 0M10 12.5v3h4v-3"/>',
+  'journey':'<path d="M4 5h12a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h12M7 2 4 5l3 3m10 6 3 3-3 3"/>',
+  'award':'<path d="M8 3.5h8v5a4 4 0 0 1-8 0Zm0 1H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 12.5v5m-4 3h8m-7.5-3h7v3h-7Z"/>',
+  'contact':'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4.5 7 7.5 6 7.5-6"/>'
+ }
+ entries=[('首页','index.html','home'),('作品','projects/index.html','work'),('经历','experience/index.html','journey'),('荣誉','honor/index.html','award'),('联系','index.html#about','contact')]
+ links=[]
+ for label,href,icon in entries:
+  active=path==href or (href!='index.html' and '#' not in href and path.startswith(href.removesuffix('index.html')))
+  current=' aria-current="page"' if active else ''
+  links.append(f'<a class="glass-dock__link" data-dock-link href="{href}"{current}><svg viewBox="0 0 24 24" aria-hidden="true">{icons[icon]}</svg><span>{label}</span></a>')
+ # A low-amplitude optical displacement shader; Safari retains the clear CSS lens.
+ optics=f'''<svg class="glass-dock__optics" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><filter id="glass-dock-refraction" x="-12%" y="-16%" width="124%" height="132%" color-interpolation-filters="sRGB"><feImage x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" href="{glass_refraction_map()}" result="optics"/><feDisplacementMap in="SourceGraphic" in2="optics" scale="9" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg>'''
+ return optics+'<nav class="glass-dock" data-glass-dock aria-label="快捷导航"><span class="glass-dock__lens" data-dock-lens aria-hidden="true"></span>'+''.join(links)+'</nav>'
+
 def render(path,title,desc,body):
  depth=len(Path(path).parts)-1; prefix='../'*depth
  links=''.join(f'<a href="{url}" '+('aria-current="page" ' if path==url or (url!='index.html' and path.startswith(str(Path(url).parent)+'/')) else '')+f'>{label}</a>' for label,url in nav)
@@ -30,14 +64,14 @@ def render(path,title,desc,body):
  results=nav+[('萌芽保卫队 · 网页塔防游戏','projects/sprout-patrol/index.html'),('AI 叙事短视频 · 独立创作','projects/ai-content/index.html'),('知识付费 · 用户增长与运营','experience/index.html#ecommerce'),('直播 · 内容与用户运营','experience/index.html#livestream'),('Word、Excel、Canva · 工具技能','experience/index.html#skills'),('面包挑战 · 活动视觉','poster/index.html'),('24秒作品介绍','index.html#introduction'),('项目思考 · 需求与设计判断','index.html#approach'),('成长机制 · 萌芽、成株与开花','projects/sprout-patrol/index.html#mechanism')]
  search=''.join(f'<a data-search-item href="{u}">{l}</a>' for l,u in results)
  dialogs=f'<dialog id="menu-dialog" data-menu-dialog class="menu-dialog" aria-labelledby="menu-title"><button class="dialog-close" data-dialog-close aria-label="关闭导航">×</button><h2 id="menu-title">马嘉程</h2><p class="menu-intro">从一项作品，了解我的实践。</p><nav aria-label="页面导航">{links}<a href="experience/index.html#education">教育背景</a><a href="mailto:19870043434@163.com">联系我</a><a href="resume.pdf" download>下载简历</a></nav><p>产品、内容与运营实践。</p></dialog><dialog id="search-dialog" class="search-dialog" aria-labelledby="search-title"><button class="dialog-close" data-dialog-close aria-label="关闭搜索">×</button><div class="search-heading"><h2 id="search-title">搜索网站</h2><kbd data-search-shortcut>Ctrl K</kbd></div><label for="search-input">搜索我的网站</label><input id="search-input" data-search-input type="search" placeholder="学历、项目、技能、联系方式…" autocomplete="off"/><div class="search-suggestions" aria-label="常用搜索"><button type="button" data-search-query="学历">学历</button><button type="button" data-search-query="项目">项目</button><button type="button" data-search-query="技能">技能</button><button type="button" data-search-query="联系方式">联系</button></div><p data-search-count aria-live="polite"></p><div class="search-results">{search}</div><p data-search-empty hidden>没有找到相关内容。可以换个关键词，或通过导航查看经历与作品。</p></dialog><dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图"><button class="dialog-close" data-dialog-close aria-label="关闭大图">×</button><img data-dialog-image src="assets/portrait-white-960.b8bfe698eef3.webp" alt="马嘉程证件照" width="960" height="960"/></dialog>'
- doc=f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>{title if path=="index.html" else title+"｜马嘉程"}</title><meta name="description" content="{desc}"/><meta property="og:title" content="{title if path=="index.html" else title+"｜马嘉程"}"/><meta property="og:description" content="{desc}"/><meta name="theme-color" content="{ '#050d1c' if path=='index.html' else '#eaf1fb' }"/><link rel="canonical" href="https://majiacheng619-collab.github.io/{"" if path=="index.html" else path.replace("index.html","")}"/><link rel="icon" href="{ICON}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{TOUCH_ICON}"/><link rel="stylesheet" href="{CSS}"/><script defer src="{JS}"></script></head><body class="{'home-page' if path=='index.html' else 'inner-page'}"><a class="skip-link" href="#main">跳转到正文</a>{header}<div class="reading-progress" data-reading-progress aria-hidden="true"></div><main id="main" tabindex="-1">{body}{footer}</main>{dialogs}<audio data-ambient loop preload="none" src="{media["music"]}"></audio><p class="sr-only" data-sound-status aria-live="polite"></p></body></html>'
+ doc=f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>{title if path=="index.html" else title+"｜马嘉程"}</title><meta name="description" content="{desc}"/><meta property="og:title" content="{title if path=="index.html" else title+"｜马嘉程"}"/><meta property="og:description" content="{desc}"/><meta name="theme-color" content="#f7f8fa"/><link rel="canonical" href="https://majiacheng619-collab.github.io/{"" if path=="index.html" else path.replace("index.html","")}"/><link rel="icon" href="{ICON}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{TOUCH_ICON}"/><link rel="stylesheet" href="{CSS}"/><script defer src="{JS}"></script></head><body class="{'home-page' if path=='index.html' else 'inner-page'}"><a class="skip-link" href="#main">跳转到正文</a>{header}<div class="reading-progress" data-reading-progress aria-hidden="true"></div><main id="main" tabindex="-1">{body}{footer}</main>{dialogs}{glass_dock(path)}<audio data-ambient loop preload="none" src="{media["music"]}"></audio><p class="sr-only" data-sound-status aria-live="polite"></p></body></html>'
  doc=doc.replace('</head>', '<meta name="color-scheme" content="light"/><meta name="format-detection" content="telephone=no"/> <meta property="og:locale" content="zh_CN"/></head>')
  if path!='index.html':
   parent='<a href="projects/index.html">作品</a><span aria-hidden="true">/</span>' if path.startswith('projects/') and path!='projects/index.html' else ''
   breadcrumb=f'<div class="page-context"><a href="index.html">马嘉程</a><span aria-hidden="true">/</span>{parent}<span aria-current="page">{title}</span></div>'
   doc=doc.replace('<main id="main" tabindex="-1">','<main id="main" tabindex="-1">'+breadcrumb)
  doc=doc.replace(f'{footer}</main>',f'</main>{footer}')
- ambient='<div class="ambient-field" aria-hidden="true"><div class="ambient-grid"></div><div class="ambient-orb orb-a"></div><div class="ambient-orb orb-b"></div><div class="ambient-droplet"></div><div class="ambient-droplet drop-two"></div></div>'
+ ambient='<div class="ambient-field" aria-hidden="true"></div>'
  doc=doc.replace('<a class="skip-link"',ambient+'<a class="skip-link"')
  canonical=re.search(r'<link rel="canonical" href="([^"]+)"',doc).group(1)
  doc=doc.replace('</head>',f'<meta property="og:url" content="{canonical}"/><meta property="og:image" content="https://majiacheng619-collab.github.io/assets/portrait-white-960.b8bfe698eef3.webp"/></head>')

@@ -33,6 +33,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  // QA traffic must not add a visitor to the production statistics.
  await context.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
  page=await context.newPage();
+ if(process.env.AUDIT_OUTPUT)fs.mkdirSync(process.env.AUDIT_OUTPUT,{recursive:true});
  page.on('pageerror',e=>consoleErrors.push(`${page.url()}: ${e.message}`));
  page.on('response',r=>{if(r.url().startsWith(origin)&&r.status()>=400)httpErrors.push(`${r.status()} ${r.url()}`);});
  for(const width of [320,390,768,1440]) {
@@ -102,9 +103,40 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  assert.equal(await page.locator('#search-dialog').evaluate(e=>e.open),true);
  await page.keyboard.press('Escape');
  report.interactions.push('search: eight recruiter queries, Chinese composition safety, arrow navigation, Enter destination, empty state, keyboard shortcut and restored focus');
- await page.locator('[data-menu-open]').dispatchEvent('pointerdown',{button:0,clientX:350,clientY:30});
- assert.equal(await page.locator('[data-menu-open] .liquid-wave').count(),1);
- report.interactions.push('pointer-generated liquid touch feedback');
+ await page.goto(origin+'/');
+ const dock=page.locator('[data-glass-dock]'),dockLinks=dock.locator('[data-dock-link]');
+ assert.equal(await dockLinks.count(),5,'The dock retains five real navigation links');
+ const linkURLs=await dockLinks.evaluateAll(links=>links.map(a=>a.href));
+ for(const href of linkURLs){const destination=new URL(href);assert.equal(destination.origin,origin);assert.equal((await context.request.get(destination.href)).status(),200,'Dock fallback destination exists: '+href);}
+ for(const width of [320,390,768,1440]){
+   await page.setViewportSize({width,height:844});
+   const bounds=await dock.boundingBox();
+   assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width+1,'Dock fits '+width+'px viewport');
+   assert.ok(bounds.y>=0&&bounds.y+bounds.height<844,'Dock remains above the bottom edge');
+ }
+ await page.setViewportSize({width:390,height:844});
+ if(process.env.AUDIT_OUTPUT)await page.screenshot({path:path.join(process.env.AUDIT_OUTPUT,'glass-home-390.png')});
+ const first=await dockLinks.nth(0).boundingBox(),second=await dockLinks.nth(1).boundingBox();
+ const start={x:first.x+first.width/2,y:first.y+first.height/2},end={x:second.x+second.width/2,y:second.y+second.height/2};
+ await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:8});
+ assert.equal(await dock.getAttribute('data-dragging'),'true');
+ if(process.env.AUDIT_OUTPUT)await page.screenshot({path:path.join(process.env.AUDIT_OUTPUT,'glass-drag-390.png')});
+ await dock.dispatchEvent('pointercancel',{pointerId:1});await page.mouse.up();
+ await page.waitForFunction(()=>!document.querySelector('[data-glass-dock]').hasAttribute('data-dragging'));
+ assert.equal(page.url(),origin+'/','Cancelled drag must not navigate');
+ await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:8});
+ await Promise.all([page.waitForURL('**/projects/index.html'),page.mouse.up()]);
+ assert.equal(await page.locator('[data-dock-link][aria-current]').count(),1,'Only one current destination after drag navigation');
+ await page.locator('[data-dock-link]').first().focus();await page.keyboard.press('Tab');
+ assert.equal(await page.locator('[data-dock-link]').nth(1).evaluate(a=>a===document.activeElement),true,'Tab follows real anchor order');
+ await page.locator('[data-dock-link]').first().focus();
+ await Promise.all([page.waitForURL(origin+'/index.html'),page.keyboard.press('Enter')]);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.locator('[data-dock-link]').nth(2).focus();
+ const reduced=await dock.evaluate(node=>{const focused=document.activeElement.getBoundingClientRect(),rect=node.getBoundingClientRect(),style=getComputedStyle(node);return {x:parseFloat(style.getPropertyValue('--lens-x')),expected:focused.left-rect.left-node.clientLeft,stretch:parseFloat(style.getPropertyValue('--lens-stretch'))};});
+ assert.ok(Math.abs(reduced.x-reduced.expected)<1,'Reduced motion positions the lens immediately');assert.equal(reduced.stretch,1);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ report.interactions.push('liquid dock: five reachable fallback links, four viewport bounds, continuous drag, cancellation, one navigation, native Tab/Enter and reduced motion');
  await page.goto(origin+'/projects/sprout-patrol/');
  await page.locator('[data-growth-step="2"]').click();
  assert.equal(await page.locator('[data-growth-panel="2"]').isVisible(),true);
@@ -161,7 +193,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  }
  const output=process.env.AUDIT_OUTPUT;
  if(output){fs.mkdirSync(output,{recursive:true});for(const [route,name] of [['','home'],['projects/','projects'],['projects/ai-content/','ai'],['game/guide.html','guide'],['game/','game']])for(const width of [390,1440]){await page.setViewportSize({width,height:900});await page.goto(origin+'/'+route);await page.evaluate(async()=>{for(let y=0;y<document.documentElement.scrollHeight;y+=innerHeight){scrollTo(0,y);await new Promise(r=>setTimeout(r,40));}scrollTo(0,0);});await page.waitForTimeout(250);await page.screenshot({path:path.join(output,`${name}-${width}.png`),fullPage:true});}}
- const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});const fallback=await noJS.newPage();await fallback.goto(origin+'/');assert.ok(await fallback.locator('.desktop-nav').isVisible());await fallback.goto(origin+'/projects/sprout-patrol/');assert.equal(await fallback.locator('[data-growth-panel]:visible').count(),3);report.interactions.push('no-JavaScript navigation and mechanism fallback');
+ const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});const fallback=await noJS.newPage();await fallback.goto(origin+'/');assert.ok(await fallback.locator('[data-glass-dock]').isVisible());assert.equal(await fallback.locator('[data-dock-link][href]:visible').count(),5);await Promise.all([fallback.waitForURL('**/projects/index.html'),fallback.locator('[data-dock-link]').nth(1).click()]);await fallback.goto(origin+'/projects/sprout-patrol/');assert.equal(await fallback.locator('[data-growth-panel]:visible').count(),3);report.interactions.push('no-JavaScript dock navigation and mechanism fallback');
  failures.push(...new Set(consoleErrors),...new Set(httpErrors));
  report.ok=failures.length===0;
  console.log(JSON.stringify(report,null,2));

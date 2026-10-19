@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs
+        run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
       - name: Verify visitor counting
         run: node --test visitor-service/*.test.mjs
       - name: Verify cleanup safeguards
@@ -67,10 +67,10 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
+          AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site
-          AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
       - name: Save temporary visual verification
         if: always()
         uses: actions/upload-artifact@v4
@@ -120,5 +120,5 @@ jobs:
         run: |
           git config user.name "马嘉程"
           git config user.email "majiacheng619@gmail.com"
-          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-19-liquid-reactor")'
-          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-19-liquid-reactor" --rewrite-main --apply
+          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-19-optical-glass")'
+          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-19-optical-glass" --rewrite-main --apply

@@ -157,6 +157,12 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
     for css in (root / 'assets').rglob('*.css'):
         text = css.read_text(encoding='utf-8')
         for value in re.findall(r'url\(\s*[\"\']?([^\)\"\']+)', text):
+            if value.strip().startswith('#'):
+                # Fragment filters live in the HTML document, not on disk.
+                fragment = value.strip()[1:]
+                if not any(fragment in doc.ids for doc in docs.values()):
+                    err(f'{css.relative_to(root)}: missing SVG filter: {value}')
+                continue
             result = local(css, value.strip())
             if result:
                 target, _ = result; referenced.add(target); counts['local_references'] += 1

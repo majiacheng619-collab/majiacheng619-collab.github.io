@@ -1,4 +1,4 @@
-"""我的首页：先看见作品，再了解作品背后的判断。"""
+"""个人作品集：首页以清晰排版、真实作品和通透材质组织信息。"""
 
 
 def build_home(img, cta, media, transcript):
@@ -8,16 +8,16 @@ def build_home(img, cta, media, transcript):
  <div class="premium-shell hero-layout">
   <div class="premium-hero-copy">
    <p class="premium-kicker"><span class="status-dot" aria-hidden="true"></span> 2027 届 · 产品与运营方向</p>
-   <h1 id="identity-title">让想法<br>发生<span class="hero-impact">。</span><span class="hero-outline">让作品发声。</span></h1>
-   <p class="premium-hero-intro">我是马嘉程。<br>从用户需求出发，把产品、内容与运营<br class="premium-desktop-break">做成可以看见、可以体验的作品。</p>
+   <h1 id="identity-title">马嘉程<span class="hero-outline">把想法，<br>做成作品。</span></h1>
+   <p class="premium-hero-intro">从用户需求出发，把产品、内容与运营<br class="premium-desktop-break">做成可以看见、可以体验的作品。</p>
    <div class="actions">{cta('#selected','探索我的作品 ↗')}{cta('resume.pdf','下载简历 ↓',True)}</div>
    <a class="hero-film-link" href="#introduction"><span aria-hidden="true">▷</span> 24 秒，认识我的实践</a>
   </div>
-  <div class="reactor" aria-hidden="true">
-   <div class="reactor-orbit orbit-outer"></div><div class="reactor-orbit orbit-middle"></div><div class="reactor-orbit orbit-inner"></div>
-   <div class="reactor-cross"></div><div class="reactor-core"><span>M</span><small>JIA CHENG</small></div>
-   <span class="reactor-label label-top">IDEA → REALITY</span><span class="reactor-label label-bottom">PRODUCT / CONTENT / OPERATIONS</span>
-   <div class="reactor-chip chip-one"><span>01</span> 产品思维</div><div class="reactor-chip chip-two"><span>02</span> 内容表达</div><div class="reactor-chip chip-three"><span>03</span> 运营实践</div>
+  <div class="hero-visual" aria-label="马嘉程的个人介绍">
+   <div class="hero-profile-card">
+    <div class="hero-profile-image">{img('assets/portrait-white-480.d1f641e10fd2.webp','马嘉程个人照片')}</div>
+    <div class="hero-profile-caption"><span>南昌理工学院</span><p>智能制造工程 · 本科在读<br>2027 届毕业生</p></div>
+   </div>
   </div>
  </div>
  <div class="hero-evidence premium-shell">
@@ -33,7 +33,7 @@ def build_home(img, cta, media, transcript):
  <a href="#service"><span class="premium-nav-number">03</span><span><strong>运营</strong><small>把需求变成服务</small></span><span aria-hidden="true">↓</span></a>
 </nav>
 <section class="premium-selected premium-shell" id="selected" aria-labelledby="selected-title">
- <div class="premium-section-head" data-reveal><div><p class="premium-kicker">我的作品与实践</p><h2 id="selected-title">不止于想法。<br><span>这是我的交付。</span></h2></div><a class="text-link" href="projects/index.html">浏览完整作品集 <span aria-hidden="true">↗</span></a></div>
+ <div class="premium-section-head" data-reveal><div><p class="premium-kicker">我的作品与实践</p><h2 id="selected-title">不止于想法。<br><span>看得见的实践。</span></h2></div><a class="text-link" href="projects/index.html">浏览完整作品集 <span aria-hidden="true">↗</span></a></div>
  <article class="premium-game" id="product">
   <div class="premium-game-heading" data-reveal><p class="premium-kicker">01 / 产品策划与迭代</p><h3>萌芽保卫队。<br><span>成长，就是策略。</span></h3><p>先种谁，保护谁，何时进化。<br>我把资源与时间的取舍，放进每一次防线布置。</p><div class="actions">{cta('game/index.html','立即体验')}{cta('projects/sprout-patrol/index.html','阅读产品案例',True)}</div></div>
   <a class="premium-game-display" href="game/index.html" data-reveal>{img('assets/game-cover.jpg','萌芽保卫队实际游戏画面，点击打开完整游戏')}<span>实际游戏画面 <span aria-hidden="true">↗</span></span></a>
@@ -41,7 +41,7 @@ def build_home(img, cta, media, transcript):
  </article>
 </section>
 <section class="premium-content" id="content" aria-labelledby="content-title"><div class="premium-shell">
- <div class="premium-section-head" data-reveal><div><p class="premium-kicker">02 / AI 叙事创作</p><h2 id="content-title">故事先行。<br><span>镜头，随后。</span></h2></div><p class="premium-section-intro">从选题与脚本，到配音、字幕和剪辑，<br class="premium-desktop-break">我独立完成了三支 AI 叙事视频。</p></div>
+ <div class="premium-section-head" data-reveal><div><p class="premium-kicker">02 / AI 叙事创作</p><h2 id="content-title">从一个主题，<br><span>到一段完整叙事。</span></h2></div><p class="premium-section-intro">从选题与脚本，到配音、字幕和剪辑，<br class="premium-desktop-break">我独立完成了三支 AI 叙事视频。</p></div>
  <div class="premium-story-list">
   <a class="premium-story" href="projects/ai-content/index.html#film-choice" data-reveal><span class="premium-story-index">01</span><div class="premium-story-type"><span>选择</span><small>升学与就业选择</small></div><p>站在不同方向之间，<br>每个决定，都有它的分量。</p><span class="premium-story-action">了解作品 <span aria-hidden="true">↗</span></span></a>
   <a class="premium-story" href="projects/ai-content/index.html#film-risk" data-reveal><span class="premium-story-index">02</span><div class="premium-story-type"><span>风险</span><small>从赢两千到欠八十万</small></div><p>从一次微小的决定，<br>看见代价如何逐渐累积。</p><span class="premium-story-action">了解作品 <span aria-hidden="true">↗</span></span></a>
@@ -58,7 +58,7 @@ def build_home(img, cta, media, transcript):
  <div class="premium-more-practice"><span>还有一些实践，发生在线下。</span><a href="poster/index.html">面包挑战与活动视觉 <span aria-hidden="true">↗</span></a><a href="honor/index.html">直播运营与荣誉凭证 <span aria-hidden="true">↗</span></a></div>
 </div></section>
 <section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
- <div class="premium-section-head" data-reveal><div><p class="premium-kicker">24秒认识我</p><h2 id="film-title">把这些实践，<br><span>连成一段故事。</span></h2></div><button class="text-button" data-sound aria-pressed="false"><span data-sound-label>开启轻音乐</span></button></div>
+ <div class="premium-section-head" data-reveal><div><p class="premium-kicker">24秒认识我</p><h2 id="film-title">24 秒，<br><span>认识我的作品。</span></h2></div></div>
  <div class="premium-film-player" data-video-player data-reveal><video id="intro-video" controls playsinline preload="none" poster="{media['poster']}" aria-label="马嘉程24秒作品介绍，无旁白，含授权器乐配乐和画面文字"><source src="{media['video']}" type="video/mp4"><track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">你的浏览器无法播放此视频，请使用下面的下载入口观看。</video><div class="premium-film-control"><button class="button primary" data-video-play aria-controls="intro-video"><span data-video-label>播放介绍</span></button><span>无旁白 · 授权器乐配乐</span><a class="text-link" download href="{media['video']}">下载影片 <span aria-hidden="true">↓</span></a></div></div>
  <details class="premium-transcript"><summary>阅读视频文字稿</summary><p>{transcript}</p></details>
 </section>
