@@ -9,7 +9,7 @@
   --glass-highlight: inset 0 1px 0 rgba(255,255,255,.98), inset 0 -1px 0 rgba(255,255,255,.32);
   --glass-blur: blur(24px) saturate(145%);
   --glass-radius: 30px;
-  --glass-blue: #0071e3;
+  --glass-blue: #0066cc;
 }
 html { background:#f7f8fa; color-scheme:light; }
 body, body.home-page { background:#f7f8fa; color:var(--glass-ink); isolation:isolate; }
@@ -81,3 +81,5 @@ body, body.home-page { background:#f7f8fa; color:var(--glass-ink); isolation:iso
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {.detail-page :is(.detail-row,.detail-game-facts,.detail-review-list,.detail-metrics,.detail-note,.detail-education,.detail-skill-card,.growth-demo,.editorial-note){background:#f9fafc!important}}
 
 .detail-page .detail-hero.dark .eyebrow{color:var(--glass-muted)}
+
+.detail-page .detail-game-visual.dark,.detail-page .detail-film-intro.dark{background:rgba(255,255,255,.22);color:var(--glass-ink)}
