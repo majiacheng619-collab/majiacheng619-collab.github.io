@@ -79,3 +79,5 @@ body, body.home-page { background:#f7f8fa; color:var(--glass-ink); isolation:iso
 .detail-page .dark details p,.detail-page .detail-product-copy>p:not(.eyebrow),.detail-page .detail-product-copy h2 span,.detail-page .detail-meta,.detail-page .detail-visual-caption,.detail-page .detail-film-intro>.detail-shell {color:var(--glass-muted)}
 .detail-page .dark .button.secondary:hover {background:var(--glass-blue);color:#fff!important;border-color:var(--glass-blue)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {.detail-page :is(.detail-row,.detail-game-facts,.detail-review-list,.detail-metrics,.detail-note,.detail-education,.detail-skill-card,.growth-demo,.editorial-note){background:#f9fafc!important}}
+
+.detail-page .detail-hero.dark .eyebrow{color:var(--glass-muted)}
