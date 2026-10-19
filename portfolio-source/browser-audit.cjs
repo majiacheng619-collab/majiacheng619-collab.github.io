@@ -117,9 +117,10 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await page.setViewportSize({width:390,height:844});
  if(process.env.AUDIT_OUTPUT)await page.screenshot({path:path.join(process.env.AUDIT_OUTPUT,'glass-home-390.png')});
  const first=await dockLinks.nth(0).boundingBox(),second=await dockLinks.nth(1).boundingBox();
+ await page.evaluate(()=>{window.__dockGestureLog=[];const dock=document.querySelector('[data-glass-dock]');for(const type of ['pointerdown','pointermove','pointercancel','pointerup','dragstart','lostpointercapture'])dock.addEventListener(type,e=>window.__dockGestureLog.push({type:e.type,target:e.target.tagName,x:e.clientX,y:e.clientY,primary:e.isPrimary,id:e.pointerId,buttons:e.buttons,prevented:e.defaultPrevented}));});
  const start={x:first.x+first.width/2,y:first.y+first.height/2},end={x:second.x+second.width/2,y:second.y+second.height/2};
  await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(end.x,end.y,{steps:8});
- assert.equal(await dock.getAttribute('data-dragging'),'true');
+ assert.equal(await dock.getAttribute('data-dragging'),'true',JSON.stringify({errors:consoleErrors,events:await page.evaluate(()=>window.__dockGestureLog)}));
  if(process.env.AUDIT_OUTPUT)await page.screenshot({path:path.join(process.env.AUDIT_OUTPUT,'glass-drag-390.png')});
  await dock.dispatchEvent('pointercancel',{pointerId:1});await page.mouse.up();
  await page.waitForFunction(()=>!document.querySelector('[data-glass-dock]').hasAttribute('data-dragging'));

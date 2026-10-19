@@ -47,8 +47,19 @@ test('horizontal drag tracks between items then commits exactly one nearest real
  const f=fixture();f.dock.emit('pointerdown');const move=f.dock.emit('pointermove',{clientX:226});assert.equal(move.defaultPrevented,true);assert.equal(f.captures.size,1);assert.ok(f.dock.hasAttribute('data-dragging'));
  f.dock.emit('pointerup',{clientX:226});const keyboard=f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:0});assert.ok(!keyboard.defaultPrevented,'drag must not swallow a keyboard activation');const compatibility=f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:1});assert.equal(compatibility.defaultPrevented,true,'compatibility click must not navigate a second time');f.settle();assert.deepEqual(f.navigations,['https://example.test/#section-2']);assert.equal(f.paint('--lens-x'),160);assert.equal(f.captures.size,0);assert.ok(!f.dock.hasAttribute('data-dragging'));assert.equal(f.links.filter(a=>a.hasAttribute('aria-current')).length,1);
 });
+test('native anchor drag is disabled so HTML drag-and-drop cannot steal the liquid gesture',()=>{
+ const f=fixture();assert.ok(f.links.every(link=>(link.getAttribute('draggable')??String(link.draggable))==='false'),'Every real dock anchor disables browser drag-and-drop');
+ f.dock.emit('pointerdown',{target:f.links[0]});const nativeDrag=f.dock.emit('dragstart',{target:f.links[0]});assert.equal(nativeDrag.defaultPrevented,true,'Native dragstart must be canceled before it can cancel pointer input');
+ f.dock.emit('pointermove',{clientX:226});assert.equal(f.captures.size,1);f.dock.emit('pointerup',{clientX:226});f.settle();assert.deepEqual(f.navigations,['https://example.test/#section-2']);assert.equal(f.paint('--lens-x'),160);
+});
 test('pointercancel restores the selected destination without activating a link',()=>{
  const f=fixture();f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:290});f.dock.emit('pointercancel');f.settle();assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);assert.equal(f.captures.size,0);assert.ok(!f.dock.hasAttribute('data-dragging'));
+});
+test('touch capture transfer keeps the drag alive and genuine capture loss restores selection',()=>{
+ const f=fixture();f.dock.emit('pointerdown',{target:f.links[0]});f.dock.emit('pointermove',{clientX:226});assert.equal(f.captures.size,1);
+ f.dock.emit('lostpointercapture',{target:f.links[0],pointerId:1});assert.equal(f.dock.getAttribute('data-dragging'),'true','Losing implicit anchor capture is harmless after the dock owns capture');
+ f.dock.emit('lostpointercapture',{pointerId:9});assert.equal(f.dock.getAttribute('data-dragging'),'true','A different pointer cannot cancel the gesture');
+ f.captures.delete(1);f.dock.emit('lostpointercapture',{pointerId:1});f.settle();assert.ok(!f.dock.hasAttribute('data-dragging'));assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);
 });
 test('right button and secondary touch cannot begin a drag',()=>{
  for(const properties of [{button:2},{isPrimary:false}]){const f=fixture();f.dock.emit('pointerdown',properties);const e=f.dock.emit('pointermove',{clientX:290});f.dock.emit('pointerup',{clientX:290});assert.ok(!e.defaultPrevented);assert.equal(f.navigations.length,0);assert.equal(f.captures.size,0);}

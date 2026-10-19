@@ -8,6 +8,12 @@
   const links = [...dock.querySelectorAll('[data-dock-link]')];
   if (!lens || !links.length) return;
   dock.dataset.glassReady = 'true';
+  // Anchors remain ordinary links, but their browser drag ghost would cancel
+  // the pointer stream before our horizontal liquid gesture can take ownership.
+  links.forEach(link => {
+    link.setAttribute('draggable', 'false');
+    link.querySelectorAll('svg,img').forEach(node => node.setAttribute('draggable', 'false'));
+  });
   // A clipped optical projection gives Safari the same visible magnification
   // as browsers supporting SVG backdrop filters. It never duplicates controls.
   const projection = document.createElement('span');
@@ -122,6 +128,7 @@
     if (old) releaseCapture(old.id);
     select(selected, reduce.matches);
   }
+  dock.addEventListener('dragstart', event => event.preventDefault(), {signal});
   dock.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !event.isPrimary || event.target.closest('a')?.hasAttribute('download')) return;
     measure();
@@ -167,7 +174,12 @@
     if (link && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) select(links.indexOf(link));
   }, {signal, capture: true});
   dock.addEventListener('pointercancel', cancelGesture, {signal});
-  dock.addEventListener('lostpointercapture', () => { if (gesture) cancelGesture(); }, {signal});
+  dock.addEventListener('lostpointercapture', event => {
+    // Touch starts with implicit capture on the anchor. Moving capture to the
+    // dock emits a bubbling lostpointercapture for that anchor; it is not loss
+    // of the dock's newly acquired pointer and must not cancel the drag.
+    if (gesture && event.pointerId === gesture.id && !dock.hasPointerCapture?.(gesture.id)) cancelGesture();
+  }, {signal});
   dock.addEventListener('focusin', event => {
     const index = links.indexOf(event.target.closest('[data-dock-link]'));
     if (index >= 0) {
