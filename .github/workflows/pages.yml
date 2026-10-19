@@ -120,5 +120,5 @@ jobs:
         run: |
           git config user.name "马嘉程"
           git config user.email "majiacheng619@gmail.com"
-          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-18-editorial-premium")'
-          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-18-editorial-premium" --rewrite-main --apply
+          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-19-liquid-reactor")'
+          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-19-liquid-reactor" --rewrite-main --apply

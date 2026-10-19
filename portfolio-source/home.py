@@ -5,19 +5,26 @@ def build_home(img, cta, media, transcript):
     return f'''
 <div class="premium-home">
 <section class="premium-hero" aria-labelledby="identity-title">
- <div class="premium-shell premium-hero-copy">
-  <p class="premium-kicker">马嘉程 <span aria-hidden="true">/</span> 2027 届 · 产品与运营</p>
-  <h1 id="identity-title">把想法，<br><span>带进真实世界。</span></h1>
-  <p class="premium-hero-intro">我做过电商教学，也创作内容、打磨产品。<br class="premium-desktop-break">比起描述自己，我更愿意先让你看见我做的事。</p>
-  <div class="actions">{cta('#selected','探索我的作品')}{cta('#introduction','观看24秒作品影片',True)}</div>
+ <div class="premium-shell hero-layout">
+  <div class="premium-hero-copy">
+   <p class="premium-kicker"><span class="status-dot" aria-hidden="true"></span> 2027 届 · 产品与运营方向</p>
+   <h1 id="identity-title">让想法<br>发生<span class="hero-impact">。</span><span class="hero-outline">让作品发声。</span></h1>
+   <p class="premium-hero-intro">我是马嘉程。<br>从用户需求出发，把产品、内容与运营<br class="premium-desktop-break">做成可以看见、可以体验的作品。</p>
+   <div class="actions">{cta('#selected','探索我的作品 ↗')}{cta('resume.pdf','下载简历 ↓',True)}</div>
+   <a class="hero-film-link" href="#introduction"><span aria-hidden="true">▷</span> 24 秒，认识我的实践</a>
+  </div>
+  <div class="reactor" aria-hidden="true">
+   <div class="reactor-orbit orbit-outer"></div><div class="reactor-orbit orbit-middle"></div><div class="reactor-orbit orbit-inner"></div>
+   <div class="reactor-cross"></div><div class="reactor-core"><span>M</span><small>JIA CHENG</small></div>
+   <span class="reactor-label label-top">IDEA → REALITY</span><span class="reactor-label label-bottom">PRODUCT / CONTENT / OPERATIONS</span>
+   <div class="reactor-chip chip-one"><span>01</span> 产品思维</div><div class="reactor-chip chip-two"><span>02</span> 内容表达</div><div class="reactor-chip chip-three"><span>03</span> 运营实践</div>
+  </div>
  </div>
- <div class="premium-hero-art premium-shell">
-  <a class="premium-hero-window" href="game/index.html" aria-label="体验我的网页游戏萌芽保卫队">
-   <div class="premium-window-bar" aria-hidden="true"><span class="premium-window-dots"><i></i><i></i><i></i></span><span>萌芽保卫队</span><span class="premium-window-live">网页即玩</span></div>
-   {img('assets/game-cover.jpg','萌芽保卫队实际游戏画面：五条草坪上的植物防线与来袭敌人',eager=True)}
-   <span class="premium-window-caption"><span>从一个规则，到一款可以玩的游戏。</span><span class="premium-round-link" aria-hidden="true">↗</span></span>
-  </a>
-  <div class="premium-hero-note"><span>我的作品 01 / 萌芽保卫队</span><span>策划 · 交互 · 迭代验收</span></div>
+ <div class="hero-evidence premium-shell">
+  <a href="experience/index.html#ecommerce"><strong>≈ 1,000<span>名</span></strong><p>电商教学累计服务学员</p></a>
+  <a href="projects/sprout-patrol/index.html"><strong>20<span>关</span></strong><p>独立策划的网页塔防游戏</p></a>
+  <a href="projects/ai-content/index.html"><strong>3<span>支</span></strong><p>独立完成的 AI 叙事作品</p></a>
+  <div class="hero-scroll-note"><span aria-hidden="true">↓</span><p>向下探索<br>我的作品与实践</p></div>
  </div>
 </section>
 <nav class="premium-work-nav premium-shell" aria-label="我的三类实践">
@@ -26,7 +33,7 @@ def build_home(img, cta, media, transcript):
  <a href="#service"><span class="premium-nav-number">03</span><span><strong>运营</strong><small>把需求变成服务</small></span><span aria-hidden="true">↓</span></a>
 </nav>
 <section class="premium-selected premium-shell" id="selected" aria-labelledby="selected-title">
- <div class="premium-section-head" data-reveal><div><p class="premium-kicker">我的作品与实践</p><h2 id="selected-title">先看看，<br><span>我做过什么。</span></h2></div><a class="text-link" href="projects/index.html">浏览完整作品集 <span aria-hidden="true">↗</span></a></div>
+ <div class="premium-section-head" data-reveal><div><p class="premium-kicker">我的作品与实践</p><h2 id="selected-title">不止于想法。<br><span>这是我的交付。</span></h2></div><a class="text-link" href="projects/index.html">浏览完整作品集 <span aria-hidden="true">↗</span></a></div>
  <article class="premium-game" id="product">
   <div class="premium-game-heading" data-reveal><p class="premium-kicker">01 / 产品策划与迭代</p><h3>萌芽保卫队。<br><span>成长，就是策略。</span></h3><p>先种谁，保护谁，何时进化。<br>我把资源与时间的取舍，放进每一次防线布置。</p><div class="actions">{cta('game/index.html','立即体验')}{cta('projects/sprout-patrol/index.html','阅读产品案例',True)}</div></div>
   <a class="premium-game-display" href="game/index.html" data-reveal>{img('assets/game-cover.jpg','萌芽保卫队实际游戏画面，点击打开完整游戏')}<span>实际游戏画面 <span aria-hidden="true">↗</span></span></a>
