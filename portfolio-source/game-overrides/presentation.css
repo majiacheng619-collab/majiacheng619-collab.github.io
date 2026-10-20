@@ -291,3 +291,7 @@ body[data-page="index"] #squad-content>p,body[data-page="index"] #squad-dialog .
  body[data-page="index"] .loader .overlay-card{background:#14231a}
  body[data-page="index"] dialog::backdrop,body[data-page="index"] #overlay:not([hidden]){backdrop-filter:none;-webkit-backdrop-filter:none}
 }
+
+/* Keep presentation rules from overriding the viewport fullscreen layout. */
+body[data-page="index"].game-fullscreen .playfield{position:fixed;inset:0;width:100%;height:100dvh;margin:0;padding:8px;border:0;border-radius:0;box-shadow:none}
+body[data-page="index"].game-fullscreen .garden-wrap{border-radius:0;box-shadow:none}

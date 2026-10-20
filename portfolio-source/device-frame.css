@@ -4,14 +4,26 @@
 .device-frame__screen{display:block;overflow:hidden;border-radius:clamp(5px,1vw,13px);background:#111214;line-height:0}
 .device-frame .device-frame__screen>img,.device-frame .device-frame__screen>video{display:block;width:100%;height:auto;max-width:100%;aspect-ratio:auto;object-fit:contain;border:0;border-radius:0;transform:none}
 .device-frame__camera{position:absolute;z-index:1;top:calc(var(--device-bezel)/2 + 1px);left:50%;width:4px;height:4px;transform:translateX(-50%);border-radius:50%;background:#141c25;box-shadow:inset 0 0 0 1px #4c56635c,0 0 0 1px #0008}
-.device-frame--mac{padding-inline:3%}
-.device-frame--mac .device-frame__body{border-radius:clamp(10px,1.65vw,22px) clamp(10px,1.65vw,22px) 5px 5px;background:linear-gradient(155deg,#34363a,#151618 38%,#202226);border-color:#8a9098;box-shadow:0 14px 28px #141c2814,inset 0 1px 0 #ffffff50}
-.device-frame__base{position:relative;display:block;width:106.4%;height:clamp(7px,1.25vw,15px);margin-left:-3.2%;margin-top:-1px;border-radius:1px 1px 44% 44%/1px 1px 80% 80%;background:linear-gradient(#dce0e4 0%,#b9c0c7 30%,#9ba4af 70%,#c4cbd1);box-shadow:0 8px 12px #141c2810}
-.device-frame__base::before{content:"";position:absolute;top:0;left:44%;width:12%;height:33%;background:linear-gradient(#939ca5,#d7dce0);border-radius:0 0 5px 5px}
+/* A quiet three-quarter product composition; the rear lid carries the mark. */
+.device-frame--mac{--device-bezel:clamp(3px,.45vw,6px);padding:8% 3% 4% 1%;perspective:1400px;isolation:isolate}
+.mac-front{position:relative;display:block;width:90%;z-index:2;transform:perspective(1400px) rotateY(-12deg) rotateX(2deg);transform-origin:50% 80%}
+.device-frame--mac .device-frame__body{padding:calc(var(--device-bezel) + 3px) var(--device-bezel) var(--device-bezel);border-radius:clamp(8px,1.15vw,15px) clamp(8px,1.15vw,15px) 3px 3px;background:#090a0b;border:1px solid #65676a;box-shadow:1px 0 0 #9b9da1,3px 1px 0 #252629,0 9px 20px #11182716,inset 0 1px 0 #c4c7ca55}
+.device-frame--mac .device-frame__screen{border-radius:clamp(5px,.8vw,10px) clamp(5px,.8vw,10px) 2px 2px}
+.device-frame--mac .device-frame__camera{top:3px;width:clamp(20px,3.2vw,42px);height:clamp(4px,.6vw,8px);border-radius:0 0 4px 4px;background:#090a0b;box-shadow:none}
+.device-frame--mac .device-frame__camera::after{content:"";position:absolute;left:50%;top:1px;width:2px;height:2px;border-radius:50%;background:#263447}
+.mac-lid{position:absolute;display:block;z-index:0;top:8%;right:1%;width:39%;height:77%;border-radius:clamp(8px,1.2vw,16px);border:1px solid #686b6e;background:linear-gradient(115deg,#303236,#5a5d62 48%,#35373b 85%,#76797d);transform:perspective(1000px) rotateY(31deg) rotateZ(2deg);box-shadow:2px 2px 0 #25262a,4px 4px 0 #9b9da155,0 16px 26px #11182712;overflow:hidden}
+.mac-lid__mark{position:absolute;right:5%;top:43%;width:14%;height:16%;color:#181a1e;filter:drop-shadow(0 1px 0 #ffffff14)}
+.mac-deck{position:relative;display:block;height:clamp(15px,3.8vw,44px);margin:-1px -3.5% 0;clip-path:polygon(3.3% 0,96.7% 0,100% 100%,0 100%);background:linear-gradient(150deg,#8a8e94,#4f5359 42%,#777c84 80%,#a0a4a9);border-top:1px solid #aaaeb444}
+.mac-keyboard{position:absolute;left:14%;right:14%;top:9%;height:47%;border-radius:1px;background:repeating-linear-gradient(90deg,transparent 0 6.5%,#777c84 6.5% 7.3%),repeating-linear-gradient(0deg,#181a1e 0 23%,#6a7078 23% 28%);transform:perspective(100px) rotateX(12deg);opacity:.85}
+.mac-trackpad{position:absolute;top:64%;left:37%;width:26%;height:28%;border:1px solid #33363b55;border-radius:2px;background:#82878e44}
+.device-frame__base{position:relative;display:block;width:107%;height:clamp(3px,.65vw,7px);margin-left:-3.5%;margin-top:-1px;border-radius:1px 1px 35% 35%/1px 1px 90% 90%;background:linear-gradient(#b1b5bb,#777d85 35%,#464a51 85%,#a5a9ae);box-shadow:0 9px 14px #141c2820}
+.device-frame__base::before{content:"";position:absolute;top:0;left:44%;width:12%;height:35%;background:#4c5159;border-radius:0 0 5px 5px}
 .device-frame--tablet .device-frame__body{padding:calc(var(--device-bezel) + 6px) var(--device-bezel);background:linear-gradient(145deg,#3c3f43,#161719 32%,#202226 80%,#44484d);border-color:#727983;border-radius:clamp(15px,2.7vw,32px);box-shadow:0 18px 40px #141c2820,inset 0 1px 0 #ffffff45}
 .device-frame--tablet .device-frame__screen{border-radius:clamp(8px,1.8vw,21px)}
 .device-frame--tablet::before,.device-frame--tablet::after{content:"";position:absolute;right:-1px;width:2px;background:#80868e;border-radius:2px;z-index:-1}
 .device-frame--tablet::before{top:16%;height:8%}.device-frame--tablet::after{top:26%;height:8%}
 .device-preview,.detail-page .device-preview,.device-preview:hover,.detail-page .device-preview:hover{display:block;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;transform:none}
-@media(max-width:760px){.device-frame{--device-bezel:6px}.device-frame__camera{width:3px;height:3px}.device-frame__body{box-shadow:0 8px 20px #141c2818}.device-frame--tablet .device-frame__body{box-shadow:0 10px 24px #141c281c}}
+@media(max-width:760px){.device-frame{--device-bezel:6px}.device-frame--tablet .device-frame__camera{width:3px;height:3px}.device-frame__body{box-shadow:0 8px 20px #141c2818}.device-frame--tablet .device-frame__body{box-shadow:0 10px 24px #141c281c}}
 @media print{.device-frame__body,.device-frame__base{box-shadow:none}}
+
+@media(max-width:760px){.device-frame--mac{--device-bezel:3px;padding-right:3%;padding-bottom:4%}.mac-front{transform:perspective(1000px) rotateY(-8deg) rotateX(1deg)}.mac-deck{height:19px}.device-frame--mac .device-frame__body{box-shadow:2px 0 0 #45484d,0 7px 16px #141c2812}}

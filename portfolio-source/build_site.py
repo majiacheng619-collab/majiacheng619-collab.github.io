@@ -70,7 +70,7 @@ experience+=detail_rows('education','教育经历',[('南昌理工学院','智�
 render('experience/index.html','实践经历','马嘉程的电商教学、直播运营、线下经营与教育经历。',experience)
 
 game=detail_open('game')+detail_hero('萌芽保卫队','种下、守护、成长。',cta('game/index.html','开始游戏'))
-game+='<section class="detail-game-visual"><div class="detail-shell"><a class="product-visual device-preview" href="game/index.html">'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队7.0黄昏实战截图',eager=True),'tablet')+'</a></div></section>'
+game+='<section class="detail-game-visual"><div class="detail-shell"><a class="product-visual device-preview" href="game/index.html">'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队7.0黄昏实战截图',eager=True),'mac')+'</a></div></section>'
 game+=detail_split('overview','我的分工','<p>独立负责玩法策划、需求拆解、交互与迭代验收，通过 AI 辅助实现代码。</p>','<div class="detail-game-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div>')
 game+='<section class="detail-growth" id="mechanism"><div class="detail-shell"><h2>成长机制</h2><p class="detail-intro">用阳光补充防线，或等待现有植物成长。</p><div class="growth-demo"><div class="growth-steps">'
 for i,t in enumerate(['萌芽','成株','开花']):

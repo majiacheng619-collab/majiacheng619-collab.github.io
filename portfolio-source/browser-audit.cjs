@@ -217,7 +217,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      const devices=await page.locator('.device-frame').evaluateAll(frames=>frames.map(frame=>{
        const image=frame.querySelector('img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
        const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
-       return {left:rect.left,right:rect.right,ratio:r.width/r.height,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
+       return {left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
      }));
      for(const device of devices)if(device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
      if(!route.startsWith('game/')){
