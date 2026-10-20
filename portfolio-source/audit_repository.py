@@ -8,8 +8,8 @@ import subprocess
 import zipfile
 
 ROOT=Path(__file__).resolve().parent.parent
-OBSOLETE_SOURCE=('portfolio-source/content.py','visitor-service/setup.py','visitor-service/activate.py','visitor-service/wrangler.jsonc','portfolio-source/game-overrides/replay-view.js','portfolio-source/game-runtime/garden-cloud.js')
-OBSOLETE_ARCHIVE=('assets/fonts/OFL.txt', '.gitignore','assets/favicon.99c44e666ff1.svg','assets/apple-touch-icon.e2c55cba898e.png')
+OBSOLETE_SOURCE=('visitor-service','portfolio-source/analytics','portfolio-source/analytics-config.json','portfolio-source/editorial.py','portfolio-source/detail.css','portfolio-source/game-runtime/garden-legacy6.js','portfolio-source/content.py','visitor-service/setup.py','visitor-service/activate.py','visitor-service/wrangler.jsonc','portfolio-source/game-overrides/replay-view.js','portfolio-source/game-runtime/garden-cloud.js')
+OBSOLETE_ARCHIVE=('assets/fonts/OFL.txt', '.gitignore','assets/favicon.99c44e666ff1.svg','assets/apple-touch-icon.e2c55cba898e.png','assets/game-cover.jpg','assets/portrait-white-480.d1f641e10fd2.webp')
 # 我逐次发现全部自撰文档，避免新增说明漏过固定名单。
 DOCS=tuple(sorted(p.relative_to(ROOT).as_posix() for p in ROOT.rglob('*.md')
                   if '.git' not in p.parts and not any(x in p.parts for x in ('site','_site','node_modules')))) + ('portfolio-source/game-overrides/LICENSE.txt',)
@@ -54,6 +54,13 @@ def audit():
             errors.append('Disabled cloud runtime remains in archive')
         if any(re.search(r'(?:^|/)replay-view(?:\.[a-f0-9]{12})?\.js$',name) for name in paths):
             errors.append('Retired duplicate replay code remains in archive')
+        for name in paths:
+            if re.search(r'(?:^|/)garden-legacy[^/]*\.js$', name):
+                errors.append('Historical game runtime remains: '+name)
+            if name.startswith('assets/vendor/diyoriko-portfolio/'):
+                errors.append('Retired template metadata remains: '+name)
+            if re.search(r'(?:^|/)ambient\.[^/]+\.mp3$', name):
+                errors.append('Unused ambient track remains: '+name)
         retired = re.compile(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)')
         for name in paths:
             if retired.search(name): errors.append('Retired visitor module remains in archive: '+name)
@@ -78,8 +85,6 @@ def audit():
             errors.append('Published credits differ from my current source')
         if archive.read('game/LICENSE.txt')!=(ROOT/'portfolio-source/game-overrides/LICENSE.txt').read_bytes():
             errors.append('My game permission notice differs from its source')
-        upstream=archive.read('assets/vendor/diyoriko-portfolio/UPSTREAM.md').decode()
-        if '我' not in upstream: errors.append('Missing first-person source attribution')
         from film.cache_probe import signature,artifacts_valid,provenance_valid
         cache=json.loads(archive.read('assets/media/film-build.json'))
         if cache.get('renderKey')!=signature(archive.read,paths): errors.append('Film cache signature is stale')

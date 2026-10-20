@@ -160,3 +160,19 @@ test('the destination discards handoff motion when reduced motion is requested',
 test('a narrow media intersection switches contrast without per-scroll animation work',()=>{
  const video=new Surface(),dark=new Surface(),f=fixture({mediaSources:[video,dark]});assert.equal(f.observed.length,1);const observer=f.observed[0];assert.equal(observer.nodes.length,2);observer.callback([{target:video,isIntersecting:true}]);assert.equal(f.dock.hasAttribute('data-over-media'),true);assert.equal(f.frames.size,0);observer.callback([{target:dark,isIntersecting:true},{target:video,isIntersecting:false}]);assert.equal(f.dock.hasAttribute('data-over-media'),true);observer.callback([{target:dark,isIntersecting:false}]);assert.equal(f.dock.hasAttribute('data-over-media'),false);f.host.emit('pagehide',{persisted:false});assert.equal(observer.disconnected,true);
 });
+
+test('water-drop release crosses rest slightly, then stops all animation work',()=>{
+ const f=fixture();f.dock.emit('pointerdown');f.settle();assert.ok(f.paint('--lens-stretch')>1.07);
+ f.dock.emit('pointerup');let minimum=Infinity;for(let n=0;n<90;n++){f.step();minimum=Math.min(minimum,f.paint('--lens-stretch'));}
+ assert.ok(minimum<1,'A small release recoil must be visible');f.settle();assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.paint('--lens-squash'),1);assert.equal(f.frames.size,0);
+});
+test('droplet response follows elapsed time at 60 and 120 Hz',()=>{
+ const a=fixture(),b=fixture({frameDuration:8.3335});a.dock.emit('pointerdown');b.dock.emit('pointerdown');a.step();b.step();
+ for(let n=0;n<12;n++)a.step();for(let n=0;n<24;n++)b.step();
+ assert.ok(Math.abs(a.paint('--lens-stretch')-b.paint('--lens-stretch'))<.002);a.settle();b.settle();
+});
+test('BFCache restoration clears a settled held droplet before new input',()=>{
+ const f=fixture();f.dock.emit('pointerdown');f.settle();assert.ok(f.paint('--lens-squash')>1.1);
+ f.host.emit('pagehide',{persisted:true});f.host.emit('pageshow',{persisted:true});
+ assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.paint('--lens-squash'),1);f.links[1].click();f.settle();assert.equal(f.paint('--lens-x'),80);
+});

@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -19,10 +20,11 @@ from urllib.parse import urlsplit
 
 REPOSITORY = 'majiacheng619-collab/majiacheng619-collab.github.io'
 ORIGIN = 'https://majiacheng619-collab.github.io'
+AUTHORIZATION = '.github/retire-history-once.json'
 
 
-def command(args, *, data=None):
-    result = subprocess.run(args, input=data, capture_output=True, text=True)
+def command(args, *, data=None, env=None):
+    result = subprocess.run(args, input=data, capture_output=True, text=True, env=env)
     if result.returncode:
         raise RuntimeError(f'{args[0]} {args[1]} failed: {result.stderr.strip()}')
     return result.stdout.strip()
@@ -106,15 +108,24 @@ def plan(args):
         raise RuntimeError('This cleanup is restricted to the portfolio repository.')
     verify_public(args.deployed_sha, args.site_revision)
     head = remote_head()
+    expected_head = getattr(args, 'expected_head', None)
+    if expected_head and head != expected_head:
+        raise RuntimeError('main advanced after the deployment archive was verified.')
     if args.rewrite_main:
         verify_checkout(head)
+    authorization = getattr(args, 'authorization_file', None)
+    if authorization:
+        if authorization != AUTHORIZATION:
+            raise RuntimeError('Unexpected cleanup authorization path.')
+        marker = json.loads(Path(authorization).read_text())
+        if marker != {'siteRevision': args.site_revision, 'branch': 'main'}:
+            raise RuntimeError('Cleanup authorization does not match this release.')
     refs = collection('git/matching-refs/')
-    unexpected = [r['ref'] for r in refs if r['ref'] != 'refs/heads/main']
-    if unexpected:
-        raise RuntimeError('Unexpected refs need review before retiring history: ' + ', '.join(unexpected))
+    managed = [r for r in refs if r['ref'] != 'refs/heads/main' and
+               (r['ref'].startswith(('refs/heads/', 'refs/tags/', 'refs/notes/')) or r['ref'] == 'refs/stash')]
+    # Hidden pull-request references are not removable repository refs.
+    unmanaged = [r['ref'] for r in refs if r['ref'] != 'refs/heads/main' and r not in managed]
     releases = collection('releases')
-    if releases:
-        raise RuntimeError('Releases need individual review before retiring history; no releases were expected.')
     runs = collection('actions/runs', 'workflow_runs')
     current = next((run for run in runs if run['id'] == args.run_id), None)
     if not current or current['head_sha'] != args.deployed_sha:
@@ -125,10 +136,6 @@ def plan(args):
     if any(run['status'] != 'completed' for run in older_runs):
         raise RuntimeError('An older workflow run is still active; wait for it to finish.')
     deployments = collection('deployments')
-    unexpected_deployments = [d for d in deployments if d.get('environment') != 'github-pages']
-    if unexpected_deployments:
-        raise RuntimeError('Unexpected deployment environments need review before cleanup: ' +
-                           ', '.join(str(d.get('environment')) for d in unexpected_deployments))
     page_deployments = [d for d in deployments if d.get('environment') == 'github-pages']
     statuses = {}
     for deployment in page_deployments:
@@ -140,7 +147,7 @@ def plan(args):
     if not matching:
         raise RuntimeError('No successful Pages deployment matches the public release.')
     keep_deployment = max(matching, key=lambda d: d['id'])['id']
-    newer = [d for d in page_deployments if d['id'] > keep_deployment]
+    newer = [d for d in deployments if d['id'] > keep_deployment]
     if newer:
         raise RuntimeError('A newer Pages deployment exists; inspect it before cleanup.')
     artifacts = collection('actions/artifacts', 'artifacts')
@@ -149,16 +156,48 @@ def plan(args):
         'repository': REPOSITORY, 'head': head, 'deployed_sha': args.deployed_sha,
         'keep_run': args.run_id, 'keep_deployment': keep_deployment,
         'remove_runs': [run['id'] for run in older_runs],
+        'remove_refs': [{'ref': r['ref'], 'sha': r['object']['sha']} for r in managed],
+        'unmanaged_refs': unmanaged,
+        'remove_releases': [{'id': r['id'], 'updated_at': r.get('updated_at'),
+                             'assets': [a['id'] for a in r.get('assets', [])]} for r in releases],
+        'authorization_file': authorization,
         # The verified Pages deployment has already consumed its upload.
         'remove_artifacts': [a['id'] for a in artifacts],
         'remove_caches': [c['id'] for c in caches],
-        'remove_deployments': [d['id'] for d in page_deployments if d['id'] != keep_deployment],
+        'remove_deployments': [d['id'] for d in deployments if d['id'] != keep_deployment],
         'rewrite_main': args.rewrite_main,
     }
 
 
+def root_tree(head, authorization):
+    """Preserve every current file except the consumed authorization marker."""
+    tree = command(['git', 'rev-parse', head + '^{tree}'])
+    if not authorization:
+        return tree
+    with tempfile.TemporaryDirectory(prefix='portfolio-retire-') as temporary:
+        env = {**os.environ, 'GIT_INDEX_FILE': str(Path(temporary) / 'index')}
+        command(['git', 'read-tree', head], env=env)
+        command(['git', 'update-index', '--force-remove', '--', authorization], env=env)
+        return command(['git', 'write-tree'], env=env)
+
+
 def apply(args, work):
     head = work['head']
+    assert_head(head)
+    verify_public(args.deployed_sha, args.site_revision)
+    for release in work['remove_releases']:
+        assert_head(head)
+        current = api(f"releases/{release['id']}")
+        if current.get('updated_at') != release['updated_at'] or [a['id'] for a in current.get('assets', [])] != release['assets']:
+            raise RuntimeError('A release changed during cleanup; stop before deleting it.')
+        for identifier in release['assets']:
+            assert_head(head)
+            api(f'releases/assets/{identifier}', 'DELETE')
+        api(f"releases/{release['id']}", 'DELETE')
+    for ref in work['remove_refs']:
+        assert_head(head)
+        command(['git', 'push', 'origin', ':' + ref['ref'],
+                 f"--force-with-lease={ref['ref']}:{ref['sha']}"])
     # Remove artifacts before runs: deleting a run can remove its artifacts too.
     for resource, identifiers in [('actions/artifacts', work['remove_artifacts']),
                                   ('actions/caches', work['remove_caches']),
@@ -173,9 +212,9 @@ def apply(args, work):
     if args.rewrite_main:
         assert_head(head)
         verify_checkout(head)
-        tree = command(['git', 'rev-parse', head + '^{tree}'])
+        tree = root_tree(head, work['authorization_file'])
         # No -p argument: the new root retains all files and has no old parents.
-        root = command(['git', 'commit-tree', tree], data='发布当前个人网站，保留正式源码与作品\n')
+        root = command(['git', 'commit-tree', tree], data='我的个人网站与作品\n')
         command(['git', 'push', 'origin', f'{root}:refs/heads/main',
                  f'--force-with-lease=refs/heads/main:{head}'])
         if remote_head() != root:
@@ -202,8 +241,13 @@ def apply(args, work):
             or kept_statuses[0].get('environment_url', '').rstrip('/') != ORIGIN):
         raise RuntimeError('Preserved Pages deployment no longer has a successful live status.')
     refs = collection('git/matching-refs/')
-    if [r['ref'] for r in refs] != ['refs/heads/main'] or collection('releases'):
+    expected_refs = {'refs/heads/main', *work['unmanaged_refs']}
+    if {r['ref'] for r in refs} != expected_refs or collection('releases'):
         raise RuntimeError('Unexpected refs/releases appeared during cleanup.')
+    if args.rewrite_main:
+        assert_head(work['new_head'])
+        if work['authorization_file'] and command(['git', 'ls-tree', work['new_head'], '--', work['authorization_file']]):
+            raise RuntimeError('The consumed authorization remains in the root tree.')
     verify_public(args.deployed_sha, args.site_revision)
     print(json.dumps({'verified': True, 'remaining_artifacts': len(artifacts),
                       'remaining_runs': len(remaining), 'remaining_deployments': len(deployments),
@@ -216,7 +260,9 @@ def main():
     parser.add_argument('--deployed-sha', required=True)
     parser.add_argument('--site-revision', required=True)
     parser.add_argument('--rewrite-main', action='store_true')
+    parser.add_argument('--expected-head')
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--authorization-file', choices=[AUTHORIZATION])
     args = parser.parse_args()
     work = plan(args)
     print(json.dumps({'dry_run': not args.apply, **work}, ensure_ascii=False, indent=2))

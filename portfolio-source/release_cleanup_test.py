@@ -1,5 +1,10 @@
 """我验证发布后的清理范围，避免误删当前部署或在验证失败时继续删除。"""
 import unittest
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 import release_cleanup as cleanup
@@ -43,10 +48,9 @@ class CleanupSafeguards(unittest.TestCase):
         self.assertEqual(work['keep_run'], 7)
         self.assertEqual(work['keep_deployment'], 10)
 
-    def test_unexpected_environment_stops_cleanup_for_review(self):
-        self.data['deployments'].append({'id': 11, 'sha': 'other', 'environment': 'preview'})
-        with self.assertRaisesRegex(RuntimeError, 'Unexpected deployment environments'):
-            self.plan()
+    def test_older_preview_records_are_retired_after_current_pages_is_verified(self):
+        self.data['deployments'].append({'id': 8, 'sha': 'other', 'environment': 'preview'})
+        self.assertEqual(self.plan()['remove_deployments'], [9, 8])
 
     def test_public_release_mismatch_stops_before_inventory_or_mutation(self):
         with patch.object(cleanup, 'verify_public', side_effect=RuntimeError('public mismatch')), \
@@ -97,6 +101,99 @@ class CleanupSafeguards(unittest.TestCase):
         self.data['deployments/10/statuses'] = [{'state': 'failure'}]
         with self.assertRaisesRegex(RuntimeError, 'successful live status'):
             self.apply_with_post_cleanup_inventory(work)
+
+
+    def test_refs_keep_hidden_pull_requests_but_retire_branches_and_tags_with_shas(self):
+        self.data['git/matching-refs/'] += [
+            {'ref': 'refs/heads/retired', 'object': {'sha': 'branch-sha'}},
+            {'ref': 'refs/tags/previous', 'object': {'sha': 'tag-sha'}},
+            {'ref': 'refs/pull/1/head', 'object': {'sha': 'hidden'}},
+        ]
+        work = self.plan()
+        self.assertEqual(work['remove_refs'], [
+            {'ref': 'refs/heads/retired', 'sha': 'branch-sha'},
+            {'ref': 'refs/tags/previous', 'sha': 'tag-sha'}])
+        self.assertEqual(work['unmanaged_refs'], ['refs/pull/1/head'])
+
+    def test_mismatched_marker_stops_before_inventory(self):
+        self.args.authorization_file = cleanup.AUTHORIZATION
+        with patch.object(cleanup, 'verify_public'), \
+             patch.object(cleanup, 'remote_head', return_value='head'), \
+             patch.object(cleanup.Path, 'read_text', return_value=json.dumps({'siteRevision': 'wrong', 'branch': 'main'})), \
+             patch.object(cleanup, 'collection') as inventory:
+            with self.assertRaisesRegex(RuntimeError, 'does not match'):
+                cleanup.plan(self.args)
+            inventory.assert_not_called()
+
+    def test_authorization_path_is_not_arbitrary(self):
+        self.args.authorization_file = 'another-file.json'
+        with patch.object(cleanup, 'verify_public'), \
+             patch.object(cleanup, 'remote_head', return_value='head'), \
+             patch.object(cleanup.Path, 'read_text') as read:
+            with self.assertRaisesRegex(RuntimeError, 'Unexpected cleanup authorization path'):
+                cleanup.plan(self.args)
+            read.assert_not_called()
+
+    def test_release_asset_ids_and_revision_are_snapshotted(self):
+        self.data['releases'] = [{'id': 4, 'updated_at': 'known', 'assets': [{'id': 40}]}]
+        self.assertEqual(self.plan()['remove_releases'], [{'id': 4, 'updated_at': 'known', 'assets': [40]}])
+
+    def test_a_newer_deployment_stops_cleanup_even_in_another_environment(self):
+        self.data['deployments'].append({'id': 11, 'sha': 'other', 'environment': 'preview'})
+        with self.assertRaisesRegex(RuntimeError, 'newer Pages deployment'):
+            self.plan()
+
+    def test_an_active_older_workflow_is_not_deleted(self):
+        self.data['actions/runs'][1]['status'] = 'in_progress'
+        with self.assertRaisesRegex(RuntimeError, 'still active'):
+            self.plan()
+
+    def test_release_changed_since_inventory_stops_before_delete(self):
+        self.data['releases'] = [{'id': 4, 'updated_at': 'known', 'assets': [{'id': 40}]}]
+        work = self.plan()
+        with patch.object(cleanup, 'remote_head', return_value='head'), \
+             patch.object(cleanup, 'verify_public'), \
+             patch.object(cleanup, 'api', return_value={'updated_at': 'newer', 'assets': [{'id': 40}]}) as api:
+            with self.assertRaisesRegex(RuntimeError, 'release changed'):
+                cleanup.apply(self.args, work)
+            self.assertEqual([call.args[1] for call in api.call_args_list if len(call.args) > 1], [])
+
+    def test_real_git_root_preserves_current_files_only_consumes_marker_and_does_not_move_checkout(self):
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                def git(*args, data=None):
+                    return subprocess.run(['git', '-c', 'user.name=Portfolio Test', '-c', 'user.email=test@example.invalid', *args],
+                                          input=data, text=True, capture_output=True, check=True).stdout.strip()
+                git('init', '-q')
+                Path('current.txt').write_text('current website')
+                Path('.github').mkdir()
+                Path(cleanup.AUTHORIZATION).write_text('one-shot')
+                git('add', '.')
+                git('commit', '-qm', 'current')
+                before = git('rev-parse', 'HEAD')
+                tree = cleanup.root_tree(before, cleanup.AUTHORIZATION)
+                root = git('commit-tree', tree, data='current only\n')
+                self.assertEqual(git('rev-list', '--parents', '-n', '1', root), root)
+                self.assertEqual(git('show', root + ':current.txt'), 'current website')
+                self.assertEqual(git('ls-tree', root, '--', cleanup.AUTHORIZATION), '')
+                self.assertEqual(git('diff', '--name-status', before, root), 'D\t' + cleanup.AUTHORIZATION)
+                self.assertEqual(git('rev-parse', 'HEAD'), before)
+            finally:
+                os.chdir(previous)
+
+
+    def test_main_advanced_after_deploy_stops_before_inventory(self):
+        self.args.expected_head = 'verified-archive-head'
+        with patch.object(cleanup, 'verify_public'), \
+             patch.object(cleanup, 'remote_head', return_value='new-user-work'), \
+             patch.object(cleanup, 'verify_checkout') as checkout, \
+             patch.object(cleanup, 'collection') as inventory:
+            with self.assertRaisesRegex(RuntimeError, 'advanced after the deployment'):
+                cleanup.plan(self.args)
+            inventory.assert_not_called()
+            checkout.assert_not_called()
 
 
 if __name__ == '__main__':

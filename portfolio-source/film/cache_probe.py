@@ -39,7 +39,6 @@ def provenance_valid(read_asset, names):
     return data.get('renderKey')==signature(read_asset,names)
 
 def status(archive):
-    if (ROOT.parent/'release-seed').exists(): return 'miss'
     names=archive.namelist()
     for override in (ROOT.parent/'assets-overrides').glob('growth-seed-*.png'):
         name='assets/'+override.name
@@ -86,7 +85,7 @@ def write_provenance(site):
     assets=['poster/poster.png','honor/live-honor-2026.jpeg']
     assets+=sorted(x for x in names if x.startswith('assets/portrait-white-960') and x.endswith('.webp'))
     proof={
-        'description':'我用这些哈希核对当前影片的输入与成片，确认维护更新没有改变已发布画面、声音和字幕。',
+        'description':'我核对当前影片的输入与成片。',
         'renderKey':cache['renderKey'],
         'sources':{x:hashlib.sha256((ROOT/x).read_bytes()).hexdigest() for x in (*SOURCES,'credits.md')},
         'assets':{x:hashlib.sha256(read(x)).hexdigest() for x in assets},

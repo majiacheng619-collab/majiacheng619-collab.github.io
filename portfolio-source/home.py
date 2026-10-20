@@ -1,4 +1,5 @@
 """A quiet portfolio homepage built around identity and actual work."""
+from device_frames import device_frame
 
 
 def build_home(img, cta, media, transcript):
@@ -21,7 +22,7 @@ def build_home(img, cta, media, transcript):
    <p>种下防线，守住一座花园。</p>
    <div class="actions">{cta('game/index.html','开始游戏')}{cta('projects/sprout-patrol/index.html','查看项目',True)}</div>
   </div>
-  <a class="premium-game-display" href="game/index.html" aria-label="体验萌芽保卫队">{img('assets/garden-current-home.webp','萌芽保卫队当前版本真实游戏截图')}</a>
+  <a class="premium-game-display device-preview" href="game/index.html" aria-label="体验萌芽保卫队">{device_frame(img('assets/garden-current-home.webp','萌芽保卫队当前版本真实游戏截图'), 'mac')}</a>
  </article>
 </section>
 <section class="premium-content premium-shell" id="content" aria-labelledby="content-title">

@@ -107,14 +107,13 @@ test('6.2 battle migration updates engine metadata while preventing false replay
  const r=E.replay(restored);assert.equal(r.version,'6.2.0');assert.equal(r.unavailable,true);assert.throws(()=>E.playReplay(r),/Historical battle/);
  const second=E.restore(E.snapshot(restored),progress);assert.equal(second.replayUnavailable,true);
 });
-test('6.0 replay execution remains historical, while restored battles migrate safely',()=>{
- const file=fs.readdirSync(dir).find(n=>/^garden-legacy6(?:\.[a-f0-9]+)?\.js$/.test(n));vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),context);
- const L=context.GardenLegacy6,progress=E.freshProgress();progress.cleared=1;
- const old=L.create(1,123,undefined,1);L.start(old);for(let i=0;i<120;i++)L.step(old);
- const historical=L.replay(old);assert.equal(E.stateHash(E.playReplay(historical)),L.stateHash(old));
- const migrated=E.restore(L.snapshot(old),progress);assert.ok(migrated);assert.equal(migrated.engineVersion,E.VERSION);assert.equal(migrated.replayUnavailable,true);
- E.pause(migrated);ticks(migrated,120);assert.ok(Number.isFinite(migrated.time));
- assert.equal(E.resolveReplayEngine(E.replay(migrated)),E);assert.throws(()=>E.playReplay(E.replay(migrated)),/Historical battle/);
+test('removed original battle engine is not loaded to restore an obsolete snapshot',()=>{
+ const progress=E.freshProgress();progress.cleared=1;
+ const s=E.create(1,123,undefined,1);E.start(s);ticks(s,120);
+ const obsolete=E.snapshot(s);obsolete.data.engineVersion='6.0.0';
+ assert.equal(E.restore(obsolete,progress),null);
+ delete obsolete.data.engineVersion;assert.equal(E.restore(obsolete,progress),null);
+ assert.equal(fs.existsSync(path.join(dir,'garden-legacy6.js')),false);
 });
 
 test('shovers respect blocked terrain instead of creating an unusable occupied obstacle',()=>{
@@ -139,15 +138,12 @@ test('control plants remain ready while every target is outside their actual ran
  e.x=p.x+200;ticks(s,1);assert.ok(e.root>0);assert.ok(p.timer>0);
 });
 
-test('6.3 replays use frozen rules and preserve their recorded state exactly',()=>{
- const L=context.GardenLegacy63;assert.ok(L);
- const s=L.create(1,733,undefined,1);L.start(s);L.place(s,s.deck[0],2,0);
- for(let i=0;i<1200;i++)L.step(s);
- const recording=L.replay(s),played=E.playReplay(recording);
- assert.equal(E.resolveReplayEngine(recording),L);assert.equal(L.stateHash(played),L.stateHash(s));
- const progress=E.freshProgress();progress.cleared=1;
- const resumed=E.restore(L.snapshot(s),progress);assert.ok(resumed);
- if(E.VERSION!==L.VERSION){assert.equal(resumed.engineVersion,E.VERSION);assert.equal(resumed.replayUnavailable,true);}
+test('recordings never dispatch to removed frozen engines',()=>{
+ const s=E.create(1,733,undefined,1);E.start(s);ticks(s,120);
+ const current=E.replay(s);
+ for(const version of ['6.0.0','6.3.0','6.4.0'])assert.throws(()=>E.playReplay({...current,version}),/Unsupported replay/);
+ assert.equal(E.resolveReplayEngine,undefined);
+ assert.equal(E.REPLAY_COMPAT,undefined);
 });
 
 function firstWaveClearedWithGarden(full=false){
@@ -203,17 +199,13 @@ test('valid endless drafts and recorded card selections still round-trip',()=>{
  assert.equal(restored.phase,'break');assert.ok(restored.perks.includes('rain'));
 });
 
-test('6.4 recordings run with frozen rules and old battle saves gain Dewfall safely',()=>{
- const L=context.GardenLegacy64;assert.ok(L);
- const s=L.create(1,733,undefined,1);L.start(s);L.place(s,s.deck[0],2,0);
- for(let i=0;i<1200;i++)L.step(s);
- const recording=L.replay(s);assert.equal(E.resolveReplayEngine(recording),L);
- assert.equal(L.stateHash(E.playReplay(recording)),L.stateHash(s));
+test('current battles retain progress, Dewfall state and deterministic playback after history removal',()=>{
  const progress=E.freshProgress();progress.cleared=1;
- const resumed=E.restore(L.snapshot(s),progress);assert.ok(resumed);
- assert.equal(resumed.engineVersion,E.VERSION);assert.equal(resumed.replayUnavailable,true);
- assert.equal(resumed.tacticCooldown,E.TACTIC.initialCharge);assert.equal(resumed.tacticsUsed,0);
- assert.throws(()=>E.playReplay(E.replay(resumed)),/Historical battle/);
+ const s=E.create(1,733,undefined,1);E.start(s);ticks(s,120);
+ const resumed=E.restore(E.snapshot(s),progress);assert.ok(resumed);
+ assert.equal(resumed.engineVersion,E.VERSION);assert.equal(resumed.dataHash,E.DATA_HASH);
+ assert.equal(resumed.tacticCooldown,s.tacticCooldown);assert.equal(resumed.tacticsUsed,s.tacticsUsed);
+ assert.equal(E.stateHash(E.playReplay(E.replay(s))),E.stateHash(s));
 });
 test('Dewfall heals only its lane, slows grounded targets and consumes exactly one charge',()=>{
  const s=fixture(),p=plant(s,'wall',2,4,true),other=plant(s,'sunbud',1,0);

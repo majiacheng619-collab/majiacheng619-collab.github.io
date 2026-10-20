@@ -214,6 +214,12 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      if(metrics.main!==1||metrics.h1!==1)failures.push(`${route}: main=${metrics.main}, h1=${metrics.h1}`);
      if(!metrics.title)failures.push(`${route}: empty title`);
      if(metrics.broken.length)failures.push(`${route}: broken images ${metrics.broken.join(',')}`);
+     const devices=await page.locator('.device-frame').evaluateAll(frames=>frames.map(frame=>{
+       const image=frame.querySelector('img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
+       const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
+       return {left:rect.left,right:rect.right,ratio:r.width/r.height,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
+     }));
+     for(const device of devices)if(device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
      if(!route.startsWith('game/')){
        const shell=await page.evaluate(()=>({dock:document.querySelectorAll('[data-glass-dock]').length,items:document.querySelectorAll('[data-glass-dock] [data-dock-item]').length,links:document.querySelectorAll('[data-glass-dock] a[data-dock-link]').length,search:document.querySelectorAll('[data-search-open]').length,current:document.querySelectorAll('[data-dock-link][aria-current]').length,retired:document.querySelectorAll('header,[data-menu-open],#menu-dialog,.chapter-nav,.reading-progress,script[src*="visitor-tracker"],script[src*="visitors."],[data-visitor-count],[data-privacy-toggle]').length,nav:document.querySelectorAll('nav').length}));
        if(shell.dock!==1||shell.items!==5||shell.links!==5||shell.search!==0||shell.current!==1||shell.retired!==0||shell.nav!==1)failures.push(`${width}px ${route}: invalid unified shell ${JSON.stringify(shell)}`);

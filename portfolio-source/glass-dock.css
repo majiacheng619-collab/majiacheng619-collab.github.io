@@ -13,7 +13,7 @@
   transform:translateX(-50%);
   border:1px solid rgba(255,255,255,.68);
   border-radius:999px;
-  background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08) 55%,rgba(236,244,252,.16));
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.045) 55%,rgba(236,244,252,.1));
   box-shadow:0 6px 24px rgba(25,40,58,.1),0 1px 3px rgba(25,40,58,.05),inset 0 1px 0 rgba(255,255,255,.75);
   -webkit-backdrop-filter:blur(7px) saturate(1.25);
   backdrop-filter:blur(7px) saturate(1.25);
@@ -82,9 +82,10 @@
   transform:translate3d(var(--lens-x),0,0) scale(var(--lens-stretch),var(--lens-squash));
   transform-origin:center;
   pointer-events:none;
-  background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(244,250,255,.04) 42%,rgba(222,238,249,.1) 68%,rgba(255,255,255,.24));
+  background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(244,250,255,.02) 42%,rgba(222,238,249,.065) 68%,rgba(255,255,255,.18));
   box-shadow:0 2px 6px rgba(34,52,68,.1),inset 0 1px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.64);
   will-change:transform;
+  overflow:hidden;
 }
 .glass-dock__lens::after {
   content:"";
@@ -102,7 +103,6 @@
   -webkit-touch-callout:none;
   -webkit-user-drag:none;
 }
-.glass-dock__optics { display:none; }
 @media(min-width:761px) {
   .glass-dock { width:400px; min-height:66px; bottom:20px; }
   .glass-dock__link { min-height:54px; }
@@ -117,19 +117,7 @@
 @media(prefers-reduced-motion:reduce) {
   .glass-dock__lens { will-change:auto; }
 }
-@media(prefers-reduced-transparency:reduce) {
-  .glass-dock { background:#f5f7fa; -webkit-backdrop-filter:none; backdrop-filter:none; }
-  .glass-dock__lens { background:#e7ecf2; }
-}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .glass-dock { background:rgba(248,250,252,.97); }
-}
-@media(forced-colors:active) {
-  .glass-dock { background:Canvas; border:1px solid CanvasText; }
-  .glass-dock__lens { display:none; }
-  .glass-dock__link[aria-current],.glass-dock__link[data-active="true"] { color:Highlight; outline:1px solid Highlight; }
-}
-@media print { .glass-dock,.glass-dock__optics { display:none!important; } }
+@media print { .glass-dock { display:none!important; } }
 
 /* Over video/dark artwork, reverse the symbols without adding an opaque plate.
    A fine edge shadow keeps white glyphs legible during bright video frames. */
@@ -138,4 +126,30 @@
 .glass-dock[data-over-media] .glass-dock__link > span { text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 1px #000; }
 .glass-dock[data-over-media] .glass-dock__link[aria-current],
 .glass-dock[data-over-media] .glass-dock__link[data-active="true"] { color:#70c4ff; }
-@media(forced-colors:active) { .glass-dock[data-over-media] { color:CanvasText; } }
+
+/* Static optical surfaces; only the light's transform/opacity follow the lens. */
+.glass-dock::before{content:"";position:absolute;inset:1px 8px auto;height:42%;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,0));pointer-events:none;z-index:0}
+.glass-dock__lens::before{content:"";position:absolute;inset:-22% 48% -22% -6%;border-radius:50%;background:linear-gradient(100deg,transparent 10%,rgba(255,255,255,.6) 48%,rgba(255,255,255,.04) 70%,transparent);transform:translate3d(var(--lens-glint-shift,0px),0,0) rotate(-22deg);opacity:var(--lens-glint-alpha,.2);pointer-events:none}
+.glass-dock__lens::after{background:radial-gradient(ellipse at 80% 0%,rgba(255,255,255,.28),transparent 55%);box-shadow:inset 1px 0 0 rgba(255,255,255,.6),inset -1px 0 0 rgba(167,214,244,.22)}
+/* Preference and capability fallbacks come after optical/deep-media rules. */
+@media(prefers-reduced-transparency:reduce){
+ .glass-dock,.glass-dock[data-over-media]{background:#f5f7fa;color:#25272b;-webkit-backdrop-filter:none;backdrop-filter:none}
+ .glass-dock__lens{background:#e7ecf2}
+ .glass-dock::before,.glass-dock__lens::before,.glass-dock__lens::after{display:none}
+ .glass-dock[data-over-media] .glass-dock__link>svg{filter:none}
+ .glass-dock[data-over-media] .glass-dock__link>span{text-shadow:none}
+ .glass-dock[data-over-media] .glass-dock__link[aria-current],.glass-dock[data-over-media] .glass-dock__link[data-active="true"]{color:#0071e3}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ .glass-dock,.glass-dock[data-over-media]{background:#f5f7fa;color:#25272b}
+ .glass-dock[data-over-media] .glass-dock__link>svg{filter:none}
+ .glass-dock[data-over-media] .glass-dock__link>span{text-shadow:none}
+ .glass-dock[data-over-media] .glass-dock__link[aria-current],.glass-dock[data-over-media] .glass-dock__link[data-active="true"]{color:#0071e3}
+}
+@media(forced-colors:active){
+ .glass-dock,.glass-dock[data-over-media]{color:CanvasText;background:Canvas;box-shadow:none}
+ .glass-dock::before,.glass-dock__lens,.glass-dock__lens::before,.glass-dock__lens::after{display:none}
+ .glass-dock .glass-dock__link[aria-current],.glass-dock[data-over-media] .glass-dock__link[aria-current],.glass-dock[data-over-media] .glass-dock__link[data-active="true"]{color:Highlight;outline:1px solid Highlight}
+ .glass-dock[data-over-media] .glass-dock__link>svg{filter:none}
+ .glass-dock[data-over-media] .glass-dock__link>span{text-shadow:none}
+}

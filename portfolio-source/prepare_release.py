@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-10-20-contact-glass-refinement'
+REVISION='2026-10-20-current-portfolio-only'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -32,22 +32,6 @@ def prepare():
     if overrides.exists(): shutil.copytree(overrides,SITE/'game',dirs_exist_ok=True)
     from game_release import fingerprint
     fingerprint(SITE/'game')
-    seed=SOURCE/'release-seed'
-    if seed.exists():
-        destination=SITE/'assets/media'
-        shutil.copytree(seed,destination,dirs_exist_ok=True,ignore=shutil.ignore_patterns('*.part*','seed-video.json'))
-        packed=seed/'seed-video.json'
-        if packed.exists():
-            plan=json.loads(packed.read_text());name=plan['name']
-            if Path(name).name!=name or not re.fullmatch(r'intro\.[a-f0-9]{12}\.mp4',name): raise RuntimeError('Unsafe seeded video name')
-            target=destination/name;digest=hashlib.sha256()
-            with target.open('wb') as output:
-                for part in plan['parts']:
-                    if Path(part['name']).name!=part['name']: raise RuntimeError('Unsafe seed part')
-                    raw=(seed/part['name']).read_bytes()
-                    if hashlib.sha256(raw).hexdigest()!=part['sha256']: raise RuntimeError('Seed part hash mismatch')
-                    digest.update(raw);output.write(raw)
-            if digest.hexdigest()!=plan['sha256']: raise RuntimeError('Synchronized seed video hash mismatch')
     from clean_release import clean
     clean(SITE)
     for retired in (SITE/'assets').glob('search-index*.json'):
@@ -60,8 +44,6 @@ def prepare():
         for old in (SITE/'assets/media').glob(pattern):
             if old != SITE/media[key]: old.unlink()
     run('python3','portfolio-source/build_site.py')
-    from analytics.install import remove as remove_analytics
-    remove_analytics(SITE)
     film=json.loads((SOURCE/'film-manifest.json').read_text())
     release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames')},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))

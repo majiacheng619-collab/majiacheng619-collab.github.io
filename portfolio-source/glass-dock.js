@@ -24,7 +24,7 @@
   let boxes = [], current = 0, target = 0, width = 0, targetWidth = 0;
   let velocity = 0, frame = 0, lastTime = 0, gesture = null;
   let suppressClickUntil = 0, navigationTimer = 0, dragActivation = false;
-  let heldScale = 0;
+  let heldScale = 0, heldVelocity = 0;
   let resizeObserver = null, contrastObserver = null, pendingHref = '';
   const contrastSources = [...document.querySelectorAll('video, .dark, [data-dock-tone=dark]')];
   function observeContrast() {
@@ -75,7 +75,7 @@
     current = boxes[0].x + state.fraction * span;
     velocity = clamp(state.speed, -3, 3) * span;
     heldScale = clamp(state.lift, 0, 1);
-    paint(1 + heldScale * .07, 1 + heldScale * .12);
+    paint(1 + heldScale * .09, 1 + heldScale * .16);
     animate();
   }
 
@@ -85,6 +85,8 @@
     lens.style.setProperty('--lens-x', `${current.toFixed(3)}px`);
     lens.style.setProperty('--lens-stretch', stretch.toFixed(4));
     lens.style.setProperty('--lens-squash', squash.toFixed(4));
+    lens.style.setProperty('--lens-glint-shift', `${clamp(velocity * .008, -10, 10).toFixed(3)}px`);
+    lens.style.setProperty('--lens-glint-alpha', (.2 + Math.min(.45, Math.abs(velocity) * .0003 + Math.abs(heldScale) * .24)).toFixed(3));
   }
   function tick(time) {
     frame = 0;
@@ -105,21 +107,30 @@
       velocity = (velocity - omega * c * dt) * decay;
     }
     const heldTarget = gesture ? 1 : 0;
-    heldScale += (heldTarget - heldScale) * (1 - Math.exp(-24 * dt));
+    // Closed-form damped droplet response: one restrained release ripple,
+    // independent of display refresh rate and with no geometry/filter animation.
+    const frequency = 30, damping = .72, decayLift = Math.exp(-damping * frequency * dt);
+    const damped = frequency * Math.sqrt(1 - damping * damping);
+    const liftOffset = heldScale - heldTarget;
+    const liftB = (heldVelocity + damping * frequency * liftOffset) / damped;
+    const liftCos = Math.cos(damped * dt), liftSin = Math.sin(damped * dt);
+    heldScale = heldTarget + decayLift * (liftOffset * liftCos + liftB * liftSin);
+    heldVelocity = decayLift * ((-damping * frequency * liftOffset + damped * liftB) * liftCos
+      + (-damping * frequency * liftB - damped * liftOffset) * liftSin);
     const strain = Math.min(.15, Math.abs(velocity) * .00013);
-    paint(1 + strain + heldScale * .07, 1 - strain * .32 + heldScale * .12);
-    if (Math.abs(current - target) > .03 || Math.abs(velocity) > .15 || Math.abs(heldTarget - heldScale) > .002) {
+    paint(1 + strain + heldScale * .09, 1 - strain * .32 + heldScale * .16);
+    if (Math.abs(current - target) > .03 || Math.abs(velocity) > .15 || Math.abs(heldTarget - heldScale) > .002 || Math.abs(heldVelocity) > .04) {
       frame = requestAnimationFrame(tick);
     } else {
-      current = target; velocity = 0; lastTime = 0; heldScale = heldTarget;
+      current = target; velocity = 0; lastTime = 0; heldScale = heldTarget; heldVelocity = 0;
       dock.removeAttribute('data-settling');
-      paint(1 + heldScale * .07, 1 + heldScale * .12);
+      paint(1 + heldScale * .09, 1 + heldScale * .16);
     }
   }
   function animate() {
     if (reduce.matches) {
       if (frame) cancelAnimationFrame(frame);
-      frame = 0; velocity = 0; lastTime = 0; current = target; width = targetWidth; heldScale = 0;
+      frame = 0; velocity = 0; lastTime = 0; current = target; width = targetWidth; heldScale = 0; heldVelocity = 0;
       paint(); return;
     }
     if (!frame && !document.hidden) frame = requestAnimationFrame(tick);
@@ -297,6 +308,7 @@
   addEventListener('pageshow', event => {
     if (!event.persisted) return;
     suppressClickUntil = 0;
+    heldScale = 0; heldVelocity = 0; velocity = 0;
     measure(true); select(selected, true);
   }, {signal});
 })();

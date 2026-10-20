@@ -5,11 +5,7 @@ from identity import build as build_identity
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
-music=sorted((ROOT/'assets/media').glob('ambient.*.mp3'))
-if len(music)!=1: raise RuntimeError('Expected exactly one current ambient track')
-media['music']=music[0].relative_to(ROOT).as_posix()
-detail_path=Path(__file__).parent/'detail.css'
-css=(Path(__file__).parent/'site.css').read_text()+'\n'+detail_path.read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()
+css=(Path(__file__).parent/'site.css').read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'device-frame.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()
 js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'glass-dock.js').read_text()
 def asset(text,stem,ext):
  name=f'assets/{stem}.{hashlib.sha256(text.encode()).hexdigest()[:12]}.{ext}'
@@ -20,6 +16,7 @@ def img(src,alt,classes='',eager=False):
  width,height=dimensions.get(src,(1280,720))
  return f'<img class="{classes}" src="{src}" alt="{alt}" width="{width}" height="{height}" decoding="async" '+('fetchpriority="high"' if eager else 'loading="lazy"')+'/>'
 def cta(url,label,secondary=False): return f'<a class="button {"secondary" if secondary else "primary"}" href="{url}"'+(' download="马嘉程_个人简历.pdf"' if url.endswith('.pdf') else '')+f'>{label}</a>'
+from device_frames import device_frame
 from site_shell import build_renderer
 render=build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media)
 dimensions=json.loads((Path(__file__).parent/'image-dimensions.json').read_text())
@@ -37,7 +34,7 @@ for old in (ROOT/'assets').glob('poster-preview.*.webp'):
  if old.name!=Path(poster_preview).name: old.unlink()
 
 
-gamevisual=f'<a class="product-visual" href="game/index.html">{img("assets/garden-current-home.webp","萌芽保卫队7.0清晨实战截图",eager=True)}</a>'
+gamevisual='<a class="product-visual device-preview" href="game/index.html">'+device_frame(img("assets/garden-current-home.webp","萌芽保卫队7.0清晨实战截图",eager=True),'mac')+'</a>'
 
 from home import build_home
 home=build_home(img, cta, media, transcript)
@@ -73,7 +70,7 @@ experience+=detail_rows('education','教育经历',[('南昌理工学院','智�
 render('experience/index.html','实践经历','马嘉程的电商教学、直播运营、线下经营与教育经历。',experience)
 
 game=detail_open('game')+detail_hero('萌芽保卫队','种下、守护、成长。',cta('game/index.html','开始游戏'))
-game+='<section class="detail-game-visual"><div class="detail-shell"><a class="product-visual" href="game/index.html">'+img('assets/garden-current-play.webp','萌芽保卫队7.0黄昏实战截图',eager=True)+'</a></div></section>'
+game+='<section class="detail-game-visual"><div class="detail-shell"><a class="product-visual device-preview" href="game/index.html">'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队7.0黄昏实战截图',eager=True),'tablet')+'</a></div></section>'
 game+=detail_split('overview','我的分工','<p>独立负责玩法策划、需求拆解、交互与迭代验收，通过 AI 辅助实现代码。</p>','<div class="detail-game-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div>')
 game+='<section class="detail-growth" id="mechanism"><div class="detail-shell"><h2>成长机制</h2><p class="detail-intro">用阳光补充防线，或等待现有植物成长。</p><div class="growth-demo"><div class="growth-steps">'
 for i,t in enumerate(['萌芽','成株','开花']):
@@ -83,7 +80,7 @@ for i,(t,d) in enumerate([('争取时间','保护萌芽，等待它长成。'),(
  growth_image=['assets/growth-seed-sprout.da294e149655.png','assets/growth-seed-adult.01b9f733e3e8.png','assets/growth-seed-flower.3fb952bbfb40.png'][i]
  game+=f'<div id="growth-panel-{i}" data-growth-panel="{i}"'+f'><img class="growth-real" src="{growth_image}" alt="种子投手的{["萌芽","成株","开花"][i]}阶段" width="384" height="384" loading="lazy" decoding="async"/><div><h3>{t}</h3><p>{d}</p></div></div>'
 game+='</div></div></section>'
-game+=detail_split('journey','花园旅程','<p>四个世界，20 关，完成一关再走向下一关。</p>',f'<a class="product-visual" href="game/journal.html">{img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度")}</a>')
+game+=detail_split('journey','花园旅程','<p>四个世界，20 关，完成一关再走向下一关。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"),'tablet')+'</a>')
 game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导入门，图鉴随时查阅。'),('存档','本机自动保存，也可导出存档码。')])
 
 game+=detail_close()

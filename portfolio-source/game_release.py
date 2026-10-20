@@ -43,6 +43,7 @@ def fingerprint(game):
     bybase={re.sub(r'\.[a-f0-9]{12}(?=\.)','',k):v for k,v in resolved.items()}
     for page in [*game.glob('*.html'),game/'sw.js',game/'manifest.webmanifest']:
         content=page.read_text()
+        content=re.sub(r'<script\b[^>]*\bsrc=["\'][^"\']*garden-legacy[^"\']*["\'][^>]*>\s*</script>', '', content, flags=re.I)
         for base,target in bybase.items():
             stem,ext=base.rsplit('.',1)
             pattern=re.escape(stem)+r'(?:\.[a-f0-9]{12})?\.'+re.escape(ext)+r'(?:\?v=[A-Za-z0-9-]+)?'
@@ -61,6 +62,7 @@ def fingerprint(game):
         stem,ext=base.rsplit('.',1)
         for old in game.glob(stem+'*.'+ext):
             if re.sub(r'\.[a-f0-9]{12}(?=\.)','',old.relative_to(game).as_posix())==base and old.relative_to(game).as_posix() not in current:old.unlink()
+    for stale in game.glob('garden-legacy*.js'):stale.unlink()
     for stale in game.glob('replay-view*.js'):stale.unlink()
     for stale in game.glob('garden-cloud*.js'):stale.unlink()
     for size in (192,512):
@@ -68,6 +70,8 @@ def fingerprint(game):
     worker=game/'sw.js'
     content=worker.read_text()
     core=json.loads(re.search(r'const CORE=(\[[^;]+\])',content).group(1))
+    core=[name for name in core if not re.search(r'(?:^|/)garden-legacy[^/]*\.js$',name)]
+    content=re.sub(r'const CORE=\[[^;]+\]', 'const CORE='+json.dumps(core,separators=(',',':')),content)
     digest=hashlib.sha256(b''.join(name.encode()+b'\0'+(game/name).read_bytes() for name in sorted(core))).hexdigest()[:12]
     content=re.sub(r"const CACHE=PREFIX\+'[^']+'", "const CACHE=PREFIX+'"+VERSION+"-"+digest+"'",content)
     worker.write_text(content)
