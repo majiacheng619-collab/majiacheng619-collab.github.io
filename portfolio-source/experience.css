@@ -1,0 +1,13 @@
+/* Image previews and restrained press feedback. */
+dialog{color:#1d1d1f;background:#fbfbfd;border:1px solid #ffffffb3;box-shadow:0 32px 120px #0003}
+dialog::backdrop{background:#17172055;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.dialog-close{width:44px;height:44px;top:20px;right:20px;border-radius:50%;background:#e9e9ed;color:#53535b;font-size:27px;line-height:1;display:grid;place-items:center;padding:0;transition:background .2s}
+.dialog-close:hover{background:#dedee3}
+.image-dialog{max-width:calc(100% - 32px);max-height:calc(100dvh - 32px);padding:74px 20px 20px;border-radius:28px}
+.image-dialog img{width:auto;height:auto;max-width:min(85vw,1000px);max-height:calc(100dvh - 145px);object-fit:contain;border-radius:8px}
+.liquid-wave{position:absolute;width:var(--wave-size);height:var(--wave-size);left:var(--wave-x);top:var(--wave-y);margin-left:calc(var(--wave-size) / -2);margin-top:calc(var(--wave-size) / -2);pointer-events:none;border-radius:50%;background:radial-gradient(circle,#ffffffb0,#ffffff38 50%,transparent 72%);animation:liquid-touch .65s var(--ease-out) forwards;z-index:2}
+.icon-button,[data-growth-step]{position:relative;isolation:isolate;overflow:hidden}
+@keyframes liquid-touch{from{transform:scale(.06);opacity:.9}to{transform:scale(1.5);opacity:0}}
+@media(max-width:700px){.dialog-close{top:16px;right:16px}.image-dialog{padding:68px 10px 10px;border-radius:22px}.image-dialog img{max-width:calc(100vw - 54px)}}
+@media(prefers-reduced-motion:reduce){.liquid-wave{display:none}}
+@media(prefers-reduced-transparency:reduce){dialog::backdrop{backdrop-filter:none;-webkit-backdrop-filter:none}}

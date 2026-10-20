@@ -1,0 +1,65 @@
+{
+  "version": 5,
+  "duration": 24,
+  "fps": 60,
+  "output_frames": 1440,
+  "master_fps": 480,
+  "master_frames": 11520,
+  "speech": false,
+  "procedural_music": false,
+  "gameplay_seconds": 2.2,
+  "gameplay_source": [
+    5.5,
+    7.7
+  ],
+  "scenes": [
+    {
+      "id": "1",
+      "start": 0,
+      "end": 2.2,
+      "text": "做。把想法做成作品"
+    },
+    {
+      "id": "2",
+      "start": 2.2,
+      "end": 4.4,
+      "text": "萌芽保卫队 · 实际游戏录屏"
+    },
+    {
+      "id": "3",
+      "start": 4.4,
+      "end": 9,
+      "text": "真实活动海报 · 从规则到现场"
+    },
+    {
+      "id": "4",
+      "start": 9,
+      "end": 12.2,
+      "text": "累计服务约 1,000 名学员"
+    },
+    {
+      "id": "5",
+      "start": 12.2,
+      "end": 14.4,
+      "text": "3 支 AI 叙事短片 · 独立完成全流程"
+    },
+    {
+      "id": "6",
+      "start": 14.4,
+      "end": 17,
+      "text": "直播内容与互动 · 2026 家乡荣耀季"
+    },
+    {
+      "id": "7",
+      "start": 17,
+      "end": 20,
+      "text": "马嘉程 · 产品与运营"
+    },
+    {
+      "id": "8",
+      "start": 20,
+      "end": 24,
+      "text": "马嘉程 · 继续看我的作品"
+    }
+  ]
+}

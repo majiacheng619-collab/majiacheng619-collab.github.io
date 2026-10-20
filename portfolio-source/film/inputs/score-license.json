@@ -1,0 +1,22 @@
+{
+  "title": "The Signs Of Progress",
+  "source": "Adobe Stock",
+  "asset_id": "511566807",
+  "source_pricing": "free",
+  "acquisition_state": "just_purchased",
+  "acquired_date": "2026-10-18",
+  "source_url": "https://stock.adobe.com/audio/the-signs-of-progress/511566807",
+  "use": "Synchronized portfolio film only; no public standalone audio source",
+  "source_edits_seconds": [
+    [
+      28.8,
+      46.2
+    ],
+    [
+      91.9,
+      98.6
+    ]
+  ],
+  "crossfade_seconds": 0.1,
+  "edited_aac_sha256": "b0051781b4523e1964e2075f4412dad5c0295f53634a6a606027af8c9c0f2f11"
+}
