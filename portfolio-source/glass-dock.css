@@ -11,12 +11,12 @@
   padding:5px;
   box-sizing:border-box;
   transform:translateX(-50%);
-  border:1px solid rgba(255,255,255,.8);
+  border:1px solid rgba(255,255,255,.68);
   border-radius:999px;
-  background:rgba(247,249,252,.72);
-  box-shadow:0 8px 28px rgba(25,40,58,.12),0 1px 3px rgba(25,40,58,.06),inset 0 1px 0 #fff;
-  -webkit-backdrop-filter:blur(18px) saturate(1.4);
-  backdrop-filter:blur(18px) saturate(1.4);
+  background:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.08) 55%,rgba(236,244,252,.16));
+  box-shadow:0 6px 24px rgba(25,40,58,.1),0 1px 3px rgba(25,40,58,.05),inset 0 1px 0 rgba(255,255,255,.75);
+  -webkit-backdrop-filter:blur(7px) saturate(1.25);
+  backdrop-filter:blur(7px) saturate(1.25);
   color:#25272b;
   isolation:isolate;
   -webkit-user-select:none;
@@ -82,8 +82,8 @@
   transform:translate3d(var(--lens-x),0,0) scale(var(--lens-stretch),var(--lens-squash));
   transform-origin:center;
   pointer-events:none;
-  background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(227,232,238,.45) 48%,rgba(255,255,255,.65));
-  box-shadow:0 1px 4px rgba(34,52,68,.12),inset 0 1px 1px #fff,inset 0 -1px 1px rgba(255,255,255,.9);
+  background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(244,250,255,.04) 42%,rgba(222,238,249,.1) 68%,rgba(255,255,255,.24));
+  box-shadow:0 2px 6px rgba(34,52,68,.1),inset 0 1px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.64);
   will-change:transform;
 }
 .glass-dock__lens::after {
@@ -95,7 +95,7 @@
   pointer-events:none;
 }
 .glass-dock:not([data-glass-ready]) .glass-dock__lens { visibility:hidden; }
-.glass-dock:not([data-glass-ready]) .glass-dock__link[aria-current] { background:rgba(255,255,255,.7); }
+.glass-dock:not([data-glass-ready]) .glass-dock__link[aria-current] { background:rgba(255,255,255,.2); }
 .glass-dock *, .glass-dock *::before, .glass-dock *::after {
   -webkit-user-select:none;
   user-select:none;
@@ -106,12 +106,9 @@
 @media(min-width:761px) {
   .glass-dock { width:400px; min-height:66px; bottom:20px; }
   .glass-dock__link { min-height:54px; }
-  .site-footer { padding-bottom:112px; }
 }
 @media(max-width:760px) {
   .glass-dock { bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
-  .site-footer { padding-bottom:calc(116px + env(safe-area-inset-bottom,0px)); }
-  #about { scroll-margin-bottom:110px; }
 }
 @media(max-width:360px) {
   .glass-dock { width:calc(100% - 20px); }
@@ -133,3 +130,12 @@
   .glass-dock__link[aria-current],.glass-dock__link[data-active="true"] { color:Highlight; outline:1px solid Highlight; }
 }
 @media print { .glass-dock,.glass-dock__optics { display:none!important; } }
+
+/* Over video/dark artwork, reverse the symbols without adding an opaque plate.
+   A fine edge shadow keeps white glyphs legible during bright video frames. */
+.glass-dock[data-over-media] { color:#fff; background:linear-gradient(135deg,rgba(20,28,36,.16),rgba(20,28,36,.1)); }
+.glass-dock[data-over-media] .glass-dock__link > svg { filter:drop-shadow(0 1px 1px rgba(0,0,0,.85)) drop-shadow(0 0 1px rgba(0,0,0,.7)); }
+.glass-dock[data-over-media] .glass-dock__link > span { text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 1px #000; }
+.glass-dock[data-over-media] .glass-dock__link[aria-current],
+.glass-dock[data-over-media] .glass-dock__link[data-active="true"] { color:#70c4ff; }
+@media(forced-colors:active) { .glass-dock[data-over-media] { color:CanvasText; } }

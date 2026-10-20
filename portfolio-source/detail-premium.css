@@ -1,5 +1,5 @@
 /* One editorial scale across the portfolio. Real work is the focal point. */
-.detail-page{--detail-width:1120px;--case-muted:#626269;--case-line:rgba(29,29,31,.1);color:#1d1d1f;background:transparent;overflow:clip;padding-bottom:64px}
+.detail-page{--detail-width:1120px;--case-muted:#626269;--case-line:rgba(29,29,31,.1);color:#1d1d1f;background:transparent;overflow:clip;padding-bottom:24px}
 .detail-page .detail-shell{width:min(var(--detail-width),calc(100% - 96px));margin-inline:auto;min-width:0}
 .detail-page section[id],.detail-page div[id]{scroll-margin-top:32px}
 .detail-page h1,.detail-page h2,.detail-page h3{font-weight:650;word-break:normal;overflow-wrap:break-word;color:inherit}
@@ -28,13 +28,13 @@
 .detail-page .detail-number strong>span{font-size:18px;font-weight:500;letter-spacing:0;margin-left:10px}
 .detail-page .detail-number>p{font-size:16px;margin:18px 0 0}
 .detail-page .detail-row-list{border:0;margin-top:42px}
-.detail-page .detail-row{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.2fr);gap:56px;align-items:start;border:0;border-top:1px solid var(--case-line);padding:30px 0;margin:0;border-radius:0;background:transparent;box-shadow:none}
+.detail-page .detail-row{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.2fr);gap:56px;align-items:start;border:0;padding:30px 0;margin:0;border-radius:0;background:transparent;box-shadow:none}
 .detail-page .detail-row h3{margin:0;font-size:24px}
 .detail-page .detail-row p{margin:0;font-size:18px;line-height:1.8;max-width:680px}
 .detail-page .detail-certificate,.detail-page .detail-poster-preview,.detail-page .detail-poster-original{display:block;width:min(350px,100%);padding:0;background:transparent;border-radius:18px;box-shadow:0 24px 56px #1d243314;transform:none;overflow:hidden}
 .detail-page .detail-certificate img,.detail-page .detail-poster-preview img,.detail-page .detail-poster-original img{display:block;width:100%;height:auto;max-height:600px;object-fit:contain;border-radius:0}
-.detail-page .detail-portrait{max-width:380px;width:100%;border-radius:34px;overflow:hidden;background:#fff;box-shadow:0 24px 56px #1d24330a}
-.detail-page .detail-portrait img{display:block;width:100%;height:auto}
+
+
 .detail-page .detail-education{margin:0 0 34px}
 .detail-page .detail-education h3{font-size:25px;margin-bottom:12px}
 .detail-page .detail-education p{font-size:17px;line-height:1.8;margin-bottom:28px}
@@ -59,20 +59,20 @@
 .detail-page .detail-film-copy h2{font-size:clamp(32px,3.5vw,46px);line-height:1.24}
 .detail-page .detail-film-copy>p{font-size:18px;line-height:1.8}
 .detail-page .detail-film-copy>.button{margin-top:10px}
-.detail-page .detail-campus-mark{width:100%;padding:42px 0;text-align:center;border:0;background:transparent}
-.detail-page .detail-campus-mark strong{display:block;font-size:clamp(80px,10vw,140px);font-weight:600;line-height:1.1;letter-spacing:-.06em;margin-bottom:22px}
-.detail-page .detail-campus-mark p{font-size:19px;margin:0}
+
+
+
 .detail-page .detail-next{padding:90px 0 100px;text-align:left;background:transparent}
-.detail-page .detail-next h2{font-size:clamp(34px,4.4vw,54px);margin-bottom:28px}
+
 @media(max-width:1000px){.detail-page .detail-shell{width:calc(100% - 64px)}.detail-page .detail-split>.detail-shell,.detail-page .detail-film>.detail-shell{gap:6%}.detail-page .detail-number>strong{font-size:80px}.detail-page .detail-number strong>span{font-size:16px}.detail-page .detail-row{gap:32px}}
 @media(max-width:700px){
- .detail-page{padding-bottom:44px}.detail-page .detail-shell{width:calc(100% - 48px)}
+ .detail-page{padding-bottom:20px}.detail-page .detail-shell{width:calc(100% - 48px)}
  .detail-page .detail-hero{padding:58px 0 52px}.detail-page h1{font-size:clamp(42px,10.5vw,64px);margin-bottom:24px;line-height:1.15}.detail-page h2{font-size:clamp(32px,8.2vw,44px);margin-bottom:22px;line-height:1.22}.detail-page .detail-intro{font-size:18px;line-height:1.75}
  .detail-page .detail-split,.detail-page .detail-rows,.detail-page .detail-film,.detail-page .detail-growth{padding:54px 0}.detail-page .detail-feature{padding-top:16px}.detail-page .detail-split>.detail-shell,.detail-page .detail-film>.detail-shell{grid-template-columns:minmax(0,1fr);gap:32px}.detail-page .detail-split-copy>p,.detail-page p{font-size:17px;line-height:1.8}.detail-page .button{font-size:16px;min-height:48px;padding-inline:22px}.detail-page .actions{gap:10px;margin-top:24px}
  .detail-page .product-visual{border-radius:20px}.detail-page .detail-game-visual{padding-bottom:18px}.detail-page .detail-row-list{margin-top:30px}.detail-page .detail-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:25px 0}.detail-page .detail-row h3{font-size:22px}.detail-page .detail-row p{font-size:17px}.detail-page .detail-number{padding:10px 0}.detail-page .detail-number>strong{font-size:clamp(76px,21vw,110px)}.detail-page .detail-number strong>span{font-size:16px}.detail-page .detail-number>p{font-size:16px}
- .detail-page .detail-certificate,.detail-page .detail-poster-preview,.detail-page .detail-poster-original{width:min(320px,90%);border-radius:16px}.detail-page .detail-portrait{width:min(320px,100%);border-radius:26px}.detail-page .detail-education h3{font-size:23px}.detail-page .detail-education p{font-size:16px}
+ .detail-page .detail-certificate,.detail-page .detail-poster-preview,.detail-page .detail-poster-original{width:min(320px,90%);border-radius:16px}.detail-page .detail-education h3{font-size:23px}.detail-page .detail-education p{font-size:16px}
  .detail-page .detail-game-facts{max-width:340px;padding:14px 0}.detail-page .detail-game-facts strong{font-size:100px}.detail-page .detail-game-facts span{font-size:17px;margin-top:12px}.detail-page .growth-demo{padding:12px 16px 28px;margin-top:28px;border-radius:26px}.detail-page .growth-demo button[data-growth-step]{min-height:60px;padding-inline:5px;border-radius:18px}.detail-page .growth-demo button[data-growth-step] strong{font-size:20px}.detail-page .growth-demo [data-growth-panel]{grid-template-columns:1fr;gap:16px;min-height:360px;padding:18px 4px 0}.detail-page .growth-real{width:170px;height:170px}.detail-page .growth-demo [data-growth-panel] h3{font-size:23px}.detail-page .growth-demo [data-growth-panel] p{font-size:17px}
- .detail-page .theme-art{min-height:260px;max-width:440px;margin:auto;border-radius:24px}.detail-page .theme-art>strong{font-size:88px}.detail-page .detail-film-copy h2{font-size:32px}.detail-page .detail-film-copy>p{font-size:17px}.detail-page .detail-next{padding:60px 0 68px}.detail-page .detail-next h2{font-size:34px}.detail-page .detail-campus-mark{padding:24px 0}.detail-page .detail-campus-mark strong{font-size:104px}
+ .detail-page .theme-art{min-height:260px;max-width:440px;margin:auto;border-radius:24px}.detail-page .theme-art>strong{font-size:88px}.detail-page .detail-film-copy h2{font-size:32px}.detail-page .detail-film-copy>p{font-size:17px}.detail-page .detail-next{padding:60px 0 68px}
 }
 @media(max-width:359px){.detail-page .detail-shell{width:calc(100% - 40px)}.detail-page h1{font-size:40px}.detail-page .detail-number>strong{font-size:70px}.detail-page .button{padding-inline:18px}}
 @media print{.detail-page{padding:0}.detail-page .detail-shell{width:100%}.detail-page .detail-hero,.detail-page .detail-split,.detail-page .detail-rows,.detail-page .detail-film,.detail-page .detail-growth{padding-block:24px}.detail-page h1{font-size:32pt}.detail-page h2{font-size:24pt}.detail-page .detail-next{display:none}.detail-page .detail-row{break-inside:avoid}.detail-page .detail-split>.detail-shell,.detail-page .detail-film>.detail-shell{grid-template-columns:1fr;gap:20px}.detail-page .product-visual,.detail-page .detail-certificate,.detail-page .detail-poster-original{box-shadow:none}}
@@ -95,7 +95,7 @@
 .detail-page .detail-row p{font-size:19px;line-height:1.65}
 .detail-page .button{font-size:17px;min-height:48px;padding:12px 24px;border-radius:999px}
 .detail-page .button::after{content:none}
-.detail-page .detail-next{padding:44px 0 72px;border-top:1px solid #d2d2d7}
+.detail-page .detail-next{padding:44px 0 72px;border:0}
 .detail-page .detail-next .actions{margin:0}
 .detail-page .detail-note{padding-block:30px 0}
 .detail-page .detail-note p{font-size:17px;line-height:1.6;margin:0}
@@ -104,7 +104,7 @@
 .detail-page .theme-art{box-shadow:none;border-radius:30px;min-height:360px}
 .detail-page .product-visual{box-shadow:none;border-radius:24px;background:#e9ebed}
 .detail-page .detail-certificate,.detail-page .detail-poster-preview,.detail-page .detail-poster-original{box-shadow:none}
-.detail-page .detail-campus-mark p{font-size:19px}
+
 .detail-page .growth-demo{background:#fff;border:0;box-shadow:none}
 .detail-page .growth-steps{background:#f5f5f7;padding:5px;border-radius:24px}
 .detail-page .growth-demo button[data-growth-step][aria-pressed="true"]{background:#fff;box-shadow:0 2px 8px #0000000c}
@@ -127,3 +127,12 @@
  .detail-page .growth-steps{border-radius:20px}
 }
 @media print{.detail-page .detail-hero,.detail-page .detail-split,.detail-page .detail-film,.detail-page .detail-growth{padding-block:24px}.detail-page .detail-hero h1{font-size:32pt}.detail-page h2{font-size:24pt}.detail-page .detail-split:nth-of-type(even),.detail-page .detail-film:nth-of-type(even),.detail-page .detail-growth{background:#fff}}
+
+/* Text-only destinations occupy the available column; no decorative image slots. */
+.detail-page .detail-copy-only>.detail-shell{display:block}
+.detail-page .detail-copy-only .detail-split-copy{max-width:800px}
+.detail-page .detail-copy-only .detail-split-copy>p{max-width:760px}
+.detail-page #education{padding-bottom:24px}
+.detail-page .education-note{padding-bottom:24px}
+.detail-page .education-note p{font-size:18px;line-height:1.7;margin:0}
+@media(max-width:700px){.detail-page #education{padding-bottom:16px}.detail-page .education-note{padding-bottom:16px}.detail-page .education-note p{font-size:17px}}

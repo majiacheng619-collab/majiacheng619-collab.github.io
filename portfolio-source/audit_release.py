@@ -22,12 +22,15 @@ class Page(HTMLParser):
         self.scripts = []
         self.videos = []
         self.tracks = []
+        self.anchors = []
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if tag == 'script' and attrs.get('src'):
             self.scripts.append(attrs['src'])
+        if tag == 'a':
+            self.anchors.append(attrs)
         if tag == 'img':
             self.images.append(attrs)
         elif tag == 'video':
@@ -70,6 +73,8 @@ def audit(root):
     if release.is_file() and json.loads(release.read_text()).get('visitorAnalytics', {}).get('enabled') is not False:
         errors.append('Release must explicitly disable visitor analytics')
 
+    if not (root / 'contact/index.html').is_file():
+        errors.append('Standalone contact page is missing')
     game = root / 'game'
     for asset in game.rglob('*'):
         match=re.search(r'\.([a-f0-9]{12})\.(?:js|css|svg|png)$',asset.name)
@@ -121,6 +126,11 @@ def audit(root):
         if path.is_relative_to(game):
             continue
         counts['portfolio_pages'] += 1
+        relative = path.relative_to(root).as_posix()
+        pdfs = [anchor for anchor in doc.anchors if '.pdf' in anchor.get('href', '').lower()]
+        expected = 1 if relative in ('index.html', 'contact/index.html') else 0
+        if len(pdfs) != expected:
+            errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for image in doc.images:
             if not all(image.get(key, '').isdigit() and int(image[key]) > 0 for key in ('width', 'height')):
                 errors.append(f'{path.relative_to(root)}: image lacks positive intrinsic dimensions: {image.get("src")}')

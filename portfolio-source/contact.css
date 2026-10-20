@@ -1,0 +1,18 @@
+/* Contact remains a quiet, direct destination at every screen size. */
+.contact-page{min-height:calc(100svh - 180px);padding-bottom:112px}
+.contact-page .detail-hero{padding:96px 0 56px}
+.contact-page .detail-hero h1{margin:0}
+.contact-page .contact-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:88px;align-items:start}
+.contact-page .contact-identity{padding-top:25px;min-width:0}
+.contact-page .contact-identity h2{font-size:36px;letter-spacing:-.035em;margin:0 0 12px}
+.contact-page .contact-identity p{font-size:18px;line-height:1.6;margin:0;color:#626269}
+.contact-page .contact-identity .actions{margin-top:28px}
+.contact-page .contact-methods{min-width:0;margin:0}
+.contact-page .contact-methods>div{padding:25px 0 31px;border:0}
+.contact-page .contact-methods dt{font-size:17px;line-height:1.5;color:#626269;margin-bottom:12px}
+.contact-page .contact-methods dd{margin:0;font-size:clamp(21px,2.45vw,29px);line-height:1.5;font-weight:500;letter-spacing:-.025em;overflow-wrap:anywhere}
+.contact-page .contact-methods a{display:inline-block;color:#1d1d1f;min-height:44px;text-decoration:none;text-underline-offset:6px}
+@media(hover:hover){.contact-page .contact-methods a:hover{color:#0066cc;text-decoration:underline}}
+.contact-page .contact-methods a:focus-visible{outline:3px solid #0071e3;outline-offset:5px;border-radius:3px}
+@media(max-width:767px){.contact-page{min-height:0;padding-bottom:80px}.contact-page .detail-hero{padding:64px 0 36px}.contact-page .contact-layout{grid-template-columns:1fr;gap:42px}.contact-page .contact-identity{padding:0}.contact-page .contact-identity h2{font-size:30px}.contact-page .contact-methods dd{font-size:23px}.contact-page .contact-methods>div{padding:22px 0 26px}}
+@media(max-width:359px){.contact-page .contact-methods dd{font-size:20px}}
