@@ -266,3 +266,17 @@ body[data-page="index"] .tactic-explanation[open] summary::after{content:'−'}
 body[data-page="index"] #overlay[popover]{margin:0;max-width:none;max-height:none;border:0;box-sizing:border-box;color:inherit}
 /* Squad instructions keep AA contrast even in a short landscape sheet. */
 body[data-page="index"] #squad-content>p,body[data-page="index"] #squad-dialog .squad-summary{color:#526452}
+
+/* The companion pages share the portfolio's short titles and readable scale. */
+.garden-presentation{background:#f5f5f7!important}
+.garden-presentation .page-main{padding-top:64px}
+.garden-presentation h1{font-size:clamp(40px,5.6vw,68px);letter-spacing:-.04em;margin-bottom:22px}
+.garden-presentation .lede{font-size:20px;line-height:1.65;margin-bottom:42px}
+.garden-presentation .gp-info-card,.garden-presentation .guide-step,.garden-presentation .gp-world,.garden-presentation .gp-replay-panel,.garden-presentation .author-card{background:#fff;border-color:#e4e4e7;box-shadow:none}
+.garden-presentation .button{font-size:16px;min-height:48px;box-shadow:none}
+.garden-presentation .button::after{content:none}
+.garden-presentation .gp-info-card p,.garden-presentation .guide-step p,.garden-presentation .gp-world>div>p:last-child{font-size:18px;line-height:1.7}
+.garden-presentation .gp-footer{font-size:14px}
+.garden-presentation .author-card{padding:52px}
+.garden-presentation .author-card>p:not(.eyebrow):not(.author-en){font-size:20px;line-height:1.7}
+@media(max-width:700px){.garden-presentation .page-main{padding-top:40px}.garden-presentation .lede{font-size:18px}.garden-presentation .author-card{padding:30px 24px}.garden-presentation .author-card>p:not(.eyebrow):not(.author-en){font-size:18px}.garden-presentation .gp-info-card p,.garden-presentation .guide-step p,.garden-presentation .gp-world>div>p:last-child{font-size:17px}.garden-presentation .gp-footer{font-size:13px}}

@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-10-19-unified-portfolio'
+REVISION='2026-10-20-clean-glass-portfolio'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -50,6 +50,8 @@ def prepare():
             if digest.hexdigest()!=plan['sha256']: raise RuntimeError('Synchronized seed video hash mismatch')
     from clean_release import clean
     clean(SITE)
+    for retired in (SITE/'assets').glob('search-index*.json'):
+        retired.unlink()
     run('python3','portfolio-source/film/render.py')
     from film.cache_probe import write_provenance
     write_provenance(SITE)

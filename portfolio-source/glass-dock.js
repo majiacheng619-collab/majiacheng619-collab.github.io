@@ -23,49 +23,51 @@
   let dockLeft = 0;
   let boxes = [], current = 0, target = 0, width = 0, targetWidth = 0;
   let velocity = 0, frame = 0, lastTime = 0, gesture = null;
-  let scrollImpulse = 0, previousScroll = scrollY, suppressClickUntil = 0;
+  let suppressClickUntil = 0, navigationTimer = 0, dragActivation = false;
+  let heldScale = 0;
   let observer = null, resizeObserver = null;
 
+  // The shell alone samples the backdrop. The empty lens is one composited
+  // surface: no filters, cloned labels, width animation or per-item frame writes.
   function paint(stretch = 1, squash = 1) {
-    dock.style.setProperty('--lens-x', `${current.toFixed(3)}px`);
-    dock.style.setProperty('--lens-width', `${width.toFixed(3)}px`);
-    dock.style.setProperty('--lens-stretch', stretch.toFixed(4));
-    dock.style.setProperty('--lens-squash', squash.toFixed(4));
-
-    dock.style.setProperty('--lens-velocity', String(clamp(velocity / 22, -1, 1)));
-    // Each icon and label is drawn once. Magnify the real content, never a
-    // duplicate hidden behind a moving mask (which tears in mobile Safari).
-    const center = current + width / 2;
-    links.forEach((item, index) => {
-      const box = boxes[index];
-      const proximity = box ? Math.max(0, 1 - Math.abs(box.x + box.width / 2 - center) / box.width) : 0;
-      item.style.setProperty('--dock-scale', String(reduce.matches ? 1 : 1 + proximity * (gesture?.dragging ? .1 : .035)));
-    });
+    lens.style.setProperty('--lens-x', `${current.toFixed(3)}px`);
+    lens.style.setProperty('--lens-stretch', stretch.toFixed(4));
+    lens.style.setProperty('--lens-squash', squash.toFixed(4));
   }
   function tick(time) {
     frame = 0;
     if (document.hidden) return;
-    const dt = clamp((time - (lastTime || time - 16.667)) / 16.667, .3, 2);
+    const dt = clamp((time - (lastTime || time - 16.667)) / 1000, .001, .04);
     lastTime = time;
-    const delta = target - current;
-    velocity = (velocity + delta * .13 * dt) * Math.pow(.66, dt);
-    current += velocity * dt;
-    width += (targetWidth - width) * (1 - Math.pow(.73, dt));
-    scrollImpulse *= Math.pow(.78, dt);
-    const strain = Math.min(.20, Math.abs(velocity) * .0055);
-    const held = gesture?.dragging ? .045 : 0;
-    paint(1 + strain + held, 1 - strain * .43 + held * .45 - Math.min(.012, Math.abs(scrollImpulse) * .0005));
-    if (Math.abs(delta) > .035 || Math.abs(velocity) > .035 || Math.abs(width - targetWidth) > .035 || Math.abs(scrollImpulse) > .02) {
+    // Exact critically damped spring; its response is independent of 60/120 Hz.
+    if (gesture?.dragging) {
+      // Coalesce input into one paint per display frame; do not make the finger
+      // chase a spring. Only the released lens settles with inertia.
+      velocity = (target - current) / dt;
+      current = target;
+    } else {
+      const omega = 24;
+      const offset = current - target, c = velocity + omega * offset;
+      const decay = Math.exp(-omega * dt);
+      current = target + (offset + c * dt) * decay;
+      velocity = (velocity - omega * c * dt) * decay;
+    }
+    const heldTarget = gesture ? 1 : 0;
+    heldScale += (heldTarget - heldScale) * (1 - Math.exp(-24 * dt));
+    const strain = Math.min(.15, Math.abs(velocity) * .00013);
+    paint(1 + strain + heldScale * .055, 1 - strain * .32 + heldScale * .09);
+    if (Math.abs(current - target) > .03 || Math.abs(velocity) > .15 || Math.abs(heldTarget - heldScale) > .002) {
       frame = requestAnimationFrame(tick);
     } else {
-      current = target; width = targetWidth; velocity = 0; lastTime = 0;
-      dock.removeAttribute('data-settling'); paint();
+      current = target; velocity = 0; lastTime = 0; heldScale = heldTarget;
+      dock.removeAttribute('data-settling');
+      paint(1 + heldScale * .055, 1 + heldScale * .09);
     }
   }
   function animate() {
     if (reduce.matches) {
       if (frame) cancelAnimationFrame(frame);
-      frame = 0; velocity = 0; lastTime = 0; current = target; width = targetWidth;
+      frame = 0; velocity = 0; lastTime = 0; current = target; width = targetWidth; heldScale = 0;
       paint(); return;
     }
     if (!frame && !document.hidden) frame = requestAnimationFrame(tick);
@@ -79,6 +81,8 @@
     });
     const geometryIndex = selected;
     target = boxes[geometryIndex].x; targetWidth = boxes[geometryIndex].width;
+    width = targetWidth;
+    lens.style.setProperty('--lens-width', `${width.toFixed(3)}px`);
     if (snap || !width) { current = target; width = targetWidth; velocity = 0; paint(); }
     else animate();
   }
@@ -103,6 +107,7 @@
   }
   function cancelGesture() {
     const old = gesture; gesture = null;
+    velocity = 0;
     dock.removeAttribute('data-dragging');
     if (old) releaseCapture(old.id);
     select(selected, reduce.matches);
@@ -115,8 +120,10 @@
   dock.addEventListener('dragstart', event => event.preventDefault(), {signal});
   dock.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !event.isPrimary || event.target.closest('a')?.hasAttribute('download')) return;
+    if (navigationTimer) { clearTimeout(navigationTimer); navigationTimer = 0; }
     measure();
     gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, started: performance.now(), dragging: false};
+    animate();
   }, {signal, passive: true});
   dock.addEventListener('pointermove', event => {
     if (!gesture || event.pointerId !== gesture.id) return;
@@ -130,7 +137,6 @@
     }
     if (event.cancelable) event.preventDefault();
     const first = boxes[0].x, last = boxes.at(-1).x;
-    targetWidth = boxes[nearest(event.clientX)].width;
     // Once horizontal intent is established, the lens belongs underneath the
     // finger even if the gesture began over an unselected destination.
     const raw = event.clientX - dockLeft - width / 2;
@@ -148,12 +154,15 @@
       if (held > 550) suppressClickUntil = performance.now() + 450;
       return;
     }
+    velocity = clamp(velocity, -750, 750);
     const next = nearest(event.clientX);
     if (isLink(links[next])) select(next);
     else select(selected);
     // Consume only the compatibility click generated by this drag. Dispatch a
     // real anchor click first so existing navigation handlers remain in charge.
+    dragActivation = event.isTrusted;
     links[next].click();
+    dragActivation = false;
     suppressClickUntil = performance.now() + 450;
   }, {signal});
   dock.addEventListener('click', event => {
@@ -162,7 +171,19 @@
       event.preventDefault(); event.stopImmediatePropagation(); return;
     }
     const link = event.target.closest('[data-dock-item]');
-    if (link && isLink(link) && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) select(links.indexOf(link));
+    if (!link || !isLink(link) || link.hasAttribute('download') || link.getAttribute('target') === '_blank' || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
+    select(links.indexOf(link));
+    const url = new URL(link.href, location.href);
+    const currentURL = new URL(location.href);
+    // Native cross-document navigation otherwise destroys the selection animation
+    // before its first frame. A short, cancellable handoff makes it visible.
+    if ((event.isTrusted || dragActivation) && url.origin === location.origin &&
+        (url.pathname !== currentURL.pathname || url.search !== currentURL.search)) {
+      event.preventDefault();
+      if (navigationTimer) clearTimeout(navigationTimer);
+      if (reduce.matches) location.assign(url.href);
+      else navigationTimer = setTimeout(() => { navigationTimer = 0; location.assign(url.href); }, 180);
+    }
   }, {signal, capture: true});
   dock.addEventListener('pointercancel', cancelGesture, {signal});
   dock.addEventListener('lostpointercapture', event => {
@@ -174,24 +195,18 @@
   // Native Tab/Enter activation and the focus-visible ring provide keyboard
   // navigation. Focus alone never moves the page-selection lens to a different
   // destination, so a focused control cannot look like a second current page.
-  addEventListener('scroll', () => {
-    const next = scrollY, difference = next - previousScroll; previousScroll = next;
-    if (reduce.matches || document.hidden || gesture) return;
-    scrollImpulse = clamp(scrollImpulse + difference * .12, -18, 18);
-    animate();
-  }, {signal, passive: true});
   const onResize = () => { if (gesture) cancelGesture(); measure(true); };
   addEventListener('resize', onResize, {signal, passive: true});
   if ('ResizeObserver' in window) {
     resizeObserver = new ResizeObserver(onResize); resizeObserver.observe(dock);
   }
-  const onMotion = () => { cancelGesture(); scrollImpulse = 0; measure(true); animate(); };
+  const onMotion = () => { cancelGesture(); measure(true); animate(); };
   reduce.addEventListener('change', onMotion, {signal});
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       if (frame) cancelAnimationFrame(frame);
-      frame = 0; lastTime = 0; scrollImpulse = 0; cancelGesture();
-    } else { previousScroll = scrollY; measure(true); }
+      frame = 0; lastTime = 0; cancelGesture();
+    } else { measure(true); }
   }, {signal});
   // Mark in-page destinations as the reader moves through the portfolio.
   const normalizedPath = pathname => pathname.replace(/\/index\.html$/, '/');
@@ -217,14 +232,16 @@
   addEventListener('pagehide', event => {
     cancelGesture();
     if (frame) cancelAnimationFrame(frame);
-    frame = 0; velocity = 0; lastTime = 0; scrollImpulse = 0;
+    frame = 0; velocity = 0; lastTime = 0;
+    if (navigationTimer) clearTimeout(navigationTimer);
+    navigationTimer = 0;
     if (event.persisted) return;
     aborter.abort(); observer?.disconnect(); resizeObserver?.disconnect();
     if (frame) cancelAnimationFrame(frame);
   }, {signal});
   addEventListener('pageshow', event => {
     if (!event.persisted) return;
-    suppressClickUntil = 0; previousScroll = scrollY;
+    suppressClickUntil = 0;
     measure(true); select(selected, true);
   }, {signal});
 })();

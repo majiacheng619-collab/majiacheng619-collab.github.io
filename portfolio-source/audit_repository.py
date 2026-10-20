@@ -57,6 +57,10 @@ def audit():
         retired = re.compile(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)')
         for name in paths:
             if retired.search(name): errors.append('Retired visitor module remains in archive: '+name)
+            if re.search(r'(?:^|/)search-index(?:\.[a-f0-9]+)?\.json$', name):
+                errors.append('Retired website search index remains in archive: '+name)
+            if not name.startswith('game/') and name.endswith(('.html', '.js', '.json')) and re.search(r'data-search-open|id=[\"\']search-dialog|data-search-index', archive.read(name).decode()):
+                errors.append('Retired website search reference in archive: '+name)
             if name.endswith(('.html', '.js', '.json')) and re.search(r'visitor-tracker|visitor-config|mjc-visitor-records-619\.pages\.dev|data-privacy-toggle', archive.read(name).decode()):
                 errors.append('Retired analytics reference in archive: '+name)
         if json.loads(archive.read('release.json')).get('visitorAnalytics',{}).get('enabled') is not False:

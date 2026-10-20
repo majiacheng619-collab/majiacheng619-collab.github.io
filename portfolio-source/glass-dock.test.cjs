@@ -16,30 +16,30 @@ class Surface {
  setAttribute(k,v){this.attrs.set(k,String(v));} removeAttribute(k){this.attrs.delete(k);} hasAttribute(k){return this.attrs.has(k);} getAttribute(k){return this.attrs.get(k)??null;}
  toggleAttribute(k,on){if(on)this.setAttribute(k,'');else this.removeAttribute(k);}
 }
-function fixture({reduced=false,sections=false,pathname='/',search=false}={}){
+function fixture({reduced=false,sections=false,pathname='/',frameDuration=16.667}={}){
  const dock=new Surface(),lens=new Surface(),media=new Surface(),doc=new Surface(),host=new Surface();
  let left=20,itemWidth=80,time=0,id=0;
- const frames=new Map(),navigations=[],captures=new Set(),observed=[],resizes=[],sectionNodes=new Map();
- const links=Array.from({length:search?5:4},(_,i)=>{const link=new Surface();link.setAttribute('data-dock-item','');link.setAttribute('data-dock-link','');link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-item]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
+ const timers=new Map(),frames=new Map(),navigations=[],captures=new Set(),observed=[],resizes=[],sectionNodes=new Map();
+ const links=Array.from({length:5},(_,i)=>{const link=new Surface();link.setAttribute('data-dock-item','');link.setAttribute('data-dock-link','');link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-item]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
  links.forEach((link,i)=>{link.append(new Surface());link.append(new Surface());if(sections){link.href=`https://example.test/index.html${i?'#section-'+i:''}`;link.setAttribute('href',new URL(link.href).pathname+new URL(link.href).hash);sectionNodes.set('section-'+i,new Surface());}});
- if(search){const button=new Surface();button.setAttribute('data-dock-item','');button.setAttribute('data-dock-search','');button.closest=s=>s==='[data-dock-item]'?button:null;button.getBoundingClientRect=()=>({left:left+5*itemWidth,width:itemWidth});button.click=()=>{const e=dock.emit('click',{target:button});if(!e.defaultPrevented)navigations.push('search');};links.push(button);}
  links[0].setAttribute('aria-current','location');
- dock.clientLeft=0;dock.querySelector=()=>lens;dock.querySelectorAll=()=>links;dock.getBoundingClientRect=()=>({left,width:itemWidth*4});dock.contains=n=>links.includes(n)||n===dock;dock.closest=()=>null;
+ dock.clientLeft=0;dock.querySelector=()=>lens;dock.querySelectorAll=()=>links;dock.getBoundingClientRect=()=>({left,width:itemWidth*5});dock.contains=n=>links.includes(n)||n===dock;dock.closest=()=>null;
  dock.setPointerCapture=n=>captures.add(n);dock.hasPointerCapture=n=>captures.has(n);dock.releasePointerCapture=n=>{captures.delete(n);dock.emit('lostpointercapture',{pointerId:n});};
  media.matches=reduced;doc.hidden=false;doc.querySelector=()=>dock;doc.getElementById=id=>sectionNodes.get(id)||null;doc.createElement=()=>new Surface();
  class IntersectionObserver {constructor(callback){this.callback=callback;observed.push(this);}observe(node){(this.nodes??=[]).push(node);}disconnect(){this.disconnected=true;}}
  class ResizeObserver {constructor(callback){this.callback=callback;resizes.push(this);}observe(node){this.node=node;}disconnect(){this.disconnected=true;}}
  host.IntersectionObserver=IntersectionObserver;
  host.ResizeObserver=ResizeObserver;
- const context=vm.createContext({window:host,document:doc,IntersectionObserver,ResizeObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname},scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
+ const context=vm.createContext({window:host,document:doc,IntersectionObserver,ResizeObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname,assign:url=>navigations.push(url)},setTimeout:(fn,delay)=>{timers.set(++id,{fn,at:time+delay});return id;},clearTimeout:n=>timers.delete(n),scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
  vm.runInContext(source,context);
- function settle(){for(let n=0;frames.size&&n<600;n++){const batch=[...frames];frames.clear();time+=16.667;for(const [,fn]of batch)fn(time);}assert.equal(frames.size,0,'animation must stop after settling');}
- return {dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,resizes,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=16.667;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(dock.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
+ function runTimers(){for(const [key,timer]of timers){if(timer.at<=time){timers.delete(key);timer.fn();}}}
+ function settle(){for(let n=0;frames.size&&n<600;n++){const batch=[...frames];frames.clear();time+=frameDuration;for(const [,fn]of batch)fn(time);}assert.equal(frames.size,0,'animation must stop after settling');}
+ return {timers,advance(milliseconds){time+=milliseconds;runTimers();},dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,resizes,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=frameDuration;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(lens.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
 }
 
 test('initial lens aligns to the current real anchor and repeated initialization adds no handlers',()=>{
  const f=fixture();assert.equal(f.paint('--lens-x'),0);assert.equal(f.paint('--lens-width'),80);assert.equal(f.links.filter(a=>a.hasAttribute('aria-current')).length,1);
- assert.deepEqual(f.links.map(a=>a.getAttribute('href')),['#section-0','#section-1','#section-2','#section-3']);
+ assert.deepEqual(f.links.map(a=>a.getAttribute('href')),['#section-0','#section-1','#section-2','#section-3','#section-4']);
  const count=f.dock.listeners.get('pointerdown').length;f.boot();assert.equal(f.dock.listeners.get('pointerdown').length,count);
 });
 test('vertical touch intent preserves native scrolling and never captures or navigates',()=>{
@@ -100,7 +100,7 @@ test('BFCache suspension stops drag and animation while restoration preserves a 
  f.host.emit('pageshow',{persisted:true});assert.equal(f.paint('--lens-x'),160);assert.equal(f.paint('--lens-stretch'),1);f.links[1].click();f.settle();assert.equal(f.paint('--lens-x'),80);assert.equal(f.navigations.length,2,'BFCache resume must retain the navigation handlers');
 });
 test('contact observer treats root and index.html as the same document and restores home on exit',()=>{
- for(const pathname of ['/','/index.html']){const f=fixture({sections:true,reduced:true,pathname});assert.equal(f.observed.length,1);const observer=f.observed[0];assert.equal(observer.nodes.length,3);const node=f.sectionNodes.get('section-3');observer.callback([{target:node,isIntersecting:true,intersectionRatio:.5}]);assert.equal(f.links[3].getAttribute('aria-current'),'location');assert.equal(f.paint('--lens-x'),240);observer.callback([{target:node,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.links[0].getAttribute('aria-current'),'page');assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);}
+ for(const pathname of ['/','/index.html']){const f=fixture({sections:true,reduced:true,pathname});assert.equal(f.observed.length,1);const observer=f.observed[0];assert.equal(observer.nodes.length,4);const node=f.sectionNodes.get('section-3');observer.callback([{target:node,isIntersecting:true,intersectionRatio:.5}]);assert.equal(f.links[3].getAttribute('aria-current'),'location');assert.equal(f.paint('--lens-x'),240);observer.callback([{target:node,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.links[0].getAttribute('aria-current'),'page');assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);}
 });
 test('observer retains still-visible sections when an unrelated intersection entry changes',()=>{
  const f=fixture({sections:true,reduced:true}),observer=f.observed[0],second=f.sectionNodes.get('section-2'),third=f.sectionNodes.get('section-3');
@@ -114,14 +114,33 @@ test('real labels are never cloned, masked or overlaid with a second selected de
  assert.ok(!source.includes('cloneNode'),'controller never duplicates text');assert.ok(!source.includes('mask-left'),'no per-frame content mask');
  f.dock.emit('pointercancel');f.settle();assert.equal(f.frames.size,0);
 });
-test('search button can tap and drag-activate without gaining current-page semantics',()=>{
- const f=fixture({search:true});assert.equal(f.links.length,6);const search=f.links.at(-1);search.click();assert.deepEqual(f.navigations,['search']);assert.ok(!search.hasAttribute('aria-current'));
- f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:460});f.dock.emit('pointerup',{clientX:460});f.settle();assert.deepEqual(f.navigations,['search','search']);assert.ok(!search.hasAttribute('aria-current'));assert.equal(f.links[0].getAttribute('aria-current'),'location');assert.equal(f.paint('--lens-x'),0);
-});
 test('context menu and long holds suppress text selection and accidental navigation',()=>{
  const f=fixture();assert.equal(f.dock.emit('selectstart').defaultPrevented,true);f.dock.emit('pointerdown',{target:f.links[0]});assert.equal(f.dock.emit('contextmenu').defaultPrevented,true);const held=f.dock.emit('click',{target:f.links[0],isTrusted:true,detail:1});assert.equal(held.defaultPrevented,true);assert.equal(f.navigations.length,0);
  const g=fixture();g.dock.emit('pointerdown');for(let n=0;n<40;n++)g.step();g.dock.emit('pointerup');assert.equal(g.dock.emit('click',{target:g.links[0],isTrusted:true,detail:1}).defaultPrevented,true);
 });
 test('stationary drag settles and schedules no perpetual animation frames',()=>{
  const f=fixture();f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:220});f.settle();assert.equal(f.frames.size,0);assert.equal(f.dock.getAttribute('data-dragging'),'true');f.dock.emit('pointerup',{clientX:220});f.settle();
+});
+
+test('the same elapsed time gives the same spring position at 60 and 120 Hz',()=>{
+ const slow=fixture(),fast=fixture({frameDuration:8.3335});slow.links[3].click();fast.links[3].click();
+ // First callback establishes each clock. Compare the following 200ms.
+ slow.step();fast.step();for(let i=0;i<12;i++)slow.step();for(let i=0;i<24;i++)fast.step();
+ assert.ok(Math.abs(slow.paint('--lens-x')-fast.paint('--lens-x'))<2,'Frame rate must not change the perceived spring speed');slow.settle();fast.settle();
+});
+test('cross-page activation paints a transition before one delayed handoff',()=>{
+ const f=fixture();f.links[1].href='https://example.test/projects/';f.links[2].href='https://example.test/experience/';
+ const first=f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});assert.equal(first.defaultPrevented,true);assert.equal(f.navigations.length,0);f.step();assert.ok(f.paint('--lens-x')>0);f.advance(100);assert.equal(f.navigations.length,0);
+ f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:1});assert.equal(f.timers.size,1,'A newer destination replaces the pending handoff');f.advance(180);assert.deepEqual(f.navigations,['https://example.test/experience/']);
+});
+test('reduced motion and modified cross-page clicks preserve immediate native intent',()=>{
+ const f=fixture({reduced:true});f.links[1].href='https://example.test/projects/';const click=f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});assert.equal(click.defaultPrevented,true);assert.deepEqual(f.navigations,['https://example.test/projects/']);assert.equal(f.frames.size,0);assert.equal(f.timers.size,0);
+ const g=fixture();g.links[1].href='https://example.test/projects/';assert.ok(!g.dock.emit('click',{target:g.links[1],isTrusted:true,ctrlKey:true,detail:1}).defaultPrevented);assert.equal(g.timers.size,0);
+});
+test('scrolling alone schedules no decorative animation or backdrop work',()=>{
+ const f=fixture();f.context.scrollY=300;f.host.emit('scroll');assert.equal(f.frames.size,0);
+});
+
+test('the dragging lens reaches the latest finger location on its first display frame',()=>{
+ const f=fixture();f.dock.emit('pointerdown',{clientX:60});f.dock.emit('pointermove',{clientX:260});f.step();assert.equal(f.paint('--lens-x'),200);f.dock.emit('pointermove',{clientX:150});f.step();assert.equal(f.paint('--lens-x'),90);f.dock.emit('pointercancel');f.settle();assert.equal(f.paint('--lens-x'),0);
 });
