@@ -11,6 +11,8 @@ OBSOLETE=(
 def clean(root):
     from film.cache_probe import refresh_documentation
     refresh_documentation(root)
+    from analytics.install import remove as remove_analytics
+    remove_analytics(root)
     for relative in OBSOLETE:
         file=root/relative
         if file.is_file(): file.unlink()

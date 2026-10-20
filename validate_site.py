@@ -31,6 +31,7 @@ class Document(HTMLParser):
         self.ids = set(); self.duplicates = []; self.refs = []; self.meta = {}
         self.lang = ''; self.h1 = 0; self.main = 0; self.title = ''
         self.in_title = False; self.nav_depth = 0; self.nav_links = []
+        self.nav_count = 0; self.docks = []; self.dock_items = []; self.retired_navigation = []
         self.pdf_links = []; self.images = []; self.blank_links = []; self.empty_links = []
         self.actions = []; self.active_anchor = None
         self.feed(text)
@@ -46,10 +47,17 @@ class Document(HTMLParser):
         if tag == 'title': self.in_title = True
         if tag == 'meta': self.meta[a.get('name') or a.get('property')] = a.get('content', '')
         if tag == 'nav':
-            label = a.get('aria-label', '')
-            if '主要' in label or '主导航' in label or label.lower() in ('primary', 'main navigation'):
+            self.nav_count += 1
+            if 'data-glass-dock' in a:
+                self.docks.append(a)
                 self.nav_depth = 1
-            elif self.nav_depth: self.nav_depth += 1
+            elif self.nav_depth:
+                self.nav_depth += 1
+        if self.nav_depth and 'data-dock-item' in a:
+            self.dock_items.append((tag, a))
+        if (tag == 'header' or 'data-menu-open' in a or a.get('id') == 'menu-dialog'
+                or {'chapter-nav', 'reading-progress'} & set(a.get('class', '').split())):
+            self.retired_navigation.append(tag)
         if tag == 'a':
             self.active_anchor = {'label': '', 'href': a.get('href', '')}
             if not a.get('href', '').strip() or a.get('href') == '#': self.empty_links.append(a.get('href', ''))
@@ -79,6 +87,13 @@ class Document(HTMLParser):
 def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinted=False):
     errors = []; warnings = []; counts = {'main_pages': 0, 'html_pages': 0, 'local_references': 0, 'pdf_links': 0, 'fingerprints': 0}
     root = root.resolve()
+    for path in root.rglob('*'):
+        if not path.is_file(): continue
+        relative = path.relative_to(root).as_posix()
+        if re.search(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)', relative):
+            errors.append('Retired visitor module remains: '+relative)
+        if path.suffix in ('.html', '.js', '.json') and re.search(r'visitor-tracker|visitor-config|mjc-visitor-records-619\.pages\.dev|data-privacy-toggle', path.read_text(encoding='utf-8')):
+            errors.append('Retired analytics reference remains: '+relative)
     docs = {}
     referenced = set()
     def err(message): errors.append(message)
@@ -117,11 +132,29 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             if not doc.meta.get(key, '').strip(): err(f'{relative}: {key} missing')
         if not doc.meta.get('og:title') or not doc.meta.get('og:description'):
             warn(f'{relative}: social sharing title/description incomplete')
-        if not doc.nav_links: err(f'{relative}: labelled primary navigation missing')
+        if doc.nav_count != 1 or len(doc.docks) != 1:
+            err(f'{relative}: requires one shared glass-dock navigation')
+        elif not (doc.docks[0].get('aria-label', '').strip() or doc.docks[0].get('aria-labelledby', '').strip()):
+            err(f'{relative}: shared glass navigation lacks an accessible label')
+        if doc.retired_navigation:
+            err(f'{relative}: retired header/chapter/menu navigation remains')
+        controls = doc.dock_items
+        if [tag for tag, attrs in controls] != ['a'] * 5 + ['button']:
+            err(f'{relative}: shared navigation requires five real links and one search button')
+        elif (any('data-dock-link' not in attrs or not attrs.get('href') for tag, attrs in controls[:5])
+              or any(key not in controls[-1][1] for key in ('data-dock-search', 'data-search-open'))
+              or controls[-1][1].get('type') != 'button'
+              or controls[-1][1].get('aria-controls') != 'search-dialog'
+              or controls[-1][1].get('aria-haspopup') != 'dialog'):
+            err(f'{relative}: unified navigation link/search semantics invalid')
+        if sum('aria-current' in attrs for _, attrs in controls) > 1:
+            err(f'{relative}: more than one current navigation destination')
+        if not doc.nav_links:
+            err(f'{relative}: shared navigation links missing')
         else:
-            targets = tuple(str(result[0].relative_to(root)) for value in doc.nav_links if (result := local(page, value)))
+            targets = tuple((str(result[0].relative_to(root)), result[1]) for value in doc.nav_links if (result := local(page, value)))
             if nav_signature is None: nav_signature = targets
-            elif targets != nav_signature: err(f'{relative}: primary navigation differs: {targets}')
+            elif targets != nav_signature: err(f'{relative}: shared navigation destinations differ: {targets}')
         if doc.duplicates: err(f'{relative}: duplicate IDs {doc.duplicates}')
         if doc.empty_links: err(f'{relative}: empty/placeholder hrefs: {doc.empty_links}')
         for image in doc.images:

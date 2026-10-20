@@ -54,6 +54,13 @@ def audit():
             errors.append('Disabled cloud runtime remains in archive')
         if any(re.search(r'(?:^|/)replay-view(?:\.[a-f0-9]{12})?\.js$',name) for name in paths):
             errors.append('Retired duplicate replay code remains in archive')
+        retired = re.compile(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)')
+        for name in paths:
+            if retired.search(name): errors.append('Retired visitor module remains in archive: '+name)
+            if name.endswith(('.html', '.js', '.json')) and re.search(r'visitor-tracker|visitor-config|mjc-visitor-records-619\.pages\.dev|data-privacy-toggle', archive.read(name).decode()):
+                errors.append('Retired analytics reference in archive: '+name)
+        if json.loads(archive.read('release.json')).get('visitorAnalytics',{}).get('enabled') is not False:
+            errors.append('Archive must explicitly disable visitor analytics')
         for name in paths:
             if name.endswith('.md') or name in ('game/LICENSE.txt','assets/media/intro-script.txt'):
                 errors.extend(document_errors(name,archive.read(name).decode()))

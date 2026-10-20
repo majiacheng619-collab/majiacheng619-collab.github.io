@@ -5,7 +5,8 @@
   const dock = document.querySelector('[data-glass-dock]');
   if (!dock || dock.dataset.glassReady) return;
   const lens = dock.querySelector('[data-dock-lens]');
-  const links = [...dock.querySelectorAll('[data-dock-link]')];
+  const links = [...dock.querySelectorAll('[data-dock-item]')];
+  const isLink = item => item.hasAttribute('data-dock-link');
   if (!lens || !links.length) return;
   dock.dataset.glassReady = 'true';
   // Anchors remain ordinary links, but their browser drag ghost would cancel
@@ -14,54 +15,31 @@
     link.setAttribute('draggable', 'false');
     link.querySelectorAll('svg,img').forEach(node => node.setAttribute('draggable', 'false'));
   });
-  // A clipped optical projection gives Safari the same visible magnification
-  // as browsers supporting SVG backdrop filters. It never duplicates controls.
-  const projection = document.createElement('span');
-  projection.className = 'glass-dock__projection';
-  projection.setAttribute('aria-hidden', 'true');
-  const projected = links.map(link => {
-    const copy = document.createElement('span');
-    copy.className = 'glass-dock__projected-link';
-    for (const child of link.childNodes) copy.append(child.cloneNode(true));
-    copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
-    projection.append(copy);
-    const original = document.createElement('span');
-    original.className = 'glass-dock__source';
-    for (const child of [...link.childNodes]) original.append(child);
-    link.append(original);
-    return copy;
-  });
-  lens.append(projection);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const aborter = new AbortController();
   const signal = aborter.signal;
   const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
   let selected = Math.max(0, links.findIndex(link => link.hasAttribute('aria-current')));
+  let dockLeft = 0;
   let boxes = [], current = 0, target = 0, width = 0, targetWidth = 0;
   let velocity = 0, frame = 0, lastTime = 0, gesture = null;
   let scrollImpulse = 0, previousScroll = scrollY, suppressClickUntil = 0;
-  let observer = null, resizeObserver = null, focusedPreview = -1;
-  function previewIndex() {
-    const active = document.activeElement;
-    const actual = active ? links.indexOf(active.closest?.('[data-dock-link]')) : -1;
-    return actual >= 0 ? actual : focusedPreview;
-  }
+  let observer = null, resizeObserver = null;
 
   function paint(stretch = 1, squash = 1) {
     dock.style.setProperty('--lens-x', `${current.toFixed(3)}px`);
     dock.style.setProperty('--lens-width', `${width.toFixed(3)}px`);
     dock.style.setProperty('--lens-stretch', stretch.toFixed(4));
     dock.style.setProperty('--lens-squash', squash.toFixed(4));
-    dock.style.setProperty('--lens-mask-left', `${(current + width * (1 - stretch) / 2).toFixed(3)}px`);
-    dock.style.setProperty('--lens-mask-right', `${(current + width * (1 + stretch) / 2).toFixed(3)}px`);
+
     dock.style.setProperty('--lens-velocity', String(clamp(velocity / 22, -1, 1)));
-    const magnify = gesture?.dragging && !reduce.matches ? 1.16 : 1.08;
-    projection.style.transform = `translateX(${-current}px) scale(${magnify})`;
-    projection.style.transformOrigin = `${current + width / 2}px 50%`;
-    const opticalIndex = boxes.length ? boxes.reduce((best, box, index) => Math.abs(box.x + box.width / 2 - current - width / 2) < Math.abs(boxes[best].x + boxes[best].width / 2 - current - width / 2) ? index : best, 0) : selected;
-    projected.forEach((copy, index) => {
-      if (index === opticalIndex) copy.setAttribute('data-active', 'true');
-      else copy.removeAttribute('data-active');
+    // Each icon and label is drawn once. Magnify the real content, never a
+    // duplicate hidden behind a moving mask (which tears in mobile Safari).
+    const center = current + width / 2;
+    links.forEach((item, index) => {
+      const box = boxes[index];
+      const proximity = box ? Math.max(0, 1 - Math.abs(box.x + box.width / 2 - center) / box.width) : 0;
+      item.style.setProperty('--dock-scale', String(reduce.matches ? 1 : 1 + proximity * (gesture?.dragging ? .1 : .035)));
     });
   }
   function tick(time) {
@@ -77,7 +55,7 @@
     const strain = Math.min(.20, Math.abs(velocity) * .0055);
     const held = gesture?.dragging ? .045 : 0;
     paint(1 + strain + held, 1 - strain * .43 + held * .45 - Math.min(.012, Math.abs(scrollImpulse) * .0005));
-    if (Math.abs(delta) > .035 || Math.abs(velocity) > .035 || Math.abs(width - targetWidth) > .035 || Math.abs(scrollImpulse) > .02 || gesture?.dragging) {
+    if (Math.abs(delta) > .035 || Math.abs(velocity) > .035 || Math.abs(width - targetWidth) > .035 || Math.abs(scrollImpulse) > .02) {
       frame = requestAnimationFrame(tick);
     } else {
       current = target; width = targetWidth; velocity = 0; lastTime = 0;
@@ -94,17 +72,12 @@
   }
   function measure(snap = false) {
     const rect = dock.getBoundingClientRect();
+    dockLeft = rect.left + dock.clientLeft;
     boxes = links.map(link => {
       const box = link.getBoundingClientRect();
       return {x: box.left - rect.left - dock.clientLeft, width: box.width, center: box.left + box.width / 2};
     });
-    projection.style.width = `${dock.clientWidth}px`;
-    projected.forEach((copy, index) => {
-      copy.style.left = `${boxes[index].x}px`;
-      copy.style.width = `${boxes[index].width}px`;
-      links[index].style.setProperty('--dock-link-x', `${boxes[index].x}px`);
-    });
-    const geometryIndex = previewIndex() >= 0 ? previewIndex() : selected;
+    const geometryIndex = selected;
     target = boxes[geometryIndex].x; targetWidth = boxes[geometryIndex].width;
     if (snap || !width) { current = target; width = targetWidth; velocity = 0; paint(); }
     else animate();
@@ -112,9 +85,9 @@
   function select(index, snap = false) {
     selected = clamp(index, 0, links.length - 1);
     links.forEach((link, i) => {
-      if (i === selected) link.setAttribute('data-active', 'true');
+      if (i === selected && isLink(link)) link.setAttribute('data-active', 'true');
       else link.removeAttribute('data-active');
-      if (i === selected) link.setAttribute('aria-current', new URL(link.href, location.href).hash ? 'location' : 'page');
+      if (i === selected && isLink(link)) link.setAttribute('aria-current', new URL(link.href, location.href).hash ? 'location' : 'page');
       else link.removeAttribute('aria-current');
     });
     if (!boxes.length) return;
@@ -134,11 +107,16 @@
     if (old) releaseCapture(old.id);
     select(selected, reduce.matches);
   }
+  dock.addEventListener('contextmenu', event => {
+    event.preventDefault();
+    if (gesture && !gesture.dragging) { suppressClickUntil = performance.now() + 900; cancelGesture(); }
+  }, {signal});
+  dock.addEventListener('selectstart', event => event.preventDefault(), {signal});
   dock.addEventListener('dragstart', event => event.preventDefault(), {signal});
   dock.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !event.isPrimary || event.target.closest('a')?.hasAttribute('download')) return;
     measure();
-    gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false};
+    gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, started: performance.now(), dragging: false};
   }, {signal, passive: true});
   dock.addEventListener('pointermove', event => {
     if (!gesture || event.pointerId !== gesture.id) return;
@@ -155,20 +133,24 @@
     targetWidth = boxes[nearest(event.clientX)].width;
     // Once horizontal intent is established, the lens belongs underneath the
     // finger even if the gesture began over an unselected destination.
-    const dockRect = dock.getBoundingClientRect();
-    const raw = event.clientX - dockRect.left - dock.clientLeft - width / 2;
+    const raw = event.clientX - dockLeft - width / 2;
     target = raw < first ? first + (raw - first) * .16 : raw > last ? last + (raw - last) * .16 : raw;
     animate();
   }, {signal, passive: false});
   dock.addEventListener('pointerup', event => {
     if (!gesture || event.pointerId !== gesture.id) return;
     const wasDragging = gesture.dragging;
+    const held = performance.now() - gesture.started;
     gesture = null;
     dock.removeAttribute('data-dragging');
     releaseCapture(event.pointerId);
-    if (!wasDragging) return;
+    if (!wasDragging) {
+      if (held > 550) suppressClickUntil = performance.now() + 450;
+      return;
+    }
     const next = nearest(event.clientX);
-    select(next);
+    if (isLink(links[next])) select(next);
+    else select(selected);
     // Consume only the compatibility click generated by this drag. Dispatch a
     // real anchor click first so existing navigation handlers remain in charge.
     links[next].click();
@@ -179,8 +161,8 @@
       suppressClickUntil = 0;
       event.preventDefault(); event.stopImmediatePropagation(); return;
     }
-    const link = event.target.closest('[data-dock-link]');
-    if (link && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) select(links.indexOf(link));
+    const link = event.target.closest('[data-dock-item]');
+    if (link && isLink(link) && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) select(links.indexOf(link));
   }, {signal, capture: true});
   dock.addEventListener('pointercancel', cancelGesture, {signal});
   dock.addEventListener('lostpointercapture', event => {
@@ -189,16 +171,9 @@
     // of the dock's newly acquired pointer and must not cancel the drag.
     if (gesture && event.pointerId === gesture.id && !dock.hasPointerCapture?.(gesture.id)) cancelGesture();
   }, {signal});
-  dock.addEventListener('focusin', event => {
-    const index = links.indexOf(event.target.closest('[data-dock-link]'));
-    if (index >= 0) {
-      focusedPreview = index;
-      target = boxes[index]?.x ?? target; targetWidth = boxes[index]?.width ?? targetWidth; animate();
-    }
-  }, {signal});
-  dock.addEventListener('focusout', event => {
-    if (!dock.contains(event.relatedTarget)) { focusedPreview = -1; select(selected); }
-  }, {signal});
+  // Native Tab/Enter activation and the focus-visible ring provide keyboard
+  // navigation. Focus alone never moves the page-selection lens to a different
+  // destination, so a focused control cannot look like a second current page.
   addEventListener('scroll', () => {
     const next = scrollY, difference = next - previousScroll; previousScroll = next;
     if (reduce.matches || document.hidden || gesture) return;
@@ -221,8 +196,9 @@
   // Mark in-page destinations as the reader moves through the portfolio.
   const normalizedPath = pathname => pathname.replace(/\/index\.html$/, '/');
   const sameDocument = url => url.origin === location.origin && normalizedPath(url.pathname) === normalizedPath(location.pathname);
-  const homeIndex = links.findIndex(link => { const url = new URL(link.href, location.href); return sameDocument(url) && !url.hash; });
+  const homeIndex = links.findIndex(link => { if (!isLink(link)) return false; const url = new URL(link.href, location.href); return sameDocument(url) && !url.hash; });
   const localSections = links.map((link, index) => {
+    if (!isLink(link)) return null;
     const url = new URL(link.href, location.href);
     return sameDocument(url) && url.hash ? {node: document.getElementById(decodeURIComponent(url.hash.slice(1))), index} : null;
   }).filter(item => item?.node);

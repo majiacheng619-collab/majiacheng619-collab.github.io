@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-10-19-optical-glass'
+REVISION='2026-10-19-unified-portfolio'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -58,8 +58,10 @@ def prepare():
         for old in (SITE/'assets/media').glob(pattern):
             if old != SITE/media[key]: old.unlink()
     run('python3','portfolio-source/build_site.py')
+    from analytics.install import remove as remove_analytics
+    remove_analytics(SITE)
     film=json.loads((SOURCE/'film-manifest.json').read_text())
-    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames')},'visitorAnalytics':{'enabled':bool(json.loads((SOURCE/'analytics-config.json').read_text()).get('endpoint'))},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
+    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames')},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))
     run('python3','validate_site.py',str(SITE),'--pdf','resume.pdf')
     if (SOURCE/'audit_release.py').exists(): run('python3','portfolio-source/audit_release.py',str(SITE))

@@ -50,6 +50,21 @@ def audit(root):
         if not path.is_relative_to(root) or not path.is_file():
             errors.append(f'{label}: missing/unsafe dynamic asset {value}')
 
+    retired = re.compile(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)')
+    for path in root.rglob('*'):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root).as_posix()
+        if retired.search(relative):
+            errors.append('Retired visitor module remains: ' + relative)
+        if path.suffix in ('.html', '.js', '.json'):
+            text = path.read_text()
+            if re.search(r'visitor-tracker|visitor-config|mjc-visitor-records-619\.pages\.dev|data-privacy-toggle', text):
+                errors.append('Retired analytics reference remains: ' + relative)
+    release = root / 'release.json'
+    if release.is_file() and json.loads(release.read_text()).get('visitorAnalytics', {}).get('enabled') is not False:
+        errors.append('Release must explicitly disable visitor analytics')
+
     game = root / 'game'
     for asset in game.rglob('*'):
         match=re.search(r'\.([a-f0-9]{12})\.(?:js|css|svg|png)$',asset.name)

@@ -39,10 +39,10 @@ jobs:
           node-version: '24'
       - name: Verify garden combat and save compatibility
         run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
-      - name: Verify visitor counting
-        run: node --test visitor-service/*.test.mjs
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
+      - name: Verify unified navigation shell
+        run: python3 -m unittest discover -s portfolio-source -p site_shell_test.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Check current film cache
@@ -120,5 +120,5 @@ jobs:
         run: |
           git config user.name "马嘉程"
           git config user.email "majiacheng619@gmail.com"
-          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-19-optical-glass")'
-          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-19-optical-glass" --rewrite-main --apply
+          python3 -c 'import os,sys; sys.path.insert(0,"portfolio-source"); from release_cleanup import verify_public; verify_public(os.environ["DEPLOYED_SHA"],"2026-10-19-unified-portfolio")'
+          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "2026-10-19-unified-portfolio" --rewrite-main --apply

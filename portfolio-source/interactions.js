@@ -55,7 +55,7 @@
     triggers.set(dialog, opener);
     priorOverflow = document.documentElement.style.overflow;
     priorGutter = document.documentElement.style.scrollbarGutter;
-    // Reserve the scrollbar lane so opening navigation does not shift the page.
+    // Reserve the scrollbar lane so opening a dialog does not shift the page.
     document.documentElement.style.scrollbarGutter = 'stable';
     document.documentElement.style.overflow = 'hidden';
     // Older WebViews still receive a usable, focus-contained dialog.
@@ -111,16 +111,13 @@
       const box = dialog.getBoundingClientRect();
       if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close(dialog);
     });
-    all('[data-dialog-close], [data-menu-close], [data-search-close], [data-portrait-close]', dialog).forEach(button => button.addEventListener('click', () => close(dialog)));
-    if (dialog.hasAttribute('data-menu-dialog')) {
-      all('a[href]', dialog).forEach(anchor => anchor.addEventListener('click', event => navigateFromDialog(event, anchor, dialog)));
-    }
+    all('[data-dialog-close], [data-search-close], [data-portrait-close]', dialog).forEach(button => button.addEventListener('click', () => close(dialog)));
   });
 
   function navigateFromDialog(event, anchor, dialog) {
     // Modified clicks keep the current modal and preserve native new-tab behavior.
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
-    if (anchor.matches('[data-search-open], [data-menu-open], [data-dialog-open], [data-portrait-open], [data-image-open]')) return;
+    if (anchor.matches('[data-search-open], [data-dialog-open], [data-portrait-open], [data-image-open]')) return;
     const url = new URL(anchor.href, location.href);
     const pagePath = pathname => pathname.replace(/\/index\.html$/, '/');
     const samePage = url.origin === location.origin && pagePath(url.pathname) === pagePath(location.pathname) && url.search === location.search;
@@ -144,9 +141,9 @@
     target.scrollIntoView({ behavior: 'auto', block: 'start' });
   }
 
-  all('[data-menu-open], [data-search-open], [data-dialog-open], [data-portrait-open], [data-image-open]').forEach(opener => {
-    const id = opener.dataset.dialogOpen || opener.dataset.menuTarget || opener.dataset.searchTarget || opener.dataset.imageTarget ||
-      (opener.hasAttribute('data-menu-open') ? 'menu-dialog' : opener.hasAttribute('data-search-open') ? 'search-dialog' : 'portrait-dialog');
+  all('[data-search-open], [data-dialog-open], [data-portrait-open], [data-image-open]').forEach(opener => {
+    const id = opener.dataset.dialogOpen || opener.dataset.searchTarget || opener.dataset.imageTarget ||
+      (opener.hasAttribute('data-search-open') ? 'search-dialog' : 'portrait-dialog');
     const dialog = byId(id);
     if (!dialog) {
       // Keep real hrefs operational; dead buttons should not appear interactive.
@@ -169,8 +166,7 @@
           image.alt = opener.dataset.imageAlt || opener.querySelector('img')?.alt || '作品图片';
         }
       }
-      if (isOpen(dialog) && opener.hasAttribute('data-menu-open')) { event.preventDefault(); close(dialog); }
-      else if (open(dialog, opener)) event.preventDefault();
+      if (open(dialog, opener)) event.preventDefault();
     });
   });
 
@@ -341,28 +337,6 @@
     refresh();
   });
 
-  // Derive the chapter from the reading position, including jumps back to the top.
-  const chapterGroups = [];
-  all('.chapter-nav').forEach(nav => {
-    const chapters = all('a[href^="#"]', nav).map(link => {
-      let section;
-      try { section = byId(decodeURIComponent(link.hash.slice(1))); } catch (_) { return null; }
-      return section ? { link, section } : null;
-    }).filter(Boolean);
-    if (!chapters.length) return;
-    let active = null;
-    const mark = current => {
-      if (active === current) return;
-      active = current;
-      chapters.forEach(({ link }) => {
-        if (link === current) link.setAttribute('aria-current', 'location');
-        else link.removeAttribute('aria-current');
-      });
-    };
-    chapterGroups.push({ nav, chapters, mark });
-    mark(chapters[0].link);
-  });
-
   // A small, explicit choice illustrates the mechanism; no timed advancement.
   all('.growth-demo').forEach(demo => {
     const buttons = all('button[data-growth-step]', demo);
@@ -413,28 +387,9 @@
   // Scroll work shares one passive, scheduled update. Native scrolling stays intact.
   const artwork = all('[data-parallax], [data-drift]');
   const moving = new Set();
-  let progress = document.querySelector('[data-reading-progress], .reading-progress');
-  if (!progress) {
-    progress = document.createElement('div');
-    progress.className = 'reading-progress';
-    progress.setAttribute('aria-hidden', 'true');
-    document.body.append(progress);
-  }
   let scrollFrame = 0;
   const drawScroll = () => {
     scrollFrame = 0;
-    const position = Math.max(0, window.scrollY || 0);
-    const length = document.documentElement.scrollHeight - innerHeight;
-    const fraction = length > 0 ? Math.min(1, position / length) : 0;
-    progress.style.transform = `scaleX(${fraction})`;
-    progress.style.setProperty('--reading-progress', String(fraction));
-    document.body.classList.toggle('has-scrolled', position > 20);
-    chapterGroups.forEach(({ nav, chapters, mark }) => {
-      const offset = Math.max(112, nav.getBoundingClientRect().bottom + 24);
-      let current = chapters[0];
-      chapters.forEach(chapter => { if (chapter.section.getBoundingClientRect().top <= offset) current = chapter; });
-      mark(current.link);
-    });
     if (reduce.matches) return;
     moving.forEach(node => {
       const box = node.getBoundingClientRect();

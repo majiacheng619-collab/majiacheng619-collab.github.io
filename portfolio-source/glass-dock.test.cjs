@@ -16,12 +16,13 @@ class Surface {
  setAttribute(k,v){this.attrs.set(k,String(v));} removeAttribute(k){this.attrs.delete(k);} hasAttribute(k){return this.attrs.has(k);} getAttribute(k){return this.attrs.get(k)??null;}
  toggleAttribute(k,on){if(on)this.setAttribute(k,'');else this.removeAttribute(k);}
 }
-function fixture({reduced=false,sections=false,pathname='/'}={}){
+function fixture({reduced=false,sections=false,pathname='/',search=false}={}){
  const dock=new Surface(),lens=new Surface(),media=new Surface(),doc=new Surface(),host=new Surface();
  let left=20,itemWidth=80,time=0,id=0;
  const frames=new Map(),navigations=[],captures=new Set(),observed=[],resizes=[],sectionNodes=new Map();
- const links=Array.from({length:4},(_,i)=>{const link=new Surface();link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-link]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
+ const links=Array.from({length:search?5:4},(_,i)=>{const link=new Surface();link.setAttribute('data-dock-item','');link.setAttribute('data-dock-link','');link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-item]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
  links.forEach((link,i)=>{link.append(new Surface());link.append(new Surface());if(sections){link.href=`https://example.test/index.html${i?'#section-'+i:''}`;link.setAttribute('href',new URL(link.href).pathname+new URL(link.href).hash);sectionNodes.set('section-'+i,new Surface());}});
+ if(search){const button=new Surface();button.setAttribute('data-dock-item','');button.setAttribute('data-dock-search','');button.closest=s=>s==='[data-dock-item]'?button:null;button.getBoundingClientRect=()=>({left:left+5*itemWidth,width:itemWidth});button.click=()=>{const e=dock.emit('click',{target:button});if(!e.defaultPrevented)navigations.push('search');};links.push(button);}
  links[0].setAttribute('aria-current','location');
  dock.clientLeft=0;dock.querySelector=()=>lens;dock.querySelectorAll=()=>links;dock.getBoundingClientRect=()=>({left,width:itemWidth*4});dock.contains=n=>links.includes(n)||n===dock;dock.closest=()=>null;
  dock.setPointerCapture=n=>captures.add(n);dock.hasPointerCapture=n=>captures.has(n);dock.releasePointerCapture=n=>{captures.delete(n);dock.emit('lostpointercapture',{pointerId:n});};
@@ -82,17 +83,13 @@ test('motion preference switches cancel in-flight drag and remove animation work
 test('resize cancels pointer ownership and measures fresh link widths',()=>{
  const f=fixture({reduced:true});f.links[2].click();f.dock.emit('pointerdown',{clientX:210});f.dock.emit('pointermove',{clientX:290});f.resize(65);assert.equal(f.captures.size,0);assert.equal(f.paint('--lens-x'),130);assert.equal(f.paint('--lens-width'),65);assert.equal(f.navigations.length,1);
 });
-test('focus previews the lens without changing destination and blur restores it',()=>{
- const f=fixture({reduced:true});f.dock.emit('focusin',{target:f.links[3]});assert.equal(f.paint('--lens-x'),240);assert.equal(f.navigations.length,0);assert.equal(f.links[0].getAttribute('aria-current'),'location');f.dock.emit('focusout',{relatedTarget:null});assert.equal(f.paint('--lens-x'),0);
+test('keyboard focus stays distinct from page selection and Enter activates normally',()=>{
+ const f=fixture({reduced:true});f.doc.activeElement=f.links[3];f.dock.emit('focusin',{target:f.links[3]});assert.equal(f.paint('--lens-x'),0);assert.equal(f.links[0].getAttribute('aria-current'),'location');assert.ok(!f.links[3].hasAttribute('data-active'));
+ f.links[3].click();assert.equal(f.paint('--lens-x'),240);assert.equal(f.links[3].getAttribute('aria-current'),'location');assert.equal(f.navigations.length,1);
 });
-test('late motion-change and ResizeObserver delivery preserve the currently focused link preview',()=>{
- for(const mediaAlreadyUpdated of [false,true]){
- const f=fixture();f.media.matches=mediaAlreadyUpdated;f.doc.activeElement=f.links[2];f.dock.emit('focusin',{target:f.links[2]});f.settle();assert.equal(f.paint('--lens-x'),160);
- f.motion(true);assert.equal(f.paint('--lens-x'),160,'A delayed media change must keep the keyboard focus preview');assert.equal(f.frames.size,0);
- assert.equal(f.resizes.length,1);f.resizes[0].callback([{target:f.dock}]);assert.equal(f.paint('--lens-x'),160,'Initial ResizeObserver delivery must not reset focus to the selected page');
- f.resize(65);f.resizes[0].callback([{target:f.dock}]);assert.equal(f.paint('--lens-x'),130,'Focused geometry must be remeasured after a real size change');assert.equal(f.paint('--lens-width'),65);
- assert.equal(f.links[0].getAttribute('aria-current'),'location');assert.ok(!f.links[2].hasAttribute('aria-current'),'Focus preview never changes the current page');assert.equal(f.navigations.length,0);
- }
+test('motion changes and ResizeObserver keep current-page geometry even with another item focused',()=>{
+ const f=fixture();f.links[1].click();f.doc.activeElement=f.links[2];f.dock.emit('focusin',{target:f.links[2]});f.motion(true);assert.equal(f.paint('--lens-x'),80);assert.equal(f.frames.size,0);
+ assert.equal(f.resizes.length,1);f.resizes[0].callback([{target:f.dock}]);assert.equal(f.paint('--lens-x'),80);f.resize(65);assert.equal(f.paint('--lens-x'),65);assert.equal(f.paint('--lens-width'),65);assert.equal(f.links[1].getAttribute('aria-current'),'location');assert.ok(!f.links[2].hasAttribute('aria-current'));
 });
 test('pagehide cancels animation and unregisters controller handlers',()=>{
  const f=fixture();f.links[2].click();assert.ok(f.frames.size);f.host.emit('pagehide',{persisted:false});assert.equal(f.frames.size,0);f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:250});assert.equal(f.captures.size,0);
@@ -111,8 +108,20 @@ test('observer retains still-visible sections when an unrelated intersection ent
  observer.callback([{target:third,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.paint('--lens-x'),160,'An absent entry is not evidence that the selected section left view');
  observer.callback([{target:second,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.paint('--lens-x'),0);
 });
-test('optical source wrapper preserves content and the mask follows the stretched lens bounds',()=>{
- const f=fixture();assert.ok(f.links.every(link=>link.childNodes.length===1&&link.childNodes[0].className==='glass-dock__source'&&link.childNodes[0].childNodes.length===2));const projection=f.lens.childNodes[0];assert.equal(projection.getAttribute('aria-hidden'),'true');assert.equal(projection.childNodes.length,4);
- f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:170});f.step();const x=f.paint('--lens-x'),width=f.paint('--lens-width'),stretch=f.paint('--lens-stretch');assert.ok(stretch>1);assert.ok(Math.abs(f.paint('--lens-mask-left')-(x+width*(1-stretch)/2))<.004);assert.ok(Math.abs(f.paint('--lens-mask-right')-(x+width*(1+stretch)/2))<.004);assert.equal(projection.childNodes.filter(copy=>copy.hasAttribute('data-active')).length,1,'Only the nearest projected label is active');
- f.dock.emit('pointercancel');f.settle();assert.equal(f.paint('--lens-mask-left'),0);assert.equal(f.paint('--lens-mask-right'),80);assert.equal(f.links[2].values.get('--dock-link-x'),'160px');
+test('real labels are never cloned, masked or overlaid with a second selected destination',()=>{
+ const f=fixture();assert.ok(f.links.every(link=>link.childNodes.length===2),'real icon and label remain intact');assert.equal(f.lens.childNodes.length,0,'lens contains no cloned content');
+ f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:250});f.step();assert.ok(f.paint('--lens-stretch')>1);assert.equal(f.links.filter(link=>link.hasAttribute('data-active')).length,1);assert.equal(f.links[0].getAttribute('aria-current'),'location');
+ assert.ok(!source.includes('cloneNode'),'controller never duplicates text');assert.ok(!source.includes('mask-left'),'no per-frame content mask');
+ f.dock.emit('pointercancel');f.settle();assert.equal(f.frames.size,0);
+});
+test('search button can tap and drag-activate without gaining current-page semantics',()=>{
+ const f=fixture({search:true});assert.equal(f.links.length,6);const search=f.links.at(-1);search.click();assert.deepEqual(f.navigations,['search']);assert.ok(!search.hasAttribute('aria-current'));
+ f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:460});f.dock.emit('pointerup',{clientX:460});f.settle();assert.deepEqual(f.navigations,['search','search']);assert.ok(!search.hasAttribute('aria-current'));assert.equal(f.links[0].getAttribute('aria-current'),'location');assert.equal(f.paint('--lens-x'),0);
+});
+test('context menu and long holds suppress text selection and accidental navigation',()=>{
+ const f=fixture();assert.equal(f.dock.emit('selectstart').defaultPrevented,true);f.dock.emit('pointerdown',{target:f.links[0]});assert.equal(f.dock.emit('contextmenu').defaultPrevented,true);const held=f.dock.emit('click',{target:f.links[0],isTrusted:true,detail:1});assert.equal(held.defaultPrevented,true);assert.equal(f.navigations.length,0);
+ const g=fixture();g.dock.emit('pointerdown');for(let n=0;n<40;n++)g.step();g.dock.emit('pointerup');assert.equal(g.dock.emit('click',{target:g.links[0],isTrusted:true,detail:1}).defaultPrevented,true);
+});
+test('stationary drag settles and schedules no perpetual animation frames',()=>{
+ const f=fixture();f.dock.emit('pointerdown');f.dock.emit('pointermove',{clientX:220});f.settle();assert.equal(f.frames.size,0);assert.equal(f.dock.getAttribute('data-dragging'),'true');f.dock.emit('pointerup',{clientX:220});f.settle();
 });
