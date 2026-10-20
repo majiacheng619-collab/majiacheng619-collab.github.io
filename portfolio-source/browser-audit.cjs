@@ -215,7 +215,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      if(!metrics.title)failures.push(`${route}: empty title`);
      if(metrics.broken.length)failures.push(`${route}: broken images ${metrics.broken.join(',')}`);
      const devices=await page.locator('.device-frame').evaluateAll(frames=>frames.map(frame=>{
-       const image=frame.querySelector('img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
+       const image=frame.querySelector('.device-frame__screen > img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
        const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
        return {left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
      }));
