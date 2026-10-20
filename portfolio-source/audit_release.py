@@ -59,6 +59,11 @@ def audit(root):
             errors.append('Retired visitor module remains: ' + relative)
         if path.suffix in ('.html', '.js', '.json'):
             text = path.read_text()
+            if not relative.startswith('game/') and re.search(r'data-search-open|id=[\"\']search-dialog|data-search-index|search-index\.[a-f0-9]+\.json', text):
+                errors.append('Retired website search remains: ' + relative)
+        if re.search(r'(?:^|/)search-index(?:\.[a-f0-9]+)?\.json$', relative):
+            errors.append('Retired website search index remains: ' + relative)
+        if path.suffix in ('.html', '.js', '.json'):
             if re.search(r'visitor-tracker|visitor-config|mjc-visitor-records-619\.pages\.dev|data-privacy-toggle', text):
                 errors.append('Retired analytics reference remains: ' + relative)
     release = root / 'release.json'

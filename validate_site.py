@@ -139,14 +139,12 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
         if doc.retired_navigation:
             err(f'{relative}: retired header/chapter/menu navigation remains')
         controls = doc.dock_items
-        if [tag for tag, attrs in controls] != ['a'] * 5 + ['button']:
-            err(f'{relative}: shared navigation requires five real links and one search button')
-        elif (any('data-dock-link' not in attrs or not attrs.get('href') for tag, attrs in controls[:5])
-              or any(key not in controls[-1][1] for key in ('data-dock-search', 'data-search-open'))
-              or controls[-1][1].get('type') != 'button'
-              or controls[-1][1].get('aria-controls') != 'search-dialog'
-              or controls[-1][1].get('aria-haspopup') != 'dialog'):
-            err(f'{relative}: unified navigation link/search semantics invalid')
+        if [tag for tag, attrs in controls] != ['a'] * 5:
+            err(f'{relative}: shared navigation requires exactly five real links')
+        elif any('data-dock-link' not in attrs or not attrs.get('href') for _, attrs in controls):
+            err(f'{relative}: unified navigation link semantics invalid')
+        if any(token in page.read_text(encoding='utf-8') for token in ('data-search-open', 'id="search-dialog"', 'data-search-index')):
+            err(f'{relative}: retired website search remains')
         if sum('aria-current' in attrs for _, attrs in controls) > 1:
             err(f'{relative}: more than one current navigation destination')
         if not doc.nav_links:

@@ -1,43 +1,29 @@
-/* A clear, continuous capsule; the moving lens belongs to the selected tab. */
+/* One static backdrop and one empty moving lens. All motion uses transform. */
 .glass-dock {
-  --lens-x:5px;
-  --lens-width:76px;
-  --lens-stretch:1;
-  --lens-squash:1;
-  --lens-velocity:0;
   position:fixed;
   z-index:90;
   left:50%;
-  bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  bottom:calc(16px + env(safe-area-inset-bottom,0px));
   display:grid;
-  grid-template-columns:repeat(6,minmax(0,1fr));
-  width:min(480px,calc(100% - 32px));
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  width:min(430px,calc(100% - 28px));
   min-height:70px;
   padding:5px;
   box-sizing:border-box;
   transform:translateX(-50%);
-  border:1px solid rgba(255,255,255,.72);
+  border:1px solid rgba(255,255,255,.8);
   border-radius:999px;
-  background:linear-gradient(145deg,rgba(255,255,255,.31),rgba(255,255,255,.11) 55%,rgba(255,255,255,.24));
-  box-shadow:0 10px 32px rgba(40,55,75,.12),0 1px 5px rgba(28,43,58,.08),inset 0 1px 1px rgba(255,255,255,.96),inset 0 -1px 1px rgba(255,255,255,.38);
-  -webkit-backdrop-filter:blur(3.5px) saturate(1.24);
-  backdrop-filter:blur(3.5px) saturate(1.24);
-  color:#272b31;
+  background:rgba(247,249,252,.72);
+  box-shadow:0 8px 28px rgba(25,40,58,.12),0 1px 3px rgba(25,40,58,.06),inset 0 1px 0 #fff;
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);
+  backdrop-filter:blur(18px) saturate(1.4);
+  color:#25272b;
   isolation:isolate;
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
   touch-action:pan-y;
   -webkit-tap-highlight-color:transparent;
-}
-.glass-dock::before {
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  border-radius:inherit;
-  pointer-events:none;
-  box-shadow:inset 1px 0 1px rgba(255,255,255,.64),inset -1px 0 1px rgba(133,164,181,.19);
 }
 .glass-dock__link {
   position:relative;
@@ -46,7 +32,7 @@
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:3px;
+  gap:4px;
   min-width:0;
   min-height:58px;
   padding:5px 3px;
@@ -56,120 +42,94 @@
   background:transparent;
   color:inherit;
   text-decoration:none!important;
-  -webkit-touch-callout:none;
-  -webkit-user-drag:none;
   font-family:inherit;
   font-size:11px;
-  font-weight:550;
+  font-weight:600;
   line-height:1.2;
-  letter-spacing:.015em;
-  -webkit-user-select:none;
-  user-select:none;
-  transition:color .2s ease;
+  letter-spacing:0;
 }
-.glass-dock .glass-dock__link:hover { background:transparent; color:#0071e3; }
 .glass-dock__link svg {
   display:block;
   width:23px;
   height:23px;
-  overflow:visible;
   fill:none;
   stroke:currentColor;
-  stroke-width:1.7;
+  stroke-width:1.8;
   stroke-linecap:round;
   stroke-linejoin:round;
   flex:none;
-  transition:transform .24s cubic-bezier(.2,.8,.2,1);
 }
-.glass-dock__link[aria-current="page"],.glass-dock__link[data-active="true"] { color:#006ee6; }
-.glass-dock__link[aria-current="page"] svg,.glass-dock__link[data-active="true"] svg { stroke-width:1.95; }
-.glass-dock__link:focus-visible { outline:2px solid #0071e3; outline-offset:-3px; background:rgba(255,255,255,.22); }
-.glass-dock__link:active svg { transform:scale(.93); }
+.glass-dock .glass-dock__link:visited { color:inherit; }
+.glass-dock .glass-dock__link[aria-current],
+.glass-dock .glass-dock__link[data-active="true"] { color:#0071e3; }
+.glass-dock .glass-dock__link:hover { background:transparent; }
+.glass-dock__link:focus-visible { outline:2px solid #0071e3; outline-offset:-3px; }
+.glass-dock__link > svg,.glass-dock__link > span { pointer-events:none; }
 .glass-dock__lens {
+  --lens-x:5px;
+  --lens-width:76px;
+  --lens-stretch:1;
+  --lens-squash:1;
   position:absolute;
   top:5px;
   bottom:5px;
   left:0;
   z-index:1;
   width:var(--lens-width);
-  border:1px solid rgba(255,255,255,.9);
-  border-radius:999px;
   box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.95);
+  border-radius:999px;
   transform:translate3d(var(--lens-x),0,0) scale(var(--lens-stretch),var(--lens-squash));
   transform-origin:center;
   pointer-events:none;
-  background:linear-gradient(145deg,rgba(255,255,255,.33),rgba(239,249,255,.05) 38%,rgba(213,234,245,.14) 70%,rgba(255,255,255,.31));
-  box-shadow:0 1px 5px rgba(44,68,83,.12),inset 0 1px 2px rgba(255,255,255,.95),inset 0 -1px 2px rgba(255,255,255,.8),inset 1px 0 2px rgba(118,158,182,.25),inset -1px 0 2px rgba(118,158,182,.22);
-  -webkit-backdrop-filter:blur(1px) saturate(1.2) brightness(1.04);
-  backdrop-filter:blur(1px) saturate(1.2) brightness(1.04);
-  will-change:transform,width;
+  background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(227,232,238,.45) 48%,rgba(255,255,255,.65));
+  box-shadow:0 1px 4px rgba(34,52,68,.12),inset 0 1px 1px #fff,inset 0 -1px 1px rgba(255,255,255,.9);
+  will-change:transform;
 }
-/* Thin optical rims reproduce convex glass; no solid blue selection pill. */
-.glass-dock__lens::before,.glass-dock__lens::after {
+.glass-dock__lens::after {
   content:"";
   position:absolute;
-  pointer-events:none;
+  inset:0;
+  border:1px solid rgba(98,121,143,.14);
   border-radius:inherit;
+  pointer-events:none;
 }
-.glass-dock__lens::before { inset:-1px; border:1px solid rgba(70,119,148,.24); mask-image:linear-gradient(115deg,#000,transparent 28%,transparent 69%,#000); -webkit-mask-image:linear-gradient(115deg,#000,transparent 28%,transparent 69%,#000); }
-.glass-dock__lens::after { inset:1px 5px; border-top:1px solid rgba(255,255,255,.92); border-bottom:1px solid rgba(255,255,255,.5); }
-.glass-dock__optics { position:absolute; width:0; height:0; pointer-events:none; overflow:hidden; }
-@media(min-width:761px) {
-  .glass-dock { width:440px; min-height:64px; bottom:18px; }
-  .glass-dock__link { min-height:52px; font-size:11px; gap:2px; }
-  .glass-dock__link svg { width:21px; height:21px; }
-  .site-footer { padding-bottom:110px; }
-}
-@media(max-width:760px) {
-  .glass-dock { bottom:calc(10px + env(safe-area-inset-bottom,0px)); width:min(460px,calc(100% - 24px)); }
-  .site-footer { padding-bottom:calc(116px + env(safe-area-inset-bottom,0px)); }
-  /* A bottom contact control must not conceal the contact destination. */
-  #about { scroll-margin-bottom:110px; }
-}
-@media(prefers-reduced-motion:reduce) {
-  .glass-dock__link,.glass-dock__link svg { transition:none; }
-  .glass-dock__lens { will-change:auto; }
-}
-@media(prefers-reduced-transparency:reduce) {
-  .glass-dock { background:#f5f7fa; -webkit-backdrop-filter:none; backdrop-filter:none; }
-  .glass-dock__lens { background:#e1ecf7; -webkit-backdrop-filter:none; backdrop-filter:none; }
-}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .glass-dock { background:rgba(248,250,252,.97); }
-  .glass-dock__lens { background:rgba(224,235,246,.85); }
-}
-@media(forced-colors:active) {
-  .glass-dock { background:Canvas; border:1px solid CanvasText; }
-  .glass-dock__lens { display:none; }
-  .glass-dock__link[aria-current="page"],.glass-dock__link[data-active="true"] { color:Highlight; outline:1px solid Highlight; }
-}
-@media print { .glass-dock,.glass-dock__optics { display:none!important; } }
-/* A finger lifts the selected lens out of its resting capsule. */
-.glass-dock[data-dragging="true"] .glass-dock__lens { top:-3px; bottom:-3px; border-color:rgba(255,255,255,.95); box-shadow:0 2px 10px rgba(44,68,83,.14),inset 0 1px 2px #fff,inset 0 -1px 3px rgba(255,255,255,.8),inset 1px 0 2px rgba(118,158,182,.26),inset -1px 0 2px rgba(118,158,182,.26); }
-
-/* Single-source labels stay above the lens: no projection, clipping masks or
-   duplicated blue destinations. Selection and keyboard focus stay distinct. */
+.glass-dock:not([data-glass-ready]) .glass-dock__lens { visibility:hidden; }
+.glass-dock:not([data-glass-ready]) .glass-dock__link[aria-current] { background:rgba(255,255,255,.7); }
 .glass-dock *, .glass-dock *::before, .glass-dock *::after {
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
   -webkit-user-drag:none;
 }
-.glass-dock__link > svg, .glass-dock__link > span {
-  transform:scale(var(--dock-scale,1));
-  transform-origin:center;
-  pointer-events:none;
+.glass-dock__optics { display:none; }
+@media(min-width:761px) {
+  .glass-dock { width:400px; min-height:66px; bottom:20px; }
+  .glass-dock__link { min-height:54px; }
+  .site-footer { padding-bottom:112px; }
 }
-.glass-dock .glass-dock__link:visited { color:inherit; }
-.glass-dock .glass-dock__link[data-active="true"] { color:#0071e3; }
-.glass-dock .glass-dock__link:not([data-active="true"]):hover { color:inherit; }
-.glass-dock:not([data-glass-ready]) .glass-dock__lens { visibility:hidden; }
-.glass-dock:not([data-glass-ready]) .glass-dock__link[aria-current] { background:rgba(255,255,255,.38); }
+@media(max-width:760px) {
+  .glass-dock { bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
+  .site-footer { padding-bottom:calc(116px + env(safe-area-inset-bottom,0px)); }
+  #about { scroll-margin-bottom:110px; }
+}
 @media(max-width:360px) {
-  .glass-dock { width:calc(100% - 16px); padding:4px; }
-  .glass-dock__link { font-size:10px; }
-  .glass-dock__link svg { width:21px; height:21px; }
+  .glass-dock { width:calc(100% - 20px); }
+  .glass-dock__link svg { width:22px; height:22px; }
 }
-
-.glass-dock[data-dragging="true"] .glass-dock__link > svg,
-.glass-dock[data-dragging="true"] .glass-dock__link > span { transition:none; }
+@media(prefers-reduced-motion:reduce) {
+  .glass-dock__lens { will-change:auto; }
+}
+@media(prefers-reduced-transparency:reduce) {
+  .glass-dock { background:#f5f7fa; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .glass-dock__lens { background:#e7ecf2; }
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .glass-dock { background:rgba(248,250,252,.97); }
+}
+@media(forced-colors:active) {
+  .glass-dock { background:Canvas; border:1px solid CanvasText; }
+  .glass-dock__lens { display:none; }
+  .glass-dock__link[aria-current],.glass-dock__link[data-active="true"] { color:Highlight; outline:1px solid Highlight; }
+}
+@media print { .glass-dock,.glass-dock__optics { display:none!important; } }

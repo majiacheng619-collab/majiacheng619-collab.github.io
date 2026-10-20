@@ -82,8 +82,7 @@
     opener?.setAttribute('aria-expanded', 'true');
     requestAnimationFrame(() => {
       if (activeDialog !== dialog || !isOpen(dialog)) return;
-      // A selector list follows DOM order; explicitly prioritize the search field.
-      const target = dialog.querySelector('[autofocus]') || dialog.querySelector('[data-search-input]') ||
+      const target = dialog.querySelector('[autofocus]') ||
         dialog.querySelector('[data-dialog-close], button, a[href], input');
       if (target) target.focus({ preventScroll: true });
       else { dialog.tabIndex = -1; dialog.focus({ preventScroll: true }); }
@@ -111,39 +110,11 @@
       const box = dialog.getBoundingClientRect();
       if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close(dialog);
     });
-    all('[data-dialog-close], [data-search-close], [data-portrait-close]', dialog).forEach(button => button.addEventListener('click', () => close(dialog)));
+    all('[data-dialog-close], [data-portrait-close]', dialog).forEach(button => button.addEventListener('click', () => close(dialog)));
   });
 
-  function navigateFromDialog(event, anchor, dialog) {
-    // Modified clicks keep the current modal and preserve native new-tab behavior.
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button > 0) return;
-    if (anchor.matches('[data-search-open], [data-dialog-open], [data-portrait-open], [data-image-open]')) return;
-    const url = new URL(anchor.href, location.href);
-    const pagePath = pathname => pathname.replace(/\/index\.html$/, '/');
-    const samePage = url.origin === location.origin && pagePath(url.pathname) === pagePath(location.pathname) && url.search === location.search;
-    let target = null;
-    if (samePage && url.hash) {
-      try { target = byId(decodeURIComponent(url.hash.slice(1))); } catch (_) { /* Preserve malformed native URLs. */ }
-    }
-    // Downloads and new windows leave this document in place: restore its focus.
-    if (anchor.target === '_blank' || anchor.hasAttribute('download')) { close(dialog); return; }
-    close(dialog, !target);
-    if (!target) return;
-    event.preventDefault();
-    if (location.hash !== url.hash) history.pushState(null, '', url.href);
-    // Move both the reading position and keyboard focus to the selected section.
-    const temporaryTabIndex = !target.hasAttribute('tabindex') && target.tabIndex < 0;
-    if (temporaryTabIndex) {
-      target.setAttribute('tabindex', '-1');
-      target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
-    }
-    target.focus({ preventScroll: true });
-    target.scrollIntoView({ behavior: 'auto', block: 'start' });
-  }
-
-  all('[data-search-open], [data-dialog-open], [data-portrait-open], [data-image-open]').forEach(opener => {
-    const id = opener.dataset.dialogOpen || opener.dataset.searchTarget || opener.dataset.imageTarget ||
-      (opener.hasAttribute('data-search-open') ? 'search-dialog' : 'portrait-dialog');
+  all('[data-dialog-open], [data-portrait-open], [data-image-open]').forEach(opener => {
+    const id = opener.dataset.dialogOpen || opener.dataset.imageTarget || 'portrait-dialog';
     const dialog = byId(id);
     if (!dialog) {
       // Keep real hrefs operational; dead buttons should not appear interactive.
@@ -170,91 +141,8 @@
     });
   });
 
-  const normalize = value => value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  const searchStates = new WeakMap();
-  all('[data-search-input]').forEach(input => {
-    const scope = input.closest('dialog') || input.closest('[data-search]');
-    if (!scope) return;
-    const results = all('a[data-search-item]', scope);
-    const records = results.map((anchor, index) => ({
-      anchor, index,
-      title: normalize(anchor.querySelector('strong')?.textContent || anchor.textContent),
-      text: normalize(anchor.textContent),
-      keywords: normalize(anchor.dataset.searchKeywords || '')
-    }));
-    const container = scope.querySelector('.search-results');
-    const empty = scope.querySelector('[data-search-empty]');
-    const count = scope.querySelector('[data-search-count]');
-    let visible = [];
-    let composing = false;
-    const filter = () => {
-      const query = normalize(input.value);
-      const terms = query.split(' ').filter(Boolean);
-      const matches = records.map(record => {
-        const haystack = `${record.text} ${record.keywords}`;
-        if (!terms.every(term => haystack.includes(term))) return null;
-        // A direct answer ranks above a page that merely mentions the same word.
-        const score = terms.reduce((sum, term) => sum + (record.title.includes(term) ? 12 : record.text.includes(term) ? 5 : record.keywords.split(' ').includes(term) ? 9 : 2), 0)
-          + (query && record.title === query ? 20 : 0);
-        return { ...record, score };
-      }).filter(Boolean).sort((a, b) => b.score - a.score || a.index - b.index);
-      visible = (query ? matches : matches.slice(0, 6)).map(record => record.anchor);
-      const shown = new Set(visible);
-      results.forEach(anchor => { anchor.hidden = !shown.has(anchor); });
-      // Moving the same elements preserves their listeners, link semantics and labels.
-      if (container) {
-        const fragment = document.createDocumentFragment();
-        const matched = new Set(matches.map(({ anchor }) => anchor));
-        matches.forEach(({ anchor }) => fragment.append(anchor));
-        records.filter(record => !matched.has(record.anchor)).forEach(({ anchor }) => fragment.append(anchor));
-        container.append(fragment);
-      }
-      if (empty) empty.hidden = matches.length > 0;
-      if (count) count.textContent = query ? `找到 ${matches.length} 项相关内容` : '常用信息 · 可搜索作品、经历、学历与联系方式';
-    };
-    input.addEventListener('compositionstart', () => { composing = true; });
-    input.addEventListener('compositionend', () => { composing = false; filter(); });
-    input.addEventListener('input', () => { if (!composing) filter(); });
-    all('[data-search-query]', scope).forEach(button => button.addEventListener('click', () => {
-      input.value = button.dataset.searchQuery || '';
-      filter();
-      input.focus();
-    }));
-    input.addEventListener('keydown', event => {
-      if (composing || event.isComposing || event.keyCode === 229) return;
-      if (event.key === 'ArrowDown' && visible.length) { event.preventDefault(); visible[0].focus(); }
-      if (event.key === 'Enter' && visible.length) { event.preventDefault(); visible[0].click(); }
-    });
-    results.forEach(anchor => {
-      anchor.addEventListener('click', event => navigateFromDialog(event, anchor, scope));
-      anchor.addEventListener('keydown', event => {
-        if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) || event.isComposing) return;
-        const index = visible.indexOf(anchor);
-        event.preventDefault();
-        if (event.key === 'ArrowUp' && index <= 0) input.focus();
-        else if (event.key === 'Home') visible[0]?.focus();
-        else if (event.key === 'End') visible[visible.length - 1]?.focus();
-        else visible[Math.min(visible.length - 1, Math.max(0, index + (event.key === 'ArrowDown' ? 1 : -1)))]?.focus();
-      });
-    });
-    searchStates.set(scope, { input, filter });
-    filter();
-  });
-  const appleKeyboard = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
-  all('[data-search-shortcut]').forEach(node => { node.textContent = appleKeyboard ? '⌘ K' : 'Ctrl K'; });
   document.addEventListener('keydown', event => {
     if (event.isComposing || event.keyCode === 229 || event.defaultPrevented) return;
-    if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k') {
-      const trigger = all('[data-search-open]').find(canFocus);
-      if (trigger) {
-        event.preventDefault();
-        const dialog = byId(trigger.getAttribute('aria-controls'));
-        if (activeDialog === dialog) searchStates.get(dialog)?.input.focus();
-        else trigger.click();
-      }
-      return;
-    }
-    // Search inputs can consume Escape before the native dialog cancel event.
     if (activeDialog && event.key === 'Escape') { event.preventDefault(); close(activeDialog); return; }
     if (!activeDialog || !fallbackStates.has(activeDialog)) return;
     if (event.key === 'Tab') {

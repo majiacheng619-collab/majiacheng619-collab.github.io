@@ -64,6 +64,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y fonts-noto-cjk
+          mkdir -p /tmp/fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /tmp/fonts/
           npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')

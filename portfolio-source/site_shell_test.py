@@ -33,7 +33,7 @@ class SharedNavigationTests(unittest.TestCase):
         self.assertEqual((self.root / route).read_text(), source)
         return Elements(source)
 
-    def test_every_portfolio_route_has_one_navigation_and_six_native_controls(self):
+    def test_every_portfolio_route_has_one_navigation_and_five_native_links(self):
         for route in ['index.html', 'projects/index.html', 'experience/index.html',
                       'honor/index.html', 'updates/index.html', 'poster/index.html',
                       'projects/sprout-patrol/index.html', 'projects/ai-content/index.html', '404.html']:
@@ -42,11 +42,9 @@ class SharedNavigationTests(unittest.TestCase):
                 self.assertEqual(len(page.matching(lambda tag, attrs: tag == 'nav')), 1)
                 self.assertEqual(len(page.matching(lambda tag, attrs: 'data-glass-dock' in attrs)), 1)
                 items = page.matching(lambda tag, attrs: 'data-dock-item' in attrs)
-                self.assertEqual([tag for tag, _ in items], ['a'] * 5 + ['button'])
-                self.assertEqual(len(page.matching(lambda tag, attrs: 'data-search-open' in attrs)), 1)
-                self.assertEqual(items[-1][1]['aria-controls'], 'search-dialog')
-                self.assertEqual(items[-1][1]['type'], 'button')
-                self.assertTrue(all(attrs.get('href') for _, attrs in items[:5]))
+                self.assertEqual([tag for tag, _ in items], ['a'] * 5)
+                self.assertTrue(all(attrs.get('href') for _, attrs in items))
+                self.assertEqual(len(page.matching(lambda tag, attrs: 'data-search-open' in attrs)), 0)
                 self.assertLessEqual(sum('aria-current' in attrs for _, attrs in items), 1)
 
     def test_primary_routes_mark_one_corresponding_current_destination(self):
@@ -70,14 +68,12 @@ class SharedNavigationTests(unittest.TestCase):
         self.assertEqual(len(page.matching(lambda tag, attrs: 'data-dock-lens' in attrs)), 1)
         self.assertEqual(len(page.matching(lambda tag, attrs: 'data-dock-projection' in attrs)), 0)
 
-    def test_search_has_accessible_label_and_modal_controls(self):
+    def test_search_is_removed_and_image_viewer_remains_accessible(self):
         page = self.page('index.html')
-        self.assertEqual(len(page.matching(lambda tag, attrs: tag == 'dialog' and attrs.get('id') == 'search-dialog')), 1)
-        self.assertEqual(len(page.matching(lambda tag, attrs: tag == 'label' and attrs.get('for') == 'search-input')), 1)
-        search = page.matching(lambda tag, attrs: 'data-search-input' in attrs)
-        self.assertEqual(len(search), 1)
-        self.assertEqual(search[0][1]['type'], 'search')
-        self.assertTrue(page.matching(lambda tag, attrs: 'data-dialog-close' in attrs and attrs.get('aria-label') == '关闭搜索'))
+        self.assertEqual(page.matching(lambda tag, attrs: attrs.get('id', '').startswith('search-')
+                                      or any(key.startswith('data-search') for key in attrs)), [])
+        self.assertEqual(len(page.matching(lambda tag, attrs: tag == 'dialog' and attrs.get('id') == 'image-dialog')), 1)
+        self.assertTrue(page.matching(lambda tag, attrs: 'data-dialog-close' in attrs and attrs.get('aria-label') == '关闭大图'))
         self.assertEqual(len(page.matching(lambda tag, attrs: tag == 'main')), 1)
         self.assertTrue(page.matching(lambda tag, attrs: tag == 'a' and attrs.get('href') == '#main'))
 
