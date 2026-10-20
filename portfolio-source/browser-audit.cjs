@@ -52,8 +52,9 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  assert.equal(await dock.locator('[data-dock-projection],.glass-dock__projection,.glass-dock__clone').count(),0,'No duplicated optical labels');
  assert.equal(await dock.locator('a span').count(),5,'Each navigation label is rendered once');
  const linkURLs=await dockLinks.evaluateAll(links=>links.map(a=>a.href));
+ assert.equal(new URL(linkURLs[4]).pathname,'/contact/index.html','Contact is a standalone route');
  for(const href of linkURLs){const destination=new URL(href);assert.equal(destination.origin,origin);assert.equal((await context.request.get(destination.href)).status(),200,'Dock fallback destination exists: '+href);}
- for(const width of [320,390,768,1440]){
+ for(const width of [320,390,768,1024,1440]){
    await page.setViewportSize({width,height:844});
    const bounds=await dock.boundingBox();
    assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width+1,'Dock fits '+width+'px viewport');
@@ -102,7 +103,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  });
  await page.waitForTimeout(350);
  assert.equal(await page.evaluate(()=>window.__dockIdleFrames),0,'The settled liquid dock must not consume animation frames');
- for(const width of [320,390,768,1440]){
+ for(const width of [320,390,768,1024,1440]){
    await page.setViewportSize({width,height:844});await page.goto(origin+'/');
    const controls=page.locator('[data-glass-dock] [data-dock-item]');
    if(process.env.AUDIT_OUTPUT)await page.screenshot({path:path.join(process.env.AUDIT_OUTPUT,`glass-initial-${width}.png`)});
@@ -118,7 +119,52 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
    await dock.dispatchEvent('pointercancel',{pointerId:await page.evaluate(()=>window.__auditPointer)});await page.mouse.up();
    assert.equal(page.url(),origin+'/',`Cancelled ${width}px drag keeps current page`);
  }
- report.interactions.push('liquid dock: five single-source items, five reachable links, four viewport bounds, real drag, cancellation, one current item, native Tab/Enter, long-press selection prevention, idle animation shutdown and reduced motion');
+ // Real touch input exercises release behavior after the press animation has settled.
+ const touchSession=await context.newCDPSession(page);
+ async function touch(x,y,hold=80){
+   await touchSession.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,radiusX:2,radiusY:2,force:1,id:1}]});
+   await page.waitForTimeout(hold);
+   await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ }
+ await page.goto(origin+'/');
+ const shortPress=await dockLinks.first().boundingBox();
+ await touch(shortPress.x+shortPress.width/2,shortPress.y+shortPress.height/2);
+ await page.waitForTimeout(700);
+ await page.waitForFunction(()=>{const s=getComputedStyle(document.querySelector('[data-dock-lens]'));return Math.abs(parseFloat(s.getPropertyValue('--lens-stretch'))-1)<.002&&Math.abs(parseFloat(s.getPropertyValue('--lens-squash'))-1)<.002;});
+ const heldOther=await dockLinks.nth(3).boundingBox(),beforeHold=page.url();
+ await touch(heldOther.x+heldOther.width/2,heldOther.y+heldOther.height/2,700);
+ await page.waitForTimeout(700);
+ assert.equal(page.url(),beforeHold,'A real touch hold on another destination must not navigate');
+ await page.waitForFunction(()=>{const s=getComputedStyle(document.querySelector('[data-dock-lens]'));return Math.abs(parseFloat(s.getPropertyValue('--lens-stretch'))-1)<.002&&Math.abs(parseFloat(s.getPropertyValue('--lens-squash'))-1)<.002;});
+ const rotateStart=await dockLinks.first().boundingBox(),rotateEnd=await dockLinks.nth(2).boundingBox();
+ await page.mouse.move(rotateStart.x+rotateStart.width/2,rotateStart.y+rotateStart.height/2);await page.mouse.down();
+ await page.mouse.move(rotateEnd.x+rotateEnd.width/2,rotateEnd.y+rotateEnd.height/2,{steps:8});
+ await page.setViewportSize({width:844,height:390});await page.waitForTimeout(100);await page.mouse.up();
+ await page.waitForTimeout(100);
+ assert.equal(await dock.getAttribute('data-dragging'),null,'Rotation cancels an in-flight drag');
+ const rotated=await dock.boundingBox();assert.ok(rotated.x>=0&&rotated.x+rotated.width<=844&&rotated.y>=0&&rotated.y+rotated.height<=390,'Rotated dock remains in viewport');
+ await page.setViewportSize({width:390,height:844});
+ report.interactions.push('real touch short press and 700ms hold release back to rest; rotation cancels drag');
+ await context.addInitScript(()=>{
+   let incoming;try{incoming=JSON.parse(sessionStorage.getItem('portfolio-dock-handoff-v2'));}catch{}
+   if(!incoming)return;
+   const observer=new MutationObserver(()=>{
+     const lens=document.querySelector('[data-dock-lens]'),dock=document.querySelector('[data-glass-dock]');
+     if(!lens||!dock||!Number.isFinite(parseFloat(lens.style.getPropertyValue('--lens-x'))))return;
+     const links=[...dock.querySelectorAll('[data-dock-link]')],rect=dock.getBoundingClientRect();
+     const xs=links.map(a=>a.getBoundingClientRect().left-rect.left-dock.clientLeft);
+     window.__incomingDockFrame={x:parseFloat(lens.style.getPropertyValue('--lens-x')),expected:xs[0]+incoming.fraction*(xs.at(-1)-xs[0]),selected:links.find(a=>a.hasAttribute('aria-current')).getBoundingClientRect().left-rect.left-dock.clientLeft};
+     observer.disconnect();
+   });observer.observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});
+ });
+ await page.goto(origin+'/');
+ await Promise.all([page.waitForURL('**/honor/index.html'),dockLinks.nth(3).click()]);
+ const incomingFrame=await page.evaluate(()=>window.__incomingDockFrame);
+ assert.ok(incomingFrame,'Cross-page activation supplies a destination animation handoff');
+ assert.ok(Math.abs(incomingFrame.x-incomingFrame.expected)<1.5,'The first destination frame continues the departure lens position');
+ report.interactions.push('cross-page first-frame lens continuity');
+
+ report.interactions.push('liquid dock: five single-source items, five reachable links, five viewport bounds, real drag, cancellation, one current item, native Tab/Enter, long-press selection prevention, idle animation shutdown and reduced motion');
  await page.goto(origin+'/projects/sprout-patrol/');
  await page.locator('[data-growth-step="2"]').click();
  assert.equal(await page.locator('[data-growth-panel="2"]').isVisible(),true);
@@ -147,12 +193,17 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  assert.equal(await page.locator('script[src*="visitor-tracker"],script[src*="visitors."],[data-visitor-count],[data-privacy-toggle]').count(),0,'Visitor analytics is removed');
  const pdf=await page.locator('a[download][href*="resume-"]').first().getAttribute('href');assert.equal((await context.request.get(origin+'/'+pdf)).status(),200);
  report.interactions.push('no automatic media playback; fingerprinted PDF downloads');
+ await page.goto(origin+'/contact/');
+ assert.equal(await page.locator('main h1').count(),1);
+ assert.equal(await page.locator('a[download][href*="resume-"]').count(),1,'Contact has one resume download');
+ assert.equal(await page.locator('[data-dock-link][aria-current]').last().textContent(),'联系');
+ report.interactions.push('independent contact destination and single resume download');
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.goto(origin+'/projects/');
  assert.equal(await page.locator('.reveal-pending').count(),0);
  report.interactions.push('reduced motion keeps all reading content visible');
  await page.emulateMedia({reducedMotion:'no-preference'});
- for(const width of [320,390,768,1440]) {
+ for(const width of [320,390,768,1024,1440]) {
    await page.setViewportSize({width,height:900});
    for(const route of pages) {
      await page.goto(`${origin}/${route}`,{waitUntil:'load'});
@@ -166,6 +217,22 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      if(!route.startsWith('game/')){
        const shell=await page.evaluate(()=>({dock:document.querySelectorAll('[data-glass-dock]').length,items:document.querySelectorAll('[data-glass-dock] [data-dock-item]').length,links:document.querySelectorAll('[data-glass-dock] a[data-dock-link]').length,search:document.querySelectorAll('[data-search-open]').length,current:document.querySelectorAll('[data-dock-link][aria-current]').length,retired:document.querySelectorAll('header,[data-menu-open],#menu-dialog,.chapter-nav,.reading-progress,script[src*="visitor-tracker"],script[src*="visitors."],[data-visitor-count],[data-privacy-toggle]').length,nav:document.querySelectorAll('nav').length}));
        if(shell.dock!==1||shell.items!==5||shell.links!==5||shell.search!==0||shell.current!==1||shell.retired!==0||shell.nav!==1)failures.push(`${width}px ${route}: invalid unified shell ${JSON.stringify(shell)}`);
+       const editorial=await page.evaluate(()=>{
+         const main=document.querySelector('main');
+         const headings=[...main.querySelectorAll('h1,h2')].map(h=>h.textContent.replace(/\s+/g,'').trim()).filter(Boolean);
+         const actions=[...main.querySelectorAll('a.button')].map(a=>`${a.textContent.replace(/\s+/g,'').trim()}|${a.href}`);
+         const duplicates=items=>items.filter((value,index)=>items.indexOf(value)!==index);
+         const footerBorders=[...document.querySelectorAll('footer,footer .footer-bottom')].filter(node=>{const s=getComputedStyle(node);return parseFloat(s.borderTopWidth)>0||parseFloat(s.borderBottomWidth)>0;}).length;
+         return {pdfs:document.querySelectorAll('a[href*="resume"][href*=".pdf"]').length,about:!!document.querySelector('main #about'),contact:new URL(document.querySelector('[data-dock-link]:last-child').href).pathname,headings:duplicates(headings),actions:duplicates(actions),portraits:main.querySelectorAll('img[src*="portrait"]').length,footerBorders};
+       });
+       const expectedPDFs=route==='index.html'||route==='contact/index.html'?1:0;
+       if(editorial.pdfs!==expectedPDFs)failures.push(`${width}px ${route}: resume CTA count ${editorial.pdfs}, expected ${expectedPDFs}`);
+       if(editorial.contact!=='/contact/index.html')failures.push(`${route}: contact does not open independent page`);
+       if(route==='index.html'&&editorial.about)failures.push('Home retains an embedded contact section');
+       if(editorial.headings.length)failures.push(`${route}: repeated main headings ${editorial.headings.join(', ')}`);
+       if(editorial.actions.length)failures.push(`${route}: repeated CTA ${editorial.actions.join(', ')}`);
+       if(editorial.portraits>1)failures.push(`${route}: repeated portrait images`);
+       if(editorial.footerBorders)failures.push(`${width}px ${route}: footer separator borders remain`);
        const dockBounds=await page.locator('[data-glass-dock]').boundingBox();
        if(!dockBounds||dockBounds.x<0||dockBounds.x+dockBounds.width>width+1||dockBounds.y<0||dockBounds.y+dockBounds.height>900)failures.push(`${width}px ${route}: dock outside safe viewport`);
      }
@@ -175,7 +242,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await page.setViewportSize({width:390,height:844});
  if(process.env.AUDIT_ACCESSIBILITY==='1') {
    await page.emulateMedia({reducedMotion:'reduce'});
-   const routes=['','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','honor/','updates/','game/guide.html','game/codex.html','game/cloud.html'];
+   const routes=['','contact/','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','honor/','updates/','game/guide.html','game/codex.html','game/cloud.html'];
    for(const route of routes){
      await page.goto(origin+'/'+route);
      await auditAccessibility(route);
@@ -184,10 +251,10 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  const output=process.env.AUDIT_OUTPUT;
  if(output){
    fs.mkdirSync(output,{recursive:true});
-   const screenshots=[['','home'],['projects/','projects'],['experience/','experience'],['projects/sprout-patrol/','gamecase'],['projects/ai-content/','ai'],['honor/','honor'],['game/guide.html','guide'],['game/','game']];
-   for(const [route,name] of screenshots)for(const width of [320,390,768,1440]){
+   const screenshots=[['','home'],['contact/','contact'],['projects/','projects'],['experience/','experience'],['projects/sprout-patrol/','gamecase'],['projects/ai-content/','ai'],['honor/','honor'],['game/guide.html','guide'],['game/','game']];
+   for(const [route,name] of screenshots)for(const width of [320,390,768,1024,1440]){
      await page.setViewportSize({width,height:900});await page.goto(origin+'/'+route);
-     await page.evaluate(async()=>{await document.fonts.ready;for(let y=0;y<document.documentElement.scrollHeight;y+=innerHeight){scrollTo(0,y);await new Promise(r=>setTimeout(r,40));}scrollTo(0,0);});
+     await page.evaluate(async()=>{await document.fonts.ready;for(let y=0;y<document.documentElement.scrollHeight;y+=innerHeight){scrollTo(0,y);await new Promise(r=>setTimeout(r,40));}await Promise.race([Promise.all([...document.images].map(image=>{image.loading='eager';return image.decode().catch(()=>{});})),new Promise(resolve=>setTimeout(resolve,2000))]);scrollTo(0,0);});
      await page.waitForTimeout(250);
      await page.screenshot({path:path.join(output,`${name}-${width}.png`),fullPage:true});
    }

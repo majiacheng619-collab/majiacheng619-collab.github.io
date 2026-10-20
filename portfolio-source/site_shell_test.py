@@ -35,7 +35,7 @@ class SharedNavigationTests(unittest.TestCase):
 
     def test_every_portfolio_route_has_one_navigation_and_five_native_links(self):
         for route in ['index.html', 'projects/index.html', 'experience/index.html',
-                      'honor/index.html', 'updates/index.html', 'poster/index.html',
+                      'honor/index.html', 'contact/index.html', 'updates/index.html', 'poster/index.html',
                       'projects/sprout-patrol/index.html', 'projects/ai-content/index.html', '404.html']:
             with self.subTest(route=route):
                 page = self.page(route)
@@ -51,11 +51,20 @@ class SharedNavigationTests(unittest.TestCase):
         for route, expected in [('index.html', 'index.html'), ('projects/index.html', '../projects/index.html'),
                                 ('projects/ai-content/index.html', '../../projects/index.html'),
                                 ('experience/index.html', '../experience/index.html'), ('honor/index.html', '../honor/index.html'),
+                                ('contact/index.html', '../contact/index.html'),
                                 ('poster/index.html', '../projects/index.html'), ('updates/index.html', '../experience/index.html')]:
             with self.subTest(route=route):
                 current = self.page(route).matching(lambda tag, attrs: 'aria-current' in attrs)
                 self.assertEqual(len(current), 1)
                 self.assertEqual(current[0][1]['href'], expected)
+
+    def test_contact_is_a_standalone_destination_from_every_page(self):
+        for route, expected in [('index.html', 'contact/index.html'),
+                                ('projects/ai-content/index.html', '../../contact/index.html')]:
+            with self.subTest(route=route):
+                items = self.page(route).matching(lambda tag, attrs: 'data-dock-link' in attrs)
+                self.assertEqual(items[-1][1]['href'], expected)
+                self.assertNotIn('#', items[-1][1]['href'])
 
     def test_removed_navigation_and_analytics_are_not_rendered(self):
         page = self.page('projects/ai-content/index.html')

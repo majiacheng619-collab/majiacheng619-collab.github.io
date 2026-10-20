@@ -1,5 +1,5 @@
 /* Shared optical palette. Navigation owns the moving glass lens. */
-:root{--nav-height:0px;--glass-ink:#1d1d1f;--glass-muted:#626269;--glass-tint:rgba(255,255,255,.32);--glass-border:rgba(255,255,255,.82);--glass-highlight:inset 0 1px 0 #fff;--glass-shadow:0 14px 40px #1d243307;--glass-blur:blur(24px) saturate(145%);--glass-blue:#0066cc;--glass-radius:28px}
+:root{--glass-ink:#1d1d1f;--glass-muted:#626269;--glass-tint:rgba(255,255,255,.32);--glass-border:rgba(255,255,255,.82);--glass-highlight:inset 0 1px 0 #fff;--glass-shadow:0 14px 40px #1d243307;--glass-blur:blur(24px) saturate(145%);--glass-blue:#0066cc;--glass-radius:28px}
 html{scroll-padding-top:24px;background:#f7f8fa;color-scheme:light}
 body,body.home-page{background:#f7f8fa;color:var(--glass-ink);isolation:isolate}
 .ambient-field{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:radial-gradient(ellipse at 10% 20%,#e8f0f980,transparent 48%),radial-gradient(ellipse at 90% 75%,#eeedf580,transparent 48%),linear-gradient(145deg,#fbfcfd,#f4f6f9 55%,#faf9f7)}

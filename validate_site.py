@@ -20,7 +20,7 @@ import zipfile
 
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
          'updates/index.html', 'projects/ai-content/index.html',
-         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html')
+         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html')
 APPROVED_PDF = '45d0c1771c091dc7e3342ca07ddc3effce3ae9282c1954e1fe2df9d93681cc74'
 ORIGIN = 'majiacheng619-collab.github.io'
 
@@ -159,7 +159,15 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             if 'alt' not in image: err(f'{relative}: image lacks alt: {image.get("src", "")}')
         for anchor in doc.blank_links:
             if 'noopener' not in anchor.get('rel', '').split(): err(f'{relative}: new-window link lacks noopener')
-        if not doc.pdf_links: err(f'{relative}: resume PDF entry missing')
+        expected_downloads = 1 if relative in ('index.html', 'contact/index.html') else 0
+        if len(doc.pdf_links) != expected_downloads:
+            err(f'{relative}: expected {expected_downloads} resume entry, found {len(doc.pdf_links)}')
+        if relative == 'index.html' and 'about' in doc.ids:
+            err('index.html: retired embedded contact section remains')
+        if len(controls) == 5:
+            contact_target = local(page, controls[-1][1].get('href', ''))
+            if not contact_target or contact_target != (root / 'contact/index.html', ''):
+                err(f'{relative}: contact navigation must open the standalone page')
         for anchor in doc.pdf_links:
             counts['pdf_links'] += 1
             parsed = urlsplit(anchor['href'])

@@ -15,7 +15,6 @@
   let priorOverflow = '';
   let priorGutter = '';
   const outsideStarts = new WeakMap();
-  const announce = (selector, message) => { const node = document.querySelector(selector); if (node) node.textContent = message; };
 
   function finishClose(dialog, restoreFocus = true) {
     if (isOpen(dialog) || activeDialog !== dialog) return;
@@ -156,74 +155,10 @@
   });
 
   // No autoplay, scroll hijacking, or automatic audio resumption.
-  const audio = document.querySelector('audio[data-ambient]');
-  let soundPending = false;
-  if (audio) audio.volume = 0.24;
-  all('[data-sound]').forEach(button => {
-    if (!audio) { button.hidden = true; return; }
-    button.addEventListener('click', async () => {
-      if (!audio.paused) { audio.pause(); return; }
-      if (soundPending) return;
-      if (all('video').some(video => !video.paused && !video.muted)) {
-        announce('[data-sound-status]', '请先暂停视频，再开启轻音乐。');
-        return;
-      }
-      soundPending = true;
-      button.setAttribute('aria-busy', 'true');
-      try { await audio.play(); announce('[data-sound-status]', '轻音乐已开启。'); }
-      catch (_) { announce('[data-sound-status]', '音乐暂时无法播放，请稍后再试。'); }
-      finally { soundPending = false; button.removeAttribute('aria-busy'); }
-    });
-  });
-  const refreshSound = () => {
-    const playing = Boolean(audio && !audio.paused);
-    all('[data-sound]').forEach(button => {
-      button.setAttribute('aria-pressed', String(playing));
-      const label = button.querySelector('[data-sound-label]');
-      if (label) label.textContent = playing ? '暂停轻音乐' : '开启轻音乐';
-    });
-  };
-  if (audio) {
-    ['play', 'pause', 'ended'].forEach(type => audio.addEventListener(type, refreshSound));
-    audio.addEventListener('error', () => announce('[data-sound-status]', '音乐暂时无法加载，请稍后再试。'));
-  }
-  refreshSound();
-  document.addEventListener('play', event => {
-    const media = event.target;
-    if (!(media instanceof HTMLVideoElement)) return;
-    audio?.pause();
-    all('video').filter(video => video !== media).forEach(video => video.pause());
-  }, true);
-  const pauseMedia = () => all('video, audio').forEach(media => media.pause());
+  // Native video controls remain the single playback surface.
+  const pauseMedia = () => all('video').forEach(media => media.pause());
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseMedia(); });
   window.addEventListener('pagehide', pauseMedia);
-
-  all('[data-video-play], [data-preview-toggle]').forEach(button => {
-    const video = byId(button.getAttribute('aria-controls')) || button.closest('[data-video-player], [data-preview-film]')?.querySelector('video');
-    if (!video) { button.hidden = true; return; }
-    let status = button.closest('[data-video-player], [data-preview-film], section')?.querySelector('[data-video-status]');
-    if (!status) {
-      status = document.createElement('p');
-      status.className = 'sr-only';
-      status.dataset.videoStatus = '';
-      status.setAttribute('role', 'status');
-      button.parentNode.insertBefore(status, button.nextSibling);
-    }
-    video.addEventListener('error', () => { status.textContent = '视频暂时无法加载，请尝试下载观看。'; });
-    const refresh = () => {
-      const playing = !video.paused;
-      button.setAttribute('aria-pressed', String(playing));
-      const label = button.querySelector('[data-preview-label], [data-video-label]');
-      if (label) label.textContent = playing ? '暂停播放' : '播放视频';
-      else button.textContent = playing ? '暂停播放' : '播放视频';
-    };
-    ['play', 'pause', 'ended'].forEach(type => video.addEventListener(type, refresh));
-    button.addEventListener('click', async () => {
-      if (!video.paused) video.pause();
-      else try { status.textContent = ''; await video.play(); } catch (_) { status.textContent = '播放暂时失败，可使用视频原生控件或下载观看。'; }
-    });
-    refresh();
-  });
 
   // A small, explicit choice illustrates the mechanism; no timed advancement.
   all('.growth-demo').forEach(demo => {
@@ -272,41 +207,8 @@
     window.addEventListener('beforeprint', settleReveal);
     window.addEventListener('pageshow', event => { if (event.persisted) settleReveal(); });
   } else settleReveal();
-  // Scroll work shares one passive, scheduled update. Native scrolling stays intact.
-  const artwork = all('[data-parallax], [data-drift]');
-  const moving = new Set();
-  let scrollFrame = 0;
-  const drawScroll = () => {
-    scrollFrame = 0;
-    if (reduce.matches) return;
-    moving.forEach(node => {
-      const box = node.getBoundingClientRect();
-      const distance = Math.max(-1, Math.min(1, (box.top + box.height / 2 - innerHeight / 2) / innerHeight));
-      node.style.setProperty('--drift', `${(distance * -18).toFixed(2)}px`);
-    });
-  };
-  const queueScroll = () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(drawScroll); };
-  if ('IntersectionObserver' in window && artwork.length) {
-    const artworkObserver = new IntersectionObserver(entries => {
-      entries.forEach(entry => entry.isIntersecting ? moving.add(entry.target) : moving.delete(entry.target));
-      queueScroll();
-    }, { rootMargin: '100px' });
-    artwork.forEach(node => artworkObserver.observe(node));
-  }
-  addEventListener('scroll', queueScroll, { passive: true });
-  addEventListener('resize', queueScroll, { passive: true });
-  addEventListener('pageshow', queueScroll);
-  if ('ResizeObserver' in window) new ResizeObserver(queueScroll).observe(document.body);
-  queueScroll();
-  // A preference change immediately settles animations already in progress.
-  const motionChanged = () => {
-    if (reduce.matches) {
-      settleReveal();
-      artwork.forEach(node => node.style.setProperty('--drift', '0px'));
-    }
-    queueScroll();
-  };
+  // Only active reveal effects respond to the motion preference.
+  const motionChanged = () => { if (reduce.matches) settleReveal(); };
   if (reduce.addEventListener) reduce.addEventListener('change', motionChanged);
   else reduce.addListener(motionChanged);
-
 })();

@@ -20,12 +20,64 @@
   const signal = aborter.signal;
   const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
   let selected = Math.max(0, links.findIndex(link => link.hasAttribute('aria-current')));
-  let dockLeft = 0;
+  let dockLeft = 0, measuredRect = null;
   let boxes = [], current = 0, target = 0, width = 0, targetWidth = 0;
   let velocity = 0, frame = 0, lastTime = 0, gesture = null;
   let suppressClickUntil = 0, navigationTimer = 0, dragActivation = false;
   let heldScale = 0;
-  let observer = null, resizeObserver = null;
+  let resizeObserver = null, contrastObserver = null, pendingHref = '';
+  const contrastSources = [...document.querySelectorAll('video, .dark, [data-dock-tone=dark]')];
+  function observeContrast() {
+    contrastObserver?.disconnect();
+    if (!contrastSources.length || !('IntersectionObserver' in window)) return;
+    const box = dock.getBoundingClientRect();
+    const viewportHeight = window.innerHeight, viewportWidth = window.innerWidth;
+    const center = box.top + box.height / 2;
+    const active = new Set();
+    contrastObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => { if (entry.isIntersecting) active.add(entry.target); else active.delete(entry.target); });
+      dock.toggleAttribute('data-over-media', active.size > 0);
+    }, {rootMargin:`${-center}px ${-(viewportWidth - box.right)}px ${-(viewportHeight - center - 1)}px ${-box.left}px`, threshold:0});
+    contrastSources.forEach(node => contrastObserver.observe(node));
+  }
+  const handoffKey = 'portfolio-dock-handoff-v2';
+  const normalizedPath = pathname => pathname.replace(/\/index\.html$/, '/');
+  function samePage(a, b) {
+    return a.origin === b.origin && normalizedPath(a.pathname) === normalizedPath(b.pathname) && a.search === b.search;
+  }
+  function clearHandoff() {
+    pendingHref = '';
+    try { sessionStorage.removeItem(handoffKey); } catch (_) { /* Storage may be disabled. */ }
+  }
+  function saveHandoff() {
+    if (!pendingHref || reduce.matches || boxes.length < 2) return;
+    const span = boxes.at(-1).x - boxes[0].x;
+    if (span <= 0) return;
+    try {
+      sessionStorage.setItem(handoffKey, JSON.stringify({
+        href: pendingHref, at: Date.now(), fraction: (current - boxes[0].x) / span,
+        speed: clamp(velocity / span, -3, 3), lift: heldScale
+      }));
+    } catch (_) { /* Ordinary anchor navigation remains available without storage. */ }
+  }
+  function restoreHandoff() {
+    let state;
+    try {
+      state = JSON.parse(sessionStorage.getItem(handoffKey));
+      sessionStorage.removeItem(handoffKey);
+    } catch (_) { return; }
+    if (reduce.matches || !state || typeof state.href !== 'string' ||
+        !Number.isFinite(state.at) || Date.now() - state.at < 0 || Date.now() - state.at > 2000 ||
+        !Number.isFinite(state.fraction) || state.fraction < -.1 || state.fraction > 1.1 ||
+        !Number.isFinite(state.speed) || !Number.isFinite(state.lift)) return;
+    try { if (!samePage(new URL(state.href, location.href), new URL(location.href))) return; } catch (_) { return; }
+    const span = boxes.at(-1).x - boxes[0].x;
+    current = boxes[0].x + state.fraction * span;
+    velocity = clamp(state.speed, -3, 3) * span;
+    heldScale = clamp(state.lift, 0, 1);
+    paint(1 + heldScale * .07, 1 + heldScale * .12);
+    animate();
+  }
 
   // The shell alone samples the backdrop. The empty lens is one composited
   // surface: no filters, cloned labels, width animation or per-item frame writes.
@@ -55,13 +107,13 @@
     const heldTarget = gesture ? 1 : 0;
     heldScale += (heldTarget - heldScale) * (1 - Math.exp(-24 * dt));
     const strain = Math.min(.15, Math.abs(velocity) * .00013);
-    paint(1 + strain + heldScale * .055, 1 - strain * .32 + heldScale * .09);
+    paint(1 + strain + heldScale * .07, 1 - strain * .32 + heldScale * .12);
     if (Math.abs(current - target) > .03 || Math.abs(velocity) > .15 || Math.abs(heldTarget - heldScale) > .002) {
       frame = requestAnimationFrame(tick);
     } else {
       current = target; velocity = 0; lastTime = 0; heldScale = heldTarget;
       dock.removeAttribute('data-settling');
-      paint(1 + heldScale * .055, 1 + heldScale * .09);
+      paint(1 + heldScale * .07, 1 + heldScale * .12);
     }
   }
   function animate() {
@@ -74,6 +126,7 @@
   }
   function measure(snap = false) {
     const rect = dock.getBoundingClientRect();
+    measuredRect = {left:rect.left, width:rect.width, height:rect.height};
     dockLeft = rect.left + dock.clientLeft;
     boxes = links.map(link => {
       const box = link.getBoundingClientRect();
@@ -120,7 +173,7 @@
   dock.addEventListener('dragstart', event => event.preventDefault(), {signal});
   dock.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !event.isPrimary || event.target.closest('a')?.hasAttribute('download')) return;
-    if (navigationTimer) { clearTimeout(navigationTimer); navigationTimer = 0; }
+    if (navigationTimer) { clearTimeout(navigationTimer); navigationTimer = 0; clearHandoff(); }
     measure();
     gesture = {id: event.pointerId, x: event.clientX, y: event.clientY, started: performance.now(), dragging: false};
     animate();
@@ -151,6 +204,9 @@
     dock.removeAttribute('data-dragging');
     releaseCapture(event.pointerId);
     if (!wasDragging) {
+      // A held press can already have settled and stopped its frame loop.
+      // Always restart on release, even when no click follows the long hold.
+      animate();
       if (held > 550) suppressClickUntil = performance.now() + 450;
       return;
     }
@@ -178,11 +234,16 @@
     // Native cross-document navigation otherwise destroys the selection animation
     // before its first frame. A short, cancellable handoff makes it visible.
     if ((event.isTrusted || dragActivation) && url.origin === location.origin &&
-        (url.pathname !== currentURL.pathname || url.search !== currentURL.search)) {
+        !samePage(url, currentURL)) {
       event.preventDefault();
       if (navigationTimer) clearTimeout(navigationTimer);
-      if (reduce.matches) location.assign(url.href);
-      else navigationTimer = setTimeout(() => { navigationTimer = 0; location.assign(url.href); }, 180);
+      pendingHref = url.href;
+      if (reduce.matches) { clearHandoff(); location.assign(url.href); }
+      else navigationTimer = setTimeout(() => {
+        navigationTimer = 0;
+        saveHandoff();
+        location.assign(url.href);
+      }, 110);
     }
   }, {signal, capture: true});
   dock.addEventListener('pointercancel', cancelGesture, {signal});
@@ -195,7 +256,16 @@
   // Native Tab/Enter activation and the focus-visible ring provide keyboard
   // navigation. Focus alone never moves the page-selection lens to a different
   // destination, so a focused control cannot look like a second current page.
-  const onResize = () => { if (gesture) cancelGesture(); measure(true); };
+  const onResize = event => {
+    // ResizeObserver delivers an initial notification even without a resize.
+    // Snapping that notification would erase a just-restored cross-page spring.
+    const rect = dock.getBoundingClientRect();
+    const changed = !measuredRect || rect.left !== measuredRect.left || rect.width !== measuredRect.width || rect.height !== measuredRect.height;
+    if (!changed && !event?.type) return;
+    if (gesture) cancelGesture();
+    measure(true);
+    observeContrast();
+  };
   addEventListener('resize', onResize, {signal, passive: true});
   if ('ResizeObserver' in window) {
     resizeObserver = new ResizeObserver(onResize); resizeObserver.observe(dock);
@@ -208,35 +278,20 @@
       frame = 0; lastTime = 0; cancelGesture();
     } else { measure(true); }
   }, {signal});
-  // Mark in-page destinations as the reader moves through the portfolio.
-  const normalizedPath = pathname => pathname.replace(/\/index\.html$/, '/');
-  const sameDocument = url => url.origin === location.origin && normalizedPath(url.pathname) === normalizedPath(location.pathname);
-  const homeIndex = links.findIndex(link => { if (!isLink(link)) return false; const url = new URL(link.href, location.href); return sameDocument(url) && !url.hash; });
-  const localSections = links.map((link, index) => {
-    if (!isLink(link)) return null;
-    const url = new URL(link.href, location.href);
-    return sameDocument(url) && url.hash ? {node: document.getElementById(decodeURIComponent(url.hash.slice(1))), index} : null;
-  }).filter(item => item?.node);
-  if ('IntersectionObserver' in window && localSections.length) {
-    const sectionVisibility = new Map();
-    observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => sectionVisibility.set(entry.target, entry));
-      if (gesture || dock.contains(document.activeElement)) return;
-      const visible = [...sectionVisibility.values()].filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-      if (visible.length) select(localSections.find(item => item.node === visible[0].target).index);
-      else if (homeIndex >= 0) select(homeIndex);
-    }, {rootMargin: '-15% 0px -45% 0px', threshold: [0, .15, .4]});
-    localSections.forEach(item => observer.observe(item.node));
-  }
-  measure(true); select(selected, true);
+  // Each tab now names a separate page, including contact. Scrolling inside a
+  // document never changes its current-page semantics or runs a section observer.
+  measure(true); select(selected, true); restoreHandoff(); observeContrast();
   addEventListener('pagehide', event => {
+    // Capture the actual departure position after loading time, rather than the
+    // earlier click position, so the next document continues the same movement.
+    saveHandoff();
     cancelGesture();
     if (frame) cancelAnimationFrame(frame);
     frame = 0; velocity = 0; lastTime = 0;
     if (navigationTimer) clearTimeout(navigationTimer);
     navigationTimer = 0;
     if (event.persisted) return;
-    aborter.abort(); observer?.disconnect(); resizeObserver?.disconnect();
+    aborter.abort(); resizeObserver?.disconnect(); contrastObserver?.disconnect();
     if (frame) cancelAnimationFrame(frame);
   }, {signal});
   addEventListener('pageshow', event => {

@@ -16,25 +16,26 @@ class Surface {
  setAttribute(k,v){this.attrs.set(k,String(v));} removeAttribute(k){this.attrs.delete(k);} hasAttribute(k){return this.attrs.has(k);} getAttribute(k){return this.attrs.get(k)??null;}
  toggleAttribute(k,on){if(on)this.setAttribute(k,'');else this.removeAttribute(k);}
 }
-function fixture({reduced=false,sections=false,pathname='/',frameDuration=16.667}={}){
+function fixture({reduced=false,sections=false,pathname='/',frameDuration=16.667,storage=new Map(),active=0,storageBlocked=false,mediaSources=[]}={}){
  const dock=new Surface(),lens=new Surface(),media=new Surface(),doc=new Surface(),host=new Surface();
  let left=20,itemWidth=80,time=0,id=0;
  const timers=new Map(),frames=new Map(),navigations=[],captures=new Set(),observed=[],resizes=[],sectionNodes=new Map();
  const links=Array.from({length:5},(_,i)=>{const link=new Surface();link.setAttribute('data-dock-item','');link.setAttribute('data-dock-link','');link.href=`https://example.test/#section-${i}`;link.setAttribute('href',`#section-${i}`);link.closest=s=>s==='a'||s==='[data-dock-item]'?link:null;link.getBoundingClientRect=()=>({left:left+i*itemWidth,width:itemWidth});link.click=()=>{const e=dock.emit('click',{target:link});if(!e.defaultPrevented)navigations.push(link.href);};return link;});
  links.forEach((link,i)=>{link.append(new Surface());link.append(new Surface());if(sections){link.href=`https://example.test/index.html${i?'#section-'+i:''}`;link.setAttribute('href',new URL(link.href).pathname+new URL(link.href).hash);sectionNodes.set('section-'+i,new Surface());}});
- links[0].setAttribute('aria-current','location');
- dock.clientLeft=0;dock.querySelector=()=>lens;dock.querySelectorAll=()=>links;dock.getBoundingClientRect=()=>({left,width:itemWidth*5});dock.contains=n=>links.includes(n)||n===dock;dock.closest=()=>null;
+ links[active].setAttribute('aria-current','location');
+ dock.clientLeft=0;dock.querySelector=()=>lens;dock.querySelectorAll=()=>links;dock.getBoundingClientRect=()=>({left,right:left+itemWidth*5,top:700,height:70,width:itemWidth*5});dock.contains=n=>links.includes(n)||n===dock;dock.closest=()=>null;
  dock.setPointerCapture=n=>captures.add(n);dock.hasPointerCapture=n=>captures.has(n);dock.releasePointerCapture=n=>{captures.delete(n);dock.emit('lostpointercapture',{pointerId:n});};
- media.matches=reduced;doc.hidden=false;doc.querySelector=()=>dock;doc.getElementById=id=>sectionNodes.get(id)||null;doc.createElement=()=>new Surface();
+ media.matches=reduced;doc.hidden=false;doc.querySelectorAll=()=>mediaSources;doc.querySelector=()=>dock;doc.getElementById=id=>sectionNodes.get(id)||null;doc.createElement=()=>new Surface();
  class IntersectionObserver {constructor(callback){this.callback=callback;observed.push(this);}observe(node){(this.nodes??=[]).push(node);}disconnect(){this.disconnected=true;}}
  class ResizeObserver {constructor(callback){this.callback=callback;resizes.push(this);}observe(node){this.node=node;}disconnect(){this.disconnected=true;}}
- host.IntersectionObserver=IntersectionObserver;
+ host.innerWidth=440;host.innerHeight=800;host.IntersectionObserver=IntersectionObserver;
  host.ResizeObserver=ResizeObserver;
- const context=vm.createContext({window:host,document:doc,IntersectionObserver,ResizeObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname,assign:url=>navigations.push(url)},setTimeout:(fn,delay)=>{timers.set(++id,{fn,at:time+delay});return id;},clearTimeout:n=>timers.delete(n),scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
+ const sessionStorage={getItem:key=>{if(storageBlocked)throw new Error('Blocked');return storage.get(key)||null;},setItem:(key,value)=>{if(storageBlocked)throw new Error('Blocked');storage.set(key,value);},removeItem:key=>{if(storageBlocked)throw new Error('Blocked');storage.delete(key);}};
+ const context=vm.createContext({sessionStorage,window:host,document:doc,IntersectionObserver,ResizeObserver,matchMedia:()=>media,AbortController,URL,location:{href:'https://example.test'+pathname,origin:'https://example.test',pathname,assign:url=>navigations.push(url)},setTimeout:(fn,delay)=>{timers.set(++id,{fn,at:time+delay});return id;},clearTimeout:n=>timers.delete(n),scrollY:0,performance:{now:()=>time},addEventListener:host.addEventListener.bind(host),requestAnimationFrame:fn=>{frames.set(++id,fn);return id;},cancelAnimationFrame:n=>frames.delete(n)});
  vm.runInContext(source,context);
  function runTimers(){for(const [key,timer]of timers){if(timer.at<=time){timers.delete(key);timer.fn();}}}
  function settle(){for(let n=0;frames.size&&n<600;n++){const batch=[...frames];frames.clear();time+=frameDuration;for(const [,fn]of batch)fn(time);}assert.equal(frames.size,0,'animation must stop after settling');}
- return {timers,advance(milliseconds){time+=milliseconds;runTimers();},dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,resizes,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=frameDuration;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(lens.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
+ return {storage,timers,advance(milliseconds){time+=milliseconds;runTimers();},dock,lens,links,media,doc,host,context,frames,navigations,captures,observed,resizes,sectionNodes,settle,step(){const batch=[...frames];frames.clear();time+=frameDuration;for(const [,fn]of batch)fn(time);},paint:key=>parseFloat(lens.values.get(key)),resize(width){itemWidth=width;host.emit('resize');},boot(){vm.runInContext(source,context);},motion(value){media.matches=value;media.emit('change');}};
 }
 
 test('initial lens aligns to the current real anchor and repeated initialization adds no handlers',()=>{
@@ -99,14 +100,8 @@ test('BFCache suspension stops drag and animation while restoration preserves a 
  f.host.emit('pagehide',{persisted:true});assert.equal(f.frames.size,0);assert.equal(f.captures.size,0);assert.ok(!f.dock.hasAttribute('data-dragging'));
  f.host.emit('pageshow',{persisted:true});assert.equal(f.paint('--lens-x'),160);assert.equal(f.paint('--lens-stretch'),1);f.links[1].click();f.settle();assert.equal(f.paint('--lens-x'),80);assert.equal(f.navigations.length,2,'BFCache resume must retain the navigation handlers');
 });
-test('contact observer treats root and index.html as the same document and restores home on exit',()=>{
- for(const pathname of ['/','/index.html']){const f=fixture({sections:true,reduced:true,pathname});assert.equal(f.observed.length,1);const observer=f.observed[0];assert.equal(observer.nodes.length,4);const node=f.sectionNodes.get('section-3');observer.callback([{target:node,isIntersecting:true,intersectionRatio:.5}]);assert.equal(f.links[3].getAttribute('aria-current'),'location');assert.equal(f.paint('--lens-x'),240);observer.callback([{target:node,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.links[0].getAttribute('aria-current'),'page');assert.equal(f.paint('--lens-x'),0);assert.equal(f.navigations.length,0);}
-});
-test('observer retains still-visible sections when an unrelated intersection entry changes',()=>{
- const f=fixture({sections:true,reduced:true}),observer=f.observed[0],second=f.sectionNodes.get('section-2'),third=f.sectionNodes.get('section-3');
- observer.callback([{target:second,isIntersecting:true,intersectionRatio:.8},{target:third,isIntersecting:true,intersectionRatio:.4}]);assert.equal(f.paint('--lens-x'),160);
- observer.callback([{target:third,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.paint('--lens-x'),160,'An absent entry is not evidence that the selected section left view');
- observer.callback([{target:second,isIntersecting:false,intersectionRatio:0}]);assert.equal(f.paint('--lens-x'),0);
+test('scrolling never changes the current page or registers section observers',()=>{
+ const f=fixture({sections:true,reduced:true});assert.equal(f.observed.length,0);f.context.scrollY=1000;f.host.emit('scroll');assert.equal(f.paint('--lens-x'),0);assert.equal(f.links[0].getAttribute('aria-current'),'page');assert.equal(f.frames.size,0);
 });
 test('real labels are never cloned, masked or overlaid with a second selected destination',()=>{
  const f=fixture();assert.ok(f.links.every(link=>link.childNodes.length===2),'real icon and label remain intact');assert.equal(f.lens.childNodes.length,0,'lens contains no cloned content');
@@ -130,7 +125,7 @@ test('the same elapsed time gives the same spring position at 60 and 120 Hz',()=
 });
 test('cross-page activation paints a transition before one delayed handoff',()=>{
  const f=fixture();f.links[1].href='https://example.test/projects/';f.links[2].href='https://example.test/experience/';
- const first=f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});assert.equal(first.defaultPrevented,true);assert.equal(f.navigations.length,0);f.step();assert.ok(f.paint('--lens-x')>0);f.advance(100);assert.equal(f.navigations.length,0);
+ const first=f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});assert.equal(first.defaultPrevented,true);assert.equal(f.navigations.length,0);f.step();assert.ok(f.paint('--lens-x')>0);f.advance(70);assert.equal(f.navigations.length,0);
  f.dock.emit('click',{target:f.links[2],isTrusted:true,detail:1});assert.equal(f.timers.size,1,'A newer destination replaces the pending handoff');f.advance(180);assert.deepEqual(f.navigations,['https://example.test/experience/']);
 });
 test('reduced motion and modified cross-page clicks preserve immediate native intent',()=>{
@@ -143,4 +138,25 @@ test('scrolling alone schedules no decorative animation or backdrop work',()=>{
 
 test('the dragging lens reaches the latest finger location on its first display frame',()=>{
  const f=fixture();f.dock.emit('pointerdown',{clientX:60});f.dock.emit('pointermove',{clientX:260});f.step();assert.equal(f.paint('--lens-x'),200);f.dock.emit('pointermove',{clientX:150});f.step();assert.equal(f.paint('--lens-x'),90);f.dock.emit('pointercancel');f.settle();assert.equal(f.paint('--lens-x'),0);
+});
+
+test('a settled long press always shrinks back after release without a click',()=>{
+ const f=fixture();f.dock.emit('pointerdown');f.settle();assert.equal(f.frames.size,0);assert.ok(f.paint('--lens-stretch')>1);f.advance(700);f.dock.emit('pointerup');assert.ok(f.frames.size,'Release must restart the stopped frame loop');f.settle();assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.paint('--lens-squash'),1);assert.equal(f.navigations.length,0);
+});
+test('the next document resumes the departure position, then settles to its own selected tab',()=>{
+ const storage=new Map(),old=fixture({storage});old.links[3].href='https://example.test/contact/index.html';old.dock.emit('click',{target:old.links[3],isTrusted:true,detail:1});for(let n=0;n<4;n++)old.step();old.advance(110);const departure=old.paint('--lens-x');old.host.emit('pagehide',{persisted:false});assert.ok(storage.size);
+ const next=fixture({storage,pathname:'/contact/index.html',active:3});assert.equal(next.paint('--lens-x'),departure,'Boot must use the departure coordinate rather than reset to the destination');assert.equal(storage.size,0,'The handoff is consumed once');next.resizes[0].callback([{target:next.dock}]);assert.equal(next.paint('--lens-x'),departure,'Initial ResizeObserver delivery must not erase the incoming animation');next.settle();assert.equal(next.paint('--lens-x'),240);
+});
+test('unrelated or stale handoffs never change the current page and blocked storage keeps navigation working',()=>{
+ for(const state of [{href:'https://example.test/unrelated/',at:Date.now(),fraction:.5,speed:0,lift:0},{href:'https://example.test/',at:Date.now()-3000,fraction:.5,speed:0,lift:0},{href:'http://[',at:Date.now(),fraction:.5,speed:0,lift:0}]){
+  const storage=new Map([['portfolio-dock-handoff-v2',JSON.stringify(state)]]),f=fixture({storage});assert.equal(f.paint('--lens-x'),0);assert.equal(storage.size,0);assert.equal(f.frames.size,0);
+ }
+ const f=fixture({storageBlocked:true});f.links[1].href='https://example.test/projects/';f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});f.advance(110);assert.deepEqual(f.navigations,['https://example.test/projects/']);
+});
+test('the destination discards handoff motion when reduced motion is requested',()=>{
+ const storage=new Map([['portfolio-dock-handoff-v2',JSON.stringify({href:'https://example.test/contact/',at:Date.now(),fraction:.2,speed:1,lift:1})]]),f=fixture({storage,reduced:true,pathname:'/contact/',active:4});assert.equal(f.paint('--lens-x'),320);assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.frames.size,0);assert.equal(storage.size,0);
+});
+
+test('a narrow media intersection switches contrast without per-scroll animation work',()=>{
+ const video=new Surface(),dark=new Surface(),f=fixture({mediaSources:[video,dark]});assert.equal(f.observed.length,1);const observer=f.observed[0];assert.equal(observer.nodes.length,2);observer.callback([{target:video,isIntersecting:true}]);assert.equal(f.dock.hasAttribute('data-over-media'),true);assert.equal(f.frames.size,0);observer.callback([{target:dark,isIntersecting:true},{target:video,isIntersecting:false}]);assert.equal(f.dock.hasAttribute('data-over-media'),true);observer.callback([{target:dark,isIntersecting:false}]);assert.equal(f.dock.hasAttribute('data-over-media'),false);f.host.emit('pagehide',{persisted:false});assert.equal(observer.disconnected,true);
 });

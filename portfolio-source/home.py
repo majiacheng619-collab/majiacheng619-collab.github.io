@@ -8,10 +8,9 @@ def build_home(img, cta, media, transcript):
  <div class="premium-shell hero-layout">
   <div class="premium-hero-copy">
    <h1 id="identity-title">马嘉程</h1>
-   <p class="premium-hero-statement">把想法，<br>做成作品。</p>
    <p class="premium-hero-intro">2027 届 · 产品与运营</p>
-   <div class="actions">{cta('#selected','查看作品')}{cta('resume.pdf','下载简历',True)}</div>
   </div>
+  <div class="actions hero-actions">{cta('resume.pdf','下载简历')}{cta('#selected','查看作品',True)}</div>
   <div class="hero-visual"><div class="hero-profile-image">{img('assets/portrait-white-960.b8bfe698eef3.webp','马嘉程个人照片',eager=True)}</div></div>
  </div>
 </section>
@@ -46,10 +45,8 @@ def build_home(img, cta, media, transcript):
 </section>
 <section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
  <div class="premium-section-head" data-reveal><h2 id="film-title">24 秒，看我做过什么。</h2></div>
- <div class="premium-film-player" data-video-player><video id="intro-video" controls playsinline preload="none" poster="{media['poster']}" aria-label="马嘉程24秒作品介绍，无旁白，含授权器乐配乐和画面文字"><source src="{media['video']}" type="video/mp4"><track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">你的浏览器无法播放此视频，请下载观看。</video><div class="premium-film-control"><button class="button primary" data-video-play aria-controls="intro-video"><span data-video-label>播放介绍</span></button><a class="button secondary" download href="{media['video']}">下载影片</a></div></div>
+ <div class="premium-film-player"><video id="intro-video" controls playsinline preload="none" poster="{media['poster']}" aria-label="马嘉程24秒作品介绍，无旁白，含授权器乐配乐和画面文字"><source src="{media['video']}" type="video/mp4"><track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。</video></div>
  <details class="premium-transcript"><summary>文字稿</summary><p>{transcript}</p></details>
 </section>
-<section class="premium-contact" id="about" aria-labelledby="contact-title">
- <div class="premium-shell premium-contact-copy" data-reveal><h2 id="contact-title">期待与你共事。</h2><div class="actions">{cta('mailto:19870043434@163.com','邮件联系')}{cta('resume.pdf','下载简历',True)}</div></div>
-</section>
+
 </div>'''
