@@ -41,6 +41,12 @@ def clean(root):
     from film.cache_probe import refresh_documentation
     refresh_documentation(root)
     remove_retired(root)
+    # These are local operating-system/build caches, never site resources.
+    for folder in sorted(root.rglob('*'), key=lambda path: len(path.parts), reverse=True):
+        if folder.is_dir() and folder.name in ('__MACOSX', '__pycache__', '.pytest_cache'):
+            shutil.rmtree(folder)
+        elif folder.is_file() and (folder.name in ('.DS_Store', 'Thumbs.db') or folder.suffix == '.pyc'):
+            folder.unlink()
     for relative in OBSOLETE:
         file=root/relative
         if file.is_file(): file.unlink()

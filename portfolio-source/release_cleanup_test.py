@@ -196,5 +196,52 @@ class CleanupSafeguards(unittest.TestCase):
             checkout.assert_not_called()
 
 
+class PublishedAssetCleanup(unittest.TestCase):
+    def test_updated_previews_change_url_and_keep_nested_routes_consistent(self):
+        from prepare_release import fingerprint_portfolio_artwork
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'assets').mkdir()
+            (root/'projects').mkdir()
+            source = root/'assets/garden-current-home.webp'
+            source.write_bytes(b'current screen')
+            (root/'assets/garden-current-home.000000000000.webp').write_bytes(b'old screen')
+            (root/'index.html').write_text('<img src="assets/garden-current-home.webp">')
+            (root/'projects/index.html').write_text('<img src="../assets/garden-current-home.000000000000.webp">')
+            fingerprint_portfolio_artwork(root)
+            first = next((root/'assets').iterdir())
+            self.assertRegex(first.name, r'^garden-current-home\.[a-f0-9]{12}\.webp$')
+            self.assertEqual(first.read_bytes(), b'current screen')
+            self.assertIn('assets/'+first.name, (root/'index.html').read_text())
+            self.assertIn('../assets/'+first.name, (root/'projects/index.html').read_text())
+            fingerprint_portfolio_artwork(root)
+            self.assertEqual(list((root/'assets').iterdir()), [first])
+            source.write_bytes(b'updated screen')
+            fingerprint_portfolio_artwork(root)
+            second = next((root/'assets').iterdir())
+            self.assertNotEqual(first.name, second.name)
+            self.assertIn(second.name, (root/'index.html').read_text())
+            self.assertIn(second.name, (root/'projects/index.html').read_text())
+            self.assertFalse(first.exists())
+
+    def test_local_cache_cleanup_preserves_current_assets_and_game_data(self):
+        from clean_release import clean
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root/'assets').mkdir()
+            (root/'game').mkdir()
+            (root/'game/save-policy.txt').write_text('Current save policy')
+            (root/'assets/current.webp').write_bytes(b'current image')
+            for folder in ('__MACOSX', 'game/__pycache__', '.pytest_cache'):
+                (root/folder).mkdir()
+                (root/folder/'cache').write_bytes(b'local cache')
+            (root/'assets/.DS_Store').write_bytes(b'finder metadata')
+            (root/'game/unused.pyc').write_bytes(b'python cache')
+            with patch('film.cache_probe.refresh_documentation'):
+                clean(root)
+            self.assertEqual(sorted(p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()),
+                             ['assets/current.webp', 'game/save-policy.txt'])
+
+
 if __name__ == '__main__':
     unittest.main()

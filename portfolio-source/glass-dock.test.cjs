@@ -176,3 +176,17 @@ test('BFCache restoration clears a settled held droplet before new input',()=>{
  f.host.emit('pagehide',{persisted:true});f.host.emit('pageshow',{persisted:true});
  assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.paint('--lens-squash'),1);f.links[1].click();f.settle();assert.equal(f.paint('--lens-x'),80);
 });
+
+
+test('releasing outside the dock or leaving the window clears a held press without navigation',()=>{
+ for(const event of ['pointerup','blur']){
+  const f=fixture();f.dock.emit('pointerdown');f.settle();assert.ok(f.paint('--lens-stretch')>1);
+  f.host.emit(event);f.settle();assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.captures.size,0);assert.equal(f.navigations.length,0);
+  f.links[1].click();f.settle();assert.equal(f.paint('--lens-x'),80);assert.equal(f.navigations.length,1);
+ }
+});
+test('desktop context menus keep native open-in-new-tab actions available',()=>{
+ for(const properties of [{button:2},{ctrlKey:true},{pointerType:'mouse'}]){
+  const f=fixture();assert.ok(!f.dock.emit('contextmenu',{target:f.links[1],...properties}).defaultPrevented);
+ }
+});

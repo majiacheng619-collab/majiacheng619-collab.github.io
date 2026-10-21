@@ -58,6 +58,12 @@ def audit(root):
         if not path.is_file():
             continue
         relative = path.relative_to(root).as_posix()
+        if path.name in ('.DS_Store', 'Thumbs.db') or path.suffix == '.pyc' or any(part in ('__MACOSX', '__pycache__', '.pytest_cache') for part in path.parts):
+            errors.append('Local build cache remains in publication: ' + relative)
+        if relative.startswith('assets/garden-current-') and path.suffix == '.webp':
+            fingerprint = re.search(r'\.([a-f0-9]{12})\.webp$', path.name)
+            if not fingerprint or hashlib.sha256(path.read_bytes()).hexdigest()[:12] != fingerprint[1]:
+                errors.append('Game preview needs a valid content fingerprint: ' + relative)
         if retired.search(relative):
             errors.append('Retired visitor module remains: ' + relative)
         if path.suffix in ('.html', '.js', '.json'):

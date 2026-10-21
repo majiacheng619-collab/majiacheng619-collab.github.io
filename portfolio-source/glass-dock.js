@@ -177,6 +177,9 @@
     select(selected, reduce.matches);
   }
   dock.addEventListener('contextmenu', event => {
+    // Keep desktop link menus (including Ctrl-click on macOS) available. Only
+    // the touch hold needs suppression to avoid callouts and selected labels.
+    if (event.button === 2 || event.ctrlKey || event.pointerType === 'mouse') return;
     event.preventDefault();
     if (gesture && !gesture.dragging) { suppressClickUntil = performance.now() + 900; cancelGesture(); }
   }, {signal});
@@ -258,6 +261,13 @@
     }
   }, {signal, capture: true});
   dock.addEventListener('pointercancel', cancelGesture, {signal});
+  // A mouse press has no implicit capture. If it leaves the dock before a
+  // horizontal drag begins, its release never reaches the dock listener.
+  // Clear that held state without activating an unrelated destination.
+  addEventListener('pointerup', event => {
+    if (gesture && event.pointerId === gesture.id && !dock.contains(event.target)) cancelGesture();
+  }, {signal});
+  addEventListener('blur', () => { if (gesture) cancelGesture(); }, {signal});
   dock.addEventListener('lostpointercapture', event => {
     // Touch starts with implicit capture on the anchor. Moving capture to the
     // dock emits a bubbling lostpointercapture for that anchor; it is not loss

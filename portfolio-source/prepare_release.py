@@ -12,10 +12,36 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-10-21-ipad-front'
+REVISION='2026-10-21-unified-portfolio'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
+
+def fingerprint_portfolio_artwork(root):
+    """Give mutable game previews immutable URLs on every portfolio page."""
+    replacements = {}
+    current = set()
+    for source in sorted((root/'assets').glob('garden-current-*.webp')):
+        # Overrides carry the canonical unversioned inputs. Inherited hashes are
+        # removed only after all generated page references have been updated.
+        if re.search(r'\.[a-f0-9]{12}\.webp$', source.name):
+            continue
+        name = source.stem + '.' + hashlib.sha256(source.read_bytes()).hexdigest()[:12] + '.webp'
+        target = source.with_name(name)
+        target.write_bytes(source.read_bytes())
+        replacements[source.name] = name
+        current.add(name)
+    if not replacements:
+        return
+    for page in root.rglob('*.html'):
+        content = page.read_text()
+        for previous, name in replacements.items():
+            stem = re.escape(previous.removesuffix('.webp'))
+            content = re.sub(stem + r'(?:\.[a-f0-9]{12})?\.webp', name, content)
+        page.write_text(content)
+    for old in (root/'assets').glob('garden-current-*.webp'):
+        if old.name not in current:
+            old.unlink()
 
 def prepare():
     # Every release starts from the sole current archive, never a stale build folder.
@@ -44,6 +70,7 @@ def prepare():
         for old in (SITE/'assets/media').glob(pattern):
             if old != SITE/media[key]: old.unlink()
     run('python3','portfolio-source/build_site.py')
+    fingerprint_portfolio_artwork(SITE)
     film=json.loads((SOURCE/'film-manifest.json').read_text())
     release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames')},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))

@@ -60,6 +60,7 @@ jobs:
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
           AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
+          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/device-frame.browser.test.cjs
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site
@@ -139,6 +140,7 @@ jobs:
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
           AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
+          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/device-frame.browser.test.cjs
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
           NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site

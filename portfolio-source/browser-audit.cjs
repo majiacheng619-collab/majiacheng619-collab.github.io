@@ -218,16 +218,20 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      const devices=await page.locator('.device-frame').evaluateAll((frames,asset)=>frames.map(frame=>{
        const image=frame.querySelector('.device-frame__screen > img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
        const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
-       let projectionError=0,hardwareUnwarped=true;
+       let projectionError=0,hardwareError=0,hardwareUnwarped=true;
        if(frame.dataset.deviceFrame==='ipad'){
          const [vx,vy,vw]=asset.viewport,scale=rect.width/vw,points=asset.screenCorners;
          const wanted={left:rect.left+(Math.min(...points.map(p=>p[0]))-vx)*scale,top:rect.top+(Math.min(...points.map(p=>p[1]))-vy)*scale,right:rect.left+(Math.max(...points.map(p=>p[0]))-vx)*scale,bottom:rect.top+(Math.max(...points.map(p=>p[1]))-vy)*scale};
          const actual=screen.getBoundingClientRect();projectionError=Math.max(...Object.keys(wanted).map(k=>Math.abs(actual[k]-wanted[k])));
-         hardwareUnwarped=getComputedStyle(frame.querySelector('.ipad-hardware')).transform==='none';
+         const hardwareImage=frame.querySelector('.ipad-hardware'),hardwareRect=hardwareImage.getBoundingClientRect();
+         // The photographed surround must retain its crop and proportions on every page.
+         const hardwareWanted={left:rect.left-vx*scale,top:rect.top-vy*scale,width:asset.sourceSize[0]*scale,height:asset.sourceSize[1]*scale};
+         hardwareError=Math.max(...Object.keys(hardwareWanted).map(key=>Math.abs(hardwareRect[key]-hardwareWanted[key])));
+         hardwareUnwarped=getComputedStyle(hardwareImage).transform==='none';
        }
-       return {projectionError,hardwareUnwarped,left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
+       return {projectionError,hardwareError,hardwareUnwarped,left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
      }),deviceAsset);
-     for(const device of devices)if(device.projectionError>1.5||!device.hardwareUnwarped||device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
+     for(const device of devices)if(device.projectionError>1.5||device.hardwareError>1.5||!device.hardwareUnwarped||device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
      if(!route.startsWith('game/')){
        const shell=await page.evaluate(()=>({dock:document.querySelectorAll('[data-glass-dock]').length,items:document.querySelectorAll('[data-glass-dock] [data-dock-item]').length,links:document.querySelectorAll('[data-glass-dock] a[data-dock-link]').length,search:document.querySelectorAll('[data-search-open]').length,current:document.querySelectorAll('[data-dock-link][aria-current]').length,retired:document.querySelectorAll('header,[data-menu-open],#menu-dialog,.chapter-nav,.reading-progress,script[src*="visitor-tracker"],script[src*="visitors."],[data-visitor-count],[data-privacy-toggle]').length,nav:document.querySelectorAll('nav').length}));
        if(shell.dock!==1||shell.items!==5||shell.links!==5||shell.search!==0||shell.current!==1||shell.retired!==0||shell.nav!==1)failures.push(`${width}px ${route}: invalid unified shell ${JSON.stringify(shell)}`);
