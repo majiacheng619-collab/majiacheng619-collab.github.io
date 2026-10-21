@@ -215,9 +215,15 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      if(metrics.main!==1||metrics.h1!==1)failures.push(`${route}: main=${metrics.main}, h1=${metrics.h1}`);
      if(!metrics.title)failures.push(`${route}: empty title`);
      if(metrics.broken.length)failures.push(`${route}: broken images ${metrics.broken.join(',')}`);
+     if(!route.startsWith('game/')){
+       const captures=await page.locator('main img[src*="garden-current-"]').evaluateAll(images=>images.map(image=>({src:image.getAttribute('src'),official:image.closest('[data-device-frame="ipad"][data-device-model="ipad-pro-2025"]')?.querySelectorAll('.ipad-hardware').length===1,legacy:!!image.closest('.device-frame--tablet,.device-frame__body')})));
+       const expectedCaptures={'index.html':1,'projects/index.html':1,'projects/sprout-patrol/index.html':2}[route]||0;
+       if(captures.length!==expectedCaptures||captures.some(capture=>!capture.official||capture.legacy))failures.push(`${width}px ${route}: screenshots must use the official 2025 iPad Pro ${JSON.stringify(captures)}`);
+     }
      const devices=await page.locator('.device-frame').evaluateAll((frames,asset)=>frames.map(frame=>{
+       if(frame.dataset.deviceFrame!=='ipad'||frame.dataset.deviceModel!=='ipad-pro-2025'||frame.querySelectorAll('.ipad-hardware').length!==1)return {invalidDevice:true,kind:frame.dataset.deviceFrame};
        const image=frame.querySelector('.device-frame__screen > img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
-       const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
+       const expected=asset.screenSourceRatio[0]/asset.screenSourceRatio[1];
        let projectionError=0,hardwareError=0,hardwareUnwarped=true;
        if(frame.dataset.deviceFrame==='ipad'){
          const [vx,vy,vw]=asset.viewport,scale=rect.width/vw,points=asset.screenCorners;
@@ -227,11 +233,11 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
          // The photographed surround must retain its crop and proportions on every page.
          const hardwareWanted={left:rect.left-vx*scale,top:rect.top-vy*scale,width:asset.sourceSize[0]*scale,height:asset.sourceSize[1]*scale};
          hardwareError=Math.max(...Object.keys(hardwareWanted).map(key=>Math.abs(hardwareRect[key]-hardwareWanted[key])));
-         hardwareUnwarped=getComputedStyle(hardwareImage).transform==='none';
+         hardwareUnwarped=getComputedStyle(hardwareImage).transform==='none'&&new URL(hardwareImage.src).pathname.endsWith('/'+asset.asset);
        }
        return {projectionError,hardwareError,hardwareUnwarped,left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
      }),deviceAsset);
-     for(const device of devices)if(device.projectionError>1.5||device.hardwareError>1.5||!device.hardwareUnwarped||device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
+     for(const device of devices)if(device.invalidDevice||device.projectionError>1.5||device.hardwareError>1.5||!device.hardwareUnwarped||device.left< -1||device.right>width+1||device.baseLeft< -1||device.baseRight>width+1||Math.abs(device.ratio-device.expected)>.01||device.fit!=='contain'||device.overflow!=='visible')failures.push(`${width}px ${route}: device surround crops or overflows ${JSON.stringify(device)}`);
      if(!route.startsWith('game/')){
        const shell=await page.evaluate(()=>({dock:document.querySelectorAll('[data-glass-dock]').length,items:document.querySelectorAll('[data-glass-dock] [data-dock-item]').length,links:document.querySelectorAll('[data-glass-dock] a[data-dock-link]').length,search:document.querySelectorAll('[data-search-open]').length,current:document.querySelectorAll('[data-dock-link][aria-current]').length,retired:document.querySelectorAll('header,[data-menu-open],#menu-dialog,.chapter-nav,.reading-progress,script[src*="visitor-tracker"],script[src*="visitors."],[data-visitor-count],[data-privacy-toggle]').length,nav:document.querySelectorAll('nav').length}));
        if(shell.dock!==1||shell.items!==5||shell.links!==5||shell.search!==0||shell.current!==1||shell.retired!==0||shell.nav!==1)failures.push(`${width}px ${route}: invalid unified shell ${JSON.stringify(shell)}`);

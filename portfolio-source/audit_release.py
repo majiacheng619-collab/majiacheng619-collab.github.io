@@ -19,6 +19,8 @@ class Page(HTMLParser):
     def __init__(self, text):
         super().__init__()
         self.images = []
+        self.device_spans = []
+        self.capture_devices = []
         self.scripts = []
         self.videos = []
         self.tracks = []
@@ -27,16 +29,25 @@ class Page(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == 'span':
+            self.device_spans.append(attrs if 'data-device-frame' in attrs else None)
         if tag == 'script' and attrs.get('src'):
             self.scripts.append(attrs['src'])
         if tag == 'a':
             self.anchors.append(attrs)
         if tag == 'img':
             self.images.append(attrs)
+            if re.search(r'garden-current-[^/]+\.webp$', attrs.get('src', '')):
+                device = next((item for item in reversed(self.device_spans) if item is not None), {})
+                self.capture_devices.append((attrs.get('src'), device))
         elif tag == 'video':
             self.videos.append(attrs)
         elif tag == 'track':
             self.tracks.append(attrs)
+
+    def handle_endtag(self, tag):
+        if tag == 'span' and self.device_spans:
+            self.device_spans.pop()
 
 
 def audit(root):
@@ -137,6 +148,9 @@ def audit(root):
         expected = 1 if relative in ('index.html', 'contact/index.html') else 0
         if len(pdfs) != expected:
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
+        for capture, device in doc.capture_devices:
+            if device.get('data-device-frame') != 'ipad' or device.get('data-device-model') != 'ipad-pro-2025':
+                errors.append(f'{relative}: screenshot must use the iPad Pro 2025 component: {capture}')
         for image in doc.images:
             if not all(image.get(key, '').isdigit() and int(image[key]) > 0 for key in ('width', 'height')):
                 errors.append(f'{path.relative_to(root)}: image lacks positive intrinsic dimensions: {image.get("src")}')

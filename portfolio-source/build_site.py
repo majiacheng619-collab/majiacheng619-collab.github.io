@@ -80,7 +80,7 @@ for i,(t,d) in enumerate([('争取时间','保护萌芽，等待它长成。'),(
  growth_image=['assets/growth-seed-sprout.da294e149655.png','assets/growth-seed-adult.01b9f733e3e8.png','assets/growth-seed-flower.3fb952bbfb40.png'][i]
  game+=f'<div id="growth-panel-{i}" data-growth-panel="{i}"'+f'><img class="growth-real" src="{growth_image}" alt="种子投手的{["萌芽","成株","开花"][i]}阶段" width="384" height="384" loading="lazy" decoding="async"/><div><h3>{t}</h3><p>{d}</p></div></div>'
 game+='</div></div></section>'
-game+=detail_split('journey','花园旅程','<p>四个世界，20 关，完成一关再走向下一关。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"),'tablet')+'</a>')
+game+=detail_split('journey','花园旅程','<p>四个世界，20 关，完成一关再走向下一关。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"),'ipad')+'</a>')
 game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导入门，图鉴随时查阅。'),('存档','本机自动保存，也可导出存档码。')])
 
 game+=detail_close()

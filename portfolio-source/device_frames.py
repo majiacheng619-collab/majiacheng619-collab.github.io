@@ -1,19 +1,11 @@
-"""Decorative device surrounds for real screen captures."""
+"""One authentic 2025 iPad Pro M5 surround for every portfolio screen capture."""
 
 
 def device_frame(content, kind='ipad'):
-    if kind not in ('ipad', 'tablet'):
-        raise ValueError('Unknown device surround')
-    if kind == 'ipad':
-        return (
-            '<span class="device-frame device-frame--ipad" data-device-frame="ipad">'
-            '<img class="ipad-hardware" src="assets/ipad-pro-m5.d67558d91a2d.jpg" alt="" aria-hidden="true" width="3504" height="2784" loading="lazy" decoding="async">'
-            '<span class="device-frame__screen">' + content + '</span></span>'
-        )
+    if kind != 'ipad':
+        raise ValueError('Portfolio captures require the 2025 iPad Pro M5 surround')
     return (
-        f'<span class="device-frame device-frame--{kind}" data-device-frame="{kind}">'
-        '<span class="device-frame__body">'
-        '<span class="device-frame__camera" aria-hidden="true"></span>'
+        '<span class="device-frame device-frame--ipad" data-device-frame="ipad" data-device-model="ipad-pro-2025">'
+        '<img class="ipad-hardware" src="assets/ipad-pro-m5.d67558d91a2d.jpg" alt="" aria-hidden="true" width="3504" height="2784" loading="lazy" decoding="async">'
         '<span class="device-frame__screen">' + content + '</span></span>'
-        + '</span>'
     )
