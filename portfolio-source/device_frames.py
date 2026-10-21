@@ -7,7 +7,7 @@ def device_frame(content, kind='mac'):
     if kind == 'mac':
         return (
             '<span class="device-frame device-frame--mac" data-device-frame="mac">'
-            '<img class="mac-hardware" src="assets/macbook-pro-m5.7929d47ee078.jpg" alt="" aria-hidden="true" width="1960" height="1306" loading="lazy" decoding="async">'
+            '<img class="mac-hardware" src="assets/macbook-pro-photo.ad19aaf9d78e.jpg" alt="" aria-hidden="true" width="1320" height="1760" loading="lazy" decoding="async">'
             '<span class="device-frame__screen">' + content + '</span></span>'
         )
     return (

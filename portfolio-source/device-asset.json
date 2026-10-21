@@ -1,23 +1,58 @@
 {
-  "asset": "assets/macbook-pro-m5.7929d47ee078.jpg",
-  "source": "https://www.apple.com/newsroom/images/2025/10/apple-unveils-new-14-inch-macbook-pro-powered-by-the-m5-chip/article/Apple-MacBook-Pro-14-in-Adobe-Premiere-Pro-251015_big.jpg.large_2x.jpg",
-  "sourcePage": "https://www.apple.com/newsroom/2025/10/apple-unveils-new-14-inch-macbook-pro-powered-by-the-m5-chip/",
-  "copyright": "Apple Inc.",
-  "sha256": "7929d47ee07898d82e5d0c1b56bf86c9ea60a5754bdc304a1a563a7ab656c6a3",
+  "asset": "assets/macbook-pro-photo.ad19aaf9d78e.jpg",
+  "sourceType": "user-provided photograph",
+  "sourceFile": "IMG_3134.jpeg",
+  "device": "MacBook Pro",
+  "chipVerified": false,
+  "sha256": "ad19aaf9d78ebd83d1be116941c6b0d76f5ab587599eb4a87da2e932b2b66cc6",
   "sourceSize": [
-    1960,
-    1306
+    1320,
+    1760
   ],
   "viewport": [
-    90,
-    110,
-    1780,
-    1080
+    20,
+    30,
+    1240,
+    1150
   ],
-  "screen": [
-    306,
-    166,
-    1348,
-    876
+  "screenCorners": [
+    [
+      340.0,
+      69.0
+    ],
+    [
+      1219.0,
+      150.0
+    ],
+    [
+      1129.0,
+      739.0
+    ],
+    [
+      296.0,
+      633.0
+    ]
+  ],
+  "screenSourceRatio": [
+    1512,
+    982
+  ],
+  "screenMatrix": [
+    0.6724464765279543,
+    0.06196605756400945,
+    0.05138381013121342,
+    0,
+    -0.057348789074623846,
+    0.7351072054110874,
+    -0.07647827903138188,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
   ]
 }
