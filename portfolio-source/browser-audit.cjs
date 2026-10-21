@@ -219,11 +219,11 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
        const image=frame.querySelector('.device-frame__screen > img'),screen=frame.querySelector('.device-frame__screen'),base=frame.querySelector('.device-frame__base'),rect=frame.getBoundingClientRect(),r=image.getBoundingClientRect(),hardware=base?.getBoundingClientRect();
        const expected=Number(image.getAttribute('width'))/Number(image.getAttribute('height'));
        let projectionError=0,hardwareUnwarped=true;
-       if(frame.dataset.deviceFrame==='mac'){
+       if(frame.dataset.deviceFrame==='ipad'){
          const [vx,vy,vw]=asset.viewport,scale=rect.width/vw,points=asset.screenCorners;
          const wanted={left:rect.left+(Math.min(...points.map(p=>p[0]))-vx)*scale,top:rect.top+(Math.min(...points.map(p=>p[1]))-vy)*scale,right:rect.left+(Math.max(...points.map(p=>p[0]))-vx)*scale,bottom:rect.top+(Math.max(...points.map(p=>p[1]))-vy)*scale};
          const actual=screen.getBoundingClientRect();projectionError=Math.max(...Object.keys(wanted).map(k=>Math.abs(actual[k]-wanted[k])));
-         hardwareUnwarped=getComputedStyle(frame.querySelector('.mac-hardware')).transform==='none';
+         hardwareUnwarped=getComputedStyle(frame.querySelector('.ipad-hardware')).transform==='none';
        }
        return {projectionError,hardwareUnwarped,left:rect.left,right:rect.right,ratio:image.offsetWidth/image.offsetHeight,expected,fit:getComputedStyle(image).objectFit,overflow:getComputedStyle(frame.closest('a')||frame).overflow,baseLeft:hardware?.left??0,baseRight:hardware?.right??0};
      }),deviceAsset);

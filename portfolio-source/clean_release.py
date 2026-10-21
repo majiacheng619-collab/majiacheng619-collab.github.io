@@ -4,6 +4,7 @@ import re
 import shutil
 
 OBSOLETE=(
+    'assets/macbook-pro-photo.ad19aaf9d78e.jpg',
     'assets/macbook-pro-m5.7929d47ee078.jpg',
     '.gitignore',
     'assets/favicon.99c44e666ff1.svg',
