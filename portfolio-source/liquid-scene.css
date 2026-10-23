@@ -154,9 +154,10 @@ html[data-scene-paused='true'] .ambient-orb { animation-play-state: paused; }
   .role-grid,.star-grid { grid-template-columns: 1fr; gap: 24px; }
   .role-path { padding: 25px; }
   .case-study { padding: 25px; margin-block: 24px 42px; }
-  .case-facts { gap: 12px; padding-bottom: 24px; }
-  .case-facts strong { font-size: 21px; }
-  .case-facts span { font-size: 12px; }
+  .case-facts { grid-template-columns: 1fr; gap: 15px; padding-bottom: 24px; }
+  .case-facts>div { flex-direction: row; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .case-facts strong { font-size: 21px; flex-shrink: 0; }
+  .case-facts span { font-size: 12px; text-align: right; }
   .detail-page .case-heading h2 { font-size: 30px; line-height: 1.35; }
   .detail-page .case-meta { font-size: 13px; }
   .detail-page .star-grid p { font-size: 16px; }
