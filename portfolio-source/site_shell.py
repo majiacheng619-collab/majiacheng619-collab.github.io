@@ -30,8 +30,6 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media):
   doc=doc.replace('</head>', '<meta name="color-scheme" content="light"/><meta name="format-detection" content="telephone=no"/> <meta property="og:locale" content="zh_CN"/></head>')
   doc=doc.replace(f'{footer}</main>',f'</main>{footer}')
   ambient='<div class="ambient-field" aria-hidden="true"><span class="ambient-orb ambient-orb-blue"></span><span class="ambient-orb ambient-orb-mint"></span><span class="ambient-orb ambient-orb-pearl"></span></div>'
-  preferences='<details class="glass-preferences"><summary aria-label="调整玻璃外观">外观 <span aria-hidden="true">◉</span></summary><div class="glass-preferences-panel"><label for="glass-clarity">通透程度</label><input id="glass-clarity" type="range" min="0" max="100" value="82"/><div class="glass-range-labels"><span>柔和</span><output for="glass-clarity" id="glass-clarity-value">82%</output><span>通透</span></div><label class="glass-motion-label"><input id="glass-motion" type="checkbox" checked/> 场景动效</label><p>外观保存在当前浏览器。系统的减少动态效果设置优先。</p></div></details>'
-  doc=doc.replace('</body>',preferences+'</body>')
   doc=doc.replace('<a class="skip-link"',ambient+'<a class="skip-link"')
   canonical=re.search(r'<link rel="canonical" href="([^"]+)"',doc).group(1)
   doc=doc.replace('</head>',f'<meta property="og:url" content="{canonical}"/><meta property="og:image" content="https://majiacheng619-collab.github.io/assets/portrait-white-960.b8bfe698eef3.webp"/></head>')

@@ -43,7 +43,7 @@ gamevisual='<a class="product-visual device-preview" href="game/index.html">'+de
 
 from home import build_home
 home=build_home(img, cta, media, transcript)
-render('index.html','马嘉程','马嘉程，2027届本科生。用户、电商与产品运营，Codex辅助网站与软件开发，营销内容与用户增长。查看作品与真实实践。',home)
+render('index.html','马嘉程','马嘉程，2027届本科生。展示电商教学、直播、门店经营、活动、AI影像与Codex辅助数字产品实践，面向相关运营、市场、商务与项目执行岗位。',home)
 
 # A shared, quiet layout for every portfolio destination.
 def detail_open(name): return f'<div class="detail-page detail-{name}">'
@@ -65,13 +65,8 @@ projects+=detail_split('field-work','面包挑战','<p>参与规则设计、物�
 projects+=detail_close()
 render('projects/index.html','作品','马嘉程的网页游戏、AI叙事视频、教学服务与线下活动。',projects)
 
-experience=detail_open('experience')+detail_hero('经历','')
-experience+=detail_split('ecommerce','电商教学与用户增长','<p>2022.06—2024.12</p><p>独立发起项目，负责咨询、教学与经营辅导，与 40–50 名推广伙伴协作。</p>','<div class="detail-number"><strong>1,000<span>左右</span></strong><p>累计去重学员</p></div>')
-experience+=detail_rows('service-thinking','服务与交付',[('教学内容','制作教学视频、操作手册与 FAQ。'),('经营辅导','围绕选品、定价、运费与投流，结合店铺实际情况持续答疑。')])
-experience+=detail_split('livestream','直播内容与用户运营','<p>2026.02—2026.09</p><p>独立负责策划、封面与直播筹备，组织户外专场，通过社群与私信维护用户。</p><p>约 1 小时的单场直播，最高曝光 30 万余。</p><div class="actions">'+cta('honor/index.html','查看荣誉')+'</div>',f'<a class="detail-certificate" data-image-open data-image-target="image-dialog" href="honor/live-honor-2026.jpeg">{img("honor/live-honor-2026.jpeg","抖音家乡荣耀季青山湖区区县100强实际凭证")}</a>')
-experience+=detail_rows('field','线下实践',[('面包挑战','2025.07—2025.08、2026.10 起。与朋友共同开展，参与规则设计、物料准备与现场执行，通常在 2–3 小时完成当场安排。'),('韩式炸鸡门店','2025.08—2025.11。与朋友合伙，承担加盟方案比选、选址签约、筹备采购与日常运营。')])
-experience+=detail_rows('skills','技能',[('产品与开发','需求拆解、AI 辅助开发与迭代验收。'),('内容与视觉','ChatGPT、Seedream、Seedance、剪映、Canva。'),('办公与数据','Word、PowerPoint、Excel 常用公式、查找匹配及数据透视表。')])
-experience+=detail_rows('education','教育经历',[('南昌理工学院','智能制造工程 · 本科在读<br/>2025.09—2027.07（预计）'),('华东交通大学','铁道信号自动控制 · 专科<br/>2022.09—2025.07')])+'<div class="detail-shell education-note"><p>两校就读期间均担任学习委员，持普通话二级甲等证书。</p></div>'+detail_close()
+from case_studies import build_experience
+experience=build_experience(cta,detail_rows)
 render('experience/index.html','实践经历','马嘉程的电商教学、直播运营、线下经营与教育经历。',experience)
 
 game=detail_open('game')+detail_hero('萌芽保卫队','种下、守护、成长。',cta('game/index.html','开始游戏'))
@@ -86,8 +81,13 @@ for i,(t,d) in enumerate([('争取时间','保护萌芽，等待它长成。'),(
  game+=f'<div id="growth-panel-{i}" data-growth-panel="{i}"'+f'><img class="growth-real" src="{growth_image}" alt="种子投手的{["萌芽","成株","开花"][i]}阶段" width="384" height="384" loading="lazy" decoding="async"/><div><h3>{t}</h3><p>{d}</p></div></div>'
 game+='</div></div></section>'
 game+=detail_split('journey','花园旅程','<p>四个世界，20 关，完成一关再走向下一关。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"),'ipad')+'</a>')
-game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导入门，图鉴随时查阅。'),('存档','本机自动保存，也可导出存档码。')])
+game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导帮助理解操作，图鉴用于查阅植物和敌人信息；将学习规则与进入玩法的过程衔接起来。'),('存档与继续','本机自动保存进度，也可导出存档码，让玩家能够中断后继续已有旅程。')])
 
+game+=detail_rows('product-process','从需求到交付',[
+ ('背景与目标','把植物成长、资源分配与防线安排变成可实际体验的网页塔防产品。围绕可上手的规则、能推进的关卡和可继续的进度，组织从想法到公开版本的交付。'),
+ ('产品拆解','独立规划植物、敌人、关卡和成长阶段，再将引导、资源、暂停、存档等拆成具体功能任务。由我提出需求与反馈，并围绕实际操作继续调整，而不是只生成一段无法使用的演示代码。'),
+ ('实现与验收','通过 Codex 等 AI 工具辅助实现代码，由我组织需求、提示词与反馈，结合实际操作持续检查交互和版本行为。网站与游戏保留浏览器交互、响应式页面、存档与发布资源等检查，以实际可用的版本作为交付结果。'),('继续体验','玩家可进入游戏查看新手引导、关卡、图鉴与进度。页面中的截图使用当前版本真实画面，成长演示则展示种子投手从萌芽到开花的三个阶段。'),
+ ('交付物','已发布 4 个世界、20 个关卡的可玩游戏，并在个人网站整理作品入口、截图、机制和项目说明。')])
 game+=detail_close()
 render('projects/sprout-patrol/index.html','萌芽保卫队','网页塔防游戏：体验植物成长与资源分配，了解马嘉程的项目分工。',game)
 
@@ -99,12 +99,12 @@ for kind,title,full,url,desc in [
  ('care','陪伴','陪家人抗癌','https://v.douyin.com/BIuX2Tb5rvM/','以人物关系、画面与声音表达家庭陪伴。')]:
  ai+=f'<section class="detail-film" id="film-{kind}"><div class="detail-shell"><div class="detail-film-art">{theme_art(kind,title)}</div><div class="detail-film-copy"><h2>{full}</h2><p>{desc}</p><a class="button primary" href="{url}" target="_blank" rel="noopener noreferrer">观看原作<span class="sr-only">（新标签页）</span></a></div></div></section>'
 ai+='</div><div class="detail-shell detail-note"><p>AI 叙事作品，非个人经历；配图为主题视觉。</p></div>'
-ai+=detail_rows('process','创作流程',[('脚本与分镜','使用 ChatGPT 梳理主题与脚本，拆分镜头任务。'),('素材与剪辑','以 Seedream、Seedance 生成素材，在剪映完成配音、字幕与剪辑。')])+detail_close()
+ai+=detail_rows('process','创作流程',[('选题与表达目标','将升学与就业、风险代价、家庭陪伴分别组织为三个故事。先明确叙事主题，再推进脚本和镜头准备，让不同作品各自有清楚的表达重点。'),('脚本与分镜','使用 ChatGPT 梳理脚本，把故事拆成具体镜头要求和生成提示词，组织后续素材任务。将整段叙事转化成可以分别制作与组织的镜头，是我在素材生成之前承担的内容策划工作。'),('素材与剪辑','以 Seedream、Seedance 生成视觉素材，在剪映完成配音、字幕与剪辑，迭代叙事节奏及视觉呈现。将生成工具与后期剪辑连接起来，完成从单独素材到完整视听作品的整理。'),('结果与分工','三支作品均由我独立完成并发布，覆盖创意策划、AI 素材和后期交付；原作入口可直接观看。此处的主题图用于区分作品，故事标题与观看按钮通向实际原作。'),('可迁移的工作','这套实践覆盖内容策划、脚本组织、AI 工具应用和视听交付，适合继续延伸到短视频、新媒体及品牌或活动内容支持等工作。')])+detail_close()
 render('projects/ai-content/index.html','AI叙事视频','马嘉程独立完成的三支AI叙事作品与原作入口。',ai)
 
 poster=detail_open('poster')+detail_hero('面包挑战','与朋友共同策划的线下活动。')
 poster+=detail_split('visual','活动海报','<p>2025.07—2025.08、2026.10 起。</p><p>我参与规则设计、A3 宣传物料准备与现场执行，向参与者说明收费、挑战要求与奖励。</p><div class="actions"><a class="button primary" data-image-open data-image-target="image-dialog" href="poster/poster.png">查看海报原图</a></div>',f'<a class="detail-poster-original" data-image-open data-image-target="image-dialog" href="poster/poster.png">{img(poster_preview,"面包挑战实际使用的活动宣传海报")}</a>')
-poster+=detail_rows('thinking','策划与执行',[('共同策划','与朋友共同准备活动规则和宣传物料。'),('现场执行','根据人流调整经营位置与组织方式，通常在 2–3 小时完成当场安排。')])
+poster+=detail_rows('thinking','策划与执行',[('场景与目标','基于南昌当地市场观察，与朋友将互动挑战整理为可以在现场开展的低投入活动。'),('规则与物料','共同准备收费、奖励、挑战要求和 A3 宣传物料，向参与者说明活动方式。实际海报标示 19.9 元/次，采用挑战主题、费用、分档奖励和参与须知的信息层次，将活动想法转为现场可展示的材料。'),('组织与调整','选择人流较大的场地，统筹物料和现场安排，根据人流变化调整位置与组织方式，包括流动经营。这个过程需要将宣传说明、参与者沟通和现场执行同时衔接。'),('实际交付','共同完成活动策划与现场执行，吸引参与及围观，通常在 2–3 小时完成当场挑战安排。网站展示实际使用的物料，以呈现从规则设计、宣传到现场落地的工作过程。'),('我的参与边界','项目由我与朋友共同开展。我参与规则、物料与执行，具体体现为现场项目推进和协作经验。')])
 poster+=detail_close()
 render('poster/index.html','面包挑战','面包挑战的实际宣传物料与马嘉程参与的规则设计、筹备和现场执行。',poster)
 
@@ -139,6 +139,6 @@ urls=['','projects/','experience/','projects/sprout-patrol/','projects/ai-conten
 (ROOT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join('<url><loc>'+origin+u+'</loc></url>' for u in urls)+'</urlset>\n')
 (ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+origin+'sitemap.xml\n')
 # Metadata does not require JavaScript or remote fonts to be useful.
-profile={'@context':'https://schema.org','@type':'Person','name':'马嘉程','url':origin,'description':'2027届本科，产品与运营方向；电商教学、AI叙事视频与网页游戏实践。'}
+profile={'@context':'https://schema.org','@type':'Person','name':'马嘉程','url':origin,'description':'2027届本科，运营、市场、商务与项目执行方向；电商教学、内容、线下经营及AI辅助数字产品实践。'}
 page=ROOT/'index.html'
 page.write_text(page.read_text().replace('</head>', '<script type="application/ld+json">'+json.dumps(profile,ensure_ascii=False)+'</script></head>'))
