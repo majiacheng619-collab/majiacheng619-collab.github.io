@@ -2,7 +2,6 @@
 from pathlib import Path
 from math import sin, cos, exp, pi
 import hashlib
-from PIL import Image, ImageFilter
 from sample_field import render
 
 
@@ -21,6 +20,7 @@ def shade(u, v):
 
 
 def build(root):
+    from PIL import Image, ImageFilter
     image = Image.new('RGB', (320, 320))
     render(image.putpixel, shade)
     image = image.resize((960, 960), Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(1.2))
