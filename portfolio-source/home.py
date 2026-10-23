@@ -10,9 +10,19 @@ def build_home(img, cta, media, transcript):
   <div class="premium-hero-copy">
    <h1 id="identity-title">马嘉程</h1>
    <p class="premium-hero-intro">2027 届 · 产品与运营</p>
+   <p class="hero-positioning">理解用户。推动增长。<br/>把想法做成可用的产品。</p>
+   <p class="hero-specialties">用户 / 电商 / 产品运营 · Codex 辅助开发 · 营销与用户增长</p>
   </div>
   <div class="actions hero-actions">{cta('resume.pdf','下载简历')}{cta('#selected','查看作品',True)}</div>
   <div class="hero-visual"><div class="hero-profile-image">{img('assets/portrait-white-960.b8bfe698eef3.webp','马嘉程个人照片',eager=True)}</div></div>
+ </div>
+</section>
+<section class="capabilities premium-shell" aria-labelledby="capabilities-title">
+ <div class="premium-section-head"><h2 id="capabilities-title">我的能力，连接业务与产品。</h2></div>
+ <div class="capability-grid">
+  <a class="capability-card" href="experience/index.html#ecommerce"><span class="capability-index" aria-hidden="true">01 / OPERATIONS</span><h3>用户、电商<br/>与产品运营</h3><p>从用户咨询、教学交付到持续经营辅导，把需求转化为具体行动。</p><span class="capability-proof">累计去重学员 1,000 左右</span><span class="capability-link">了解运营实践 ↗</span></a>
+  <a class="capability-card" href="projects/sprout-patrol/index.html"><span class="capability-index" aria-hidden="true">02 / BUILD</span><h3>用 Codex，<br/>把想法做出来</h3><p>网站、平台与软件开发方向：需求拆解、AI 辅助实现、交互设计与迭代验收。</p><span class="capability-proof">已落地：个人网站与网页游戏</span><span class="capability-link">查看开发作品 ↗</span></a>
+  <a class="capability-card" href="experience/index.html#livestream"><span class="capability-index" aria-hidden="true">03 / GROWTH</span><h3>营销内容<br/>与用户增长</h3><p>连接内容、直播、社群与线下场景，围绕触达、互动和服务持续优化。</p><span class="capability-proof">单场直播最高曝光 30 万余</span><span class="capability-link">了解增长实践 ↗</span></a>
  </div>
 </section>
 <section class="premium-selected" id="selected" aria-labelledby="selected-title">

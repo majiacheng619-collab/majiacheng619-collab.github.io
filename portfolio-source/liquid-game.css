@@ -1,0 +1,68 @@
+/* The same transparent optical language extends to the complete game microsite. */
+body.garden-presentation, body[data-page='index'] {
+  --gp-glass: linear-gradient(145deg,#ffffff4d,#ffffff1a);
+  --glass: #ffffff40;
+  background: radial-gradient(ellipse at 15% 10%,#bddcfa80,transparent 55%),
+              radial-gradient(ellipse at 90% 70%,#b3e5d780,transparent 55%), #eff4f8;
+}
+.gp-nav, .game-toolbar, .seed-tray,
+.garden-presentation .liquid, .garden-presentation .gp-info-card,
+.garden-presentation .guide-step, .garden-presentation .gp-world,
+.garden-presentation .gp-replay-panel,
+body[data-page='index'] .overlay-card,
+body[data-page='index'] .home-tools,
+body[data-page='index'] .game-status,
+body[data-page='index'] dialog {
+  background: linear-gradient(145deg,#ffffff5c,#ffffff14 55%,#ffffff3d),#ffffff26;
+  border: 1px solid #ffffffcf;
+  box-shadow: inset 0 1px 0 #fff,inset 0 -1px 0 #ffffff7a,0 14px 42px #224d6021;
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+body[data-page='index'] .seed-card:not(:disabled),
+.garden-presentation .button:not(.primary) {
+  background: linear-gradient(145deg,#ffffff85,#ffffff29);
+  border: 1px solid #ffffffbf;
+  box-shadow: inset 0 1px 0 #fff,0 4px 12px #244a3512;
+}
+:root[data-world='eclipse'] body[data-page='index'] .game-toolbar,
+:root[data-world='eclipse'] body[data-page='index'] .seed-tray,
+:root[data-world='eclipse'] body[data-page='index'] .overlay-card,
+:root[data-world='eclipse'] body[data-page='index'] dialog {
+  background: linear-gradient(145deg,#233c46eb,#1c303bd9);
+  border-color: #a8d4e340;
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .gp-nav, .game-toolbar, .seed-tray,
+  .garden-presentation .liquid, .garden-presentation .gp-info-card,
+  .garden-presentation .guide-step, .garden-presentation .gp-world,
+  .garden-presentation .gp-replay-panel,
+  body[data-page='index'] .overlay-card,body[data-page='index'] dialog { background: #f7faf8; }
+}
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  .gp-nav,.game-toolbar,.seed-tray,
+  .garden-presentation .liquid,.garden-presentation .gp-info-card,
+  .garden-presentation .guide-step,.garden-presentation .gp-world,
+  .garden-presentation .gp-replay-panel,
+  body[data-page='index'] .overlay-card,body[data-page='index'] dialog {
+    background: #f7faf8; backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+}
+@media print {
+  body.garden-presentation { background: white; }
+  .garden-presentation .liquid,.garden-presentation .gp-info-card { box-shadow: none; backdrop-filter: none; }
+}
+:root[data-world='eclipse'] body[data-page='index'] .seed-card:not(:disabled) {
+  background: linear-gradient(145deg,#36515bf2,#243d46e8); border-color: #a8d4e340;
+}
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  :root[data-world='eclipse'] body[data-page='index'] :is(.game-toolbar,.seed-tray,.overlay-card,dialog) {
+    background: #22353c;
+  }
+}
+:root[data-world='eclipse'] body[data-page='index'] {
+  --ink: #edf3ed; --muted: #aec0bc;
+  color: var(--ink);
+  background: radial-gradient(ellipse at 15% 10%,#324c6055,transparent 55%),
+              radial-gradient(ellipse at 90% 70%,#294b4655,transparent 55%),#17252b;
+}
