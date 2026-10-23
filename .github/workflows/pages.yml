@@ -53,7 +53,8 @@ jobs:
         run: python3 portfolio-source/prepare_release.py
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
-      - name: Verify responsive pages and browser interactions
+      - name: Prepare browser verification
+        timeout-minutes: 10
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y fonts-noto-cjk
@@ -62,11 +63,24 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
-          AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/device-frame.browser.test.cjs
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Verify responsive pages and browser interactions
+        timeout-minutes: 12
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/browser-audit.cjs _site
+      - name: Verify official device previews
+        timeout-minutes: 3
+        run: node portfolio-source/device-frame.browser.test.cjs
+      - name: Verify garden browser interactions
+        timeout-minutes: 5
+        run: node portfolio-source/game-browser-audit.cjs _site
+      - name: Verify garden offline cache
+        timeout-minutes: 3
+        run: node portfolio-source/game-cache-audit.cjs _site
+      - name: Verify garden experience
+        timeout-minutes: 5
+        run: node portfolio-source/game-experience-audit.cjs _site
       - name: Save temporary visual verification
         if: always()
         uses: actions/upload-artifact@v4
@@ -136,7 +150,8 @@ jobs:
         run: python3 portfolio-source/prepare_release.py
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
-      - name: Verify responsive pages and browser interactions
+      - name: Prepare browser verification
+        timeout-minutes: 10
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y fonts-noto-cjk
@@ -145,11 +160,24 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
           export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
           export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
-          AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/browser-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/device-frame.browser.test.cjs
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-browser-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-cache-audit.cjs _site
-          NODE_PATH="$RUNNER_TEMP/portfolio-browser/node_modules" node portfolio-source/game-experience-audit.cjs _site
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Verify responsive pages and browser interactions
+        timeout-minutes: 12
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/browser-audit.cjs _site
+      - name: Verify official device previews
+        timeout-minutes: 3
+        run: node portfolio-source/device-frame.browser.test.cjs
+      - name: Verify garden browser interactions
+        timeout-minutes: 5
+        run: node portfolio-source/game-browser-audit.cjs _site
+      - name: Verify garden offline cache
+        timeout-minutes: 3
+        run: node portfolio-source/game-cache-audit.cjs _site
+      - name: Verify garden experience
+        timeout-minutes: 5
+        run: node portfolio-source/game-experience-audit.cjs _site
       - name: Save temporary visual verification
         if: always()
         uses: actions/upload-artifact@v4
