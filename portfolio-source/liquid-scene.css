@@ -4,7 +4,7 @@
   --glass-surface: rgb(255 255 255 / var(--glass-alpha));
   --glass-edge: rgb(255 255 255 / .78);
   --glass-depth: 0 15px 40px #38567512, inset 0 1px 0 #ffffffe6, inset 0 -1px 0 #ffffff3b;
-  --glass-optics: blur(14px) saturate(150%);
+  --glass-optics: blur(9px) saturate(145%);
   --scene-x: 0px;
   --scene-y: 0px;
 }
@@ -185,5 +185,12 @@ html[data-scene-motion='off'] .ambient-orb { animation: none; transform: none; }
 /* This canvas samples the generated height/normal field at runtime. */
 .optical-scene { position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
 .ambient-field>.optical-scene { position:absolute; }
-html[data-scene-motion='on'] .ambient-orb { opacity:.2; }
+html[data-scene-motion='on'] .ambient-orb { opacity:.08; }
 @media (prefers-reduced-transparency:reduce), (prefers-contrast:more), print { .optical-scene { display:none; } }
+
+/* Water is the atmosphere; the glass keeps thin bright edges and deep soft shadows. */
+.ambient-field::after { opacity: .16; }
+.capability-card,.case-study,.role-path,.home-field,.premium-home .premium-story {
+  border-color: #ffffffa8;
+  box-shadow: 0 20px 60px #31597517,inset 0 1px 1px #ffffffed,inset 1px 0 0 #ffffff70,inset 0 -1px 1px #739fb333;
+}
