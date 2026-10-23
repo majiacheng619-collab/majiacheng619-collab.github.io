@@ -67,7 +67,7 @@
       sessionStorage.removeItem(handoffKey);
     } catch (_) { return; }
     if (reduce.matches || !state || typeof state.href !== 'string' ||
-        !Number.isFinite(state.at) || Date.now() - state.at < 0 || Date.now() - state.at > 2000 ||
+        !Number.isFinite(state.at) || Date.now() - state.at < 0 || Date.now() - state.at > 10000 ||
         !Number.isFinite(state.fraction) || state.fraction < -.1 || state.fraction > 1.1 ||
         !Number.isFinite(state.speed) || !Number.isFinite(state.lift)) return;
     try { if (!samePage(new URL(state.href, location.href), new URL(location.href))) return; } catch (_) { return; }
