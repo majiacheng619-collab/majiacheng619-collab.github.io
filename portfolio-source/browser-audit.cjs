@@ -103,6 +103,14 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await Promise.all([page.waitForURL(origin+'/index.html'),page.keyboard.press('Enter')]);
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.locator('[data-dock-link]').nth(2).focus();
+ // MediaQueryList change delivery follows emulation asynchronously. Wait for
+ // the actual reduced-motion state rather than racing the browser event.
+ await page.waitForFunction(()=>{
+   const node=document.querySelector('[data-glass-dock]');
+   const selected=node.querySelector('[aria-current]').getBoundingClientRect();
+   const rect=node.getBoundingClientRect(),style=getComputedStyle(node.querySelector('[data-dock-lens]'));
+   return Math.abs(parseFloat(style.getPropertyValue('--lens-x'))-(selected.left-rect.left-node.clientLeft))<1 && parseFloat(style.getPropertyValue('--lens-stretch'))===1;
+ });
  const reduced=await dock.evaluate(node=>{const selected=node.querySelector('[aria-current]').getBoundingClientRect(),rect=node.getBoundingClientRect(),style=getComputedStyle(node.querySelector('[data-dock-lens]'));return {x:parseFloat(style.getPropertyValue('--lens-x')),expected:selected.left-rect.left-node.clientLeft,stretch:parseFloat(style.getPropertyValue('--lens-stretch'))};});
  assert.ok(Math.abs(reduced.x-reduced.expected)<1,'Reduced motion keeps the lens on the current page while keyboard focus moves');assert.equal(reduced.stretch,1);
  await page.emulateMedia({reducedMotion:'no-preference'});
