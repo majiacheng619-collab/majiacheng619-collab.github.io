@@ -96,7 +96,7 @@
   }
   function draw(now = 0) {
     frame = 0;
-    if (!ready || stopped()) { last = 0; return; }
+    if (!ready || stopped() || (motion.matches && !needsPaint)) { last = 0; return; }
     if (last && now - last < 15 && !motion.matches) { frame = requestAnimationFrame(draw); return; }
     if (last && !motion.matches) elapsed += Math.min(.1, (now - last) / 1000);
     last = now;
