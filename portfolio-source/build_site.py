@@ -5,12 +5,17 @@ from identity import build as build_identity
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
-css=(Path(__file__).parent/'site.css').read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'device-frame.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()
-js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'glass-dock.js').read_text()
+css=(Path(__file__).parent/'site.css').read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'device-frame.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()+'\n'+(Path(__file__).parent/'liquid-scene.css').read_text()
+js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'glass-dock.js').read_text()+'\n'+(Path(__file__).parent/'liquid-scene.js').read_text()
 def asset(text,stem,ext):
  name=f'assets/{stem}.{hashlib.sha256(text.encode()).hexdigest()[:12]}.{ext}'
  (ROOT/name).write_text(text)
  return name
+import sys
+sys.path.insert(0,str(Path(__file__).parent/'optics'))
+from render_field import build as build_optical_field
+optical_asset=build_optical_field(ROOT)
+css=css.replace('GLASS_FIELD_ASSET',optical_asset)
 CSS=asset(css,'portfolio','css'); JS=asset(js,'portfolio','js')
 def img(src,alt,classes='',eager=False):
  width,height=dimensions.get(src,(1280,720))
@@ -38,7 +43,7 @@ gamevisual='<a class="product-visual device-preview" href="game/index.html">'+de
 
 from home import build_home
 home=build_home(img, cta, media, transcript)
-render('index.html','马嘉程','我是马嘉程，2027届本科生，求职方向为产品与运营。体验我的网页游戏，观看AI叙事视频，了解电商教学与经营实践。',home)
+render('index.html','马嘉程','马嘉程，2027届本科生。用户、电商与产品运营，Codex辅助网站与软件开发，营销内容与用户增长。查看作品与真实实践。',home)
 
 # A shared, quiet layout for every portfolio destination.
 def detail_open(name): return f'<div class="detail-page detail-{name}">'

@@ -1,0 +1,202 @@
+/* Shared optical layer. Text stays sharp while the scene passes behind it. */
+:root {
+  --glass-alpha: .18;
+  --glass-surface: rgb(255 255 255 / var(--glass-alpha));
+  --glass-edge: rgb(255 255 255 / .82);
+  --glass-depth: 0 18px 54px #284d7520, inset 0 1px 0 #ffffffed, inset 0 -1px 0 #ffffff6b;
+  --glass-optics: blur(22px) saturate(145%);
+  --scene-x: 0px;
+  --scene-y: 0px;
+}
+html { background: #eef3fa; }
+body, body.home-page { background: transparent; }
+.ambient-field {
+  background: linear-gradient(145deg,#edf4fb33,#f2f2f833), url("GLASS_FIELD_ASSET") center / cover;
+}
+.ambient-orb {
+  position: absolute;
+  width: min(78vw, 1000px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(44px);
+  opacity: .7;
+  transform: translate3d(var(--scene-x), var(--scene-y), 0);
+}
+.ambient-orb-blue {
+  left: -22%; top: -18%;
+  background: radial-gradient(circle at 65% 65%, #96cafa, #bfd8fa 40%, transparent 69%);
+}
+.ambient-orb-mint {
+  right: -28%; top: 28%;
+  background: radial-gradient(circle at 35% 45%, #a6e2d3, #c1e8e2 40%, transparent 70%);
+}
+.ambient-orb-pearl {
+  left: 18%; bottom: -38%;
+  background: radial-gradient(circle, #d8c6ee, #f7ded8 37%, transparent 69%);
+}
+.premium-home, .premium-home .premium-hero, .premium-home .premium-selected,
+.premium-home .premium-service,
+.detail-page .detail-split:nth-of-type(even),
+.detail-page .detail-film:nth-of-type(even), .detail-page .detail-growth,
+.page-hero:not(.dark) { background: transparent; }
+.premium-home .premium-hero { padding-block: 76px 48px; }
+.hero-layout { grid-template-columns: minmax(0,1fr) 250px; gap: 28px 56px; }
+.premium-home .premium-hero-copy { align-self: center; }
+.premium-home .hero-positioning {
+  color: #1d2b3f; font-size: clamp(28px,3.1vw,43px);
+  line-height: 1.3; letter-spacing: -.035em; font-weight: 600;
+  margin-top: 22px;
+}
+.premium-home .hero-specialties {
+  color: #42546b; font-size: 16px; line-height: 1.8; margin-top: 18px;
+}
+.hero-profile-image { border: 1px solid var(--glass-edge); box-shadow: var(--glass-depth); }
+.capabilities { padding-block: 32px 48px; }
+.capabilities .premium-section-head h2 { font-size: clamp(26px,3vw,36px); }
+.capability-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.capability-card {
+  display: flex; flex-direction: column; min-width: 0;
+  padding: 30px; color: #1d2b3f; min-height: 360px;
+}
+.capability-index { font-size: 11px; font-weight: 650; letter-spacing: .1em; color: #405775; }
+.premium-home .capability-card h3 { font-size: clamp(25px,2.7vw,33px); margin: 26px 0 18px; }
+.premium-home .capability-card p { font-size: 16px; line-height: 1.8; color: #43536a; margin-bottom: 24px; }
+.capability-proof { margin-top: auto; font-size: 13px; font-weight: 600; color: #365d75; }
+.capability-link { margin-top: 20px; font-size: 14px; color: #0055b3; }
+/* Reuse one material throughout the portfolio, including details and dialogs. */
+.capability-card, .premium-home .premium-story,
+.premium-home .premium-experience-list>a,
+.detail-page .detail-row,
+.detail-page .detail-split>.detail-shell,
+.detail-page .detail-film>.detail-shell,
+.contact-page .contact-identity,
+.contact-page .contact-methods>div,
+.detail-page .growth-demo,
+.premium-home .premium-transcript,
+.glass-preferences-panel, .image-dialog {
+  background: linear-gradient(135deg,#ffffff4a,#ffffff08 48%,#ffffff29), var(--glass-surface);
+  border: 1px solid var(--glass-edge);
+  border-radius: 28px;
+  box-shadow: var(--glass-depth);
+  -webkit-backdrop-filter: var(--glass-optics);
+  backdrop-filter: var(--glass-optics);
+}
+.detail-page .detail-split>.detail-shell,
+.detail-page .detail-film>.detail-shell { padding: clamp(24px,4vw,48px); }
+.detail-page .detail-row-list { display: grid; gap: 14px; }
+.detail-page .detail-row { padding: 28px; }
+.contact-page .contact-identity { padding: 30px; }
+.contact-page .contact-methods { display: grid; gap: 16px; }
+.contact-page .contact-methods>div { padding: 24px; }
+.premium-home .premium-transcript { padding: 12px 24px; margin-top: 20px; }
+.premium-home .premium-story-choice { background-color: rgb(212 229 250 / .2); }
+.premium-home .premium-story-risk { background-color: rgb(249 224 217 / .2); }
+.premium-home .premium-story-care { background-color: rgb(209 237 223 / .2); }
+.premium-home .button.primary, .detail-page .button.primary, .button.primary {
+  background: linear-gradient(145deg,#107cebe6,#0059bde8);
+  border: 1px solid #8dc1ff;
+  box-shadow: inset 0 1px 1px #ffffff7a, 0 8px 22px #0066cc25;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.premium-home .button.secondary, .detail-page .button.secondary, .button.secondary {
+  color: #0055b3; background: var(--glass-surface);
+  border: 1px solid #ffffffeb; box-shadow: var(--glass-depth);
+  -webkit-backdrop-filter: var(--glass-optics); backdrop-filter: var(--glass-optics);
+}
+.button.secondary:hover, .premium-home .button.secondary:hover { background: #ffffff85; color: #004d9e!important; }
+.glass-dock {
+  background: linear-gradient(145deg,#ffffff60,#ffffff12 55%,#ffffff48),var(--glass-surface);
+  border-color: #ffffffdb;
+  box-shadow: 0 16px 48px #24466c30,inset 0 1px 1px #fff,inset 0 -1px 1px #ffffff80;
+  -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+}
+.glass-preferences {
+  position: fixed; z-index: 41; top: max(16px,env(safe-area-inset-top,0px));
+  right: max(18px,env(safe-area-inset-right,0px));
+  border: 0; margin: 0; padding: 0; font-size: 14px;
+}
+.glass-preferences>summary {
+  list-style: none; display: flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 8px 17px; border-radius: 999px;
+  border: 1px solid var(--glass-edge); color: #243d58;
+  background: var(--glass-surface); box-shadow: var(--glass-depth);
+  -webkit-backdrop-filter: var(--glass-optics); backdrop-filter: var(--glass-optics);
+}
+.glass-preferences summary::-webkit-details-marker { display: none; }
+.glass-preferences-panel { width: min(290px,calc(100vw - 36px)); margin-top: 12px; padding: 24px; }
+.glass-preferences-panel label { display: block; color: #243d58; font-weight: 600; }
+#glass-clarity { width: 100%; min-height: 44px; accent-color: #0066cc; margin: 8px 0 0; }
+.glass-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: #42546b; }
+.glass-preferences-panel .glass-motion-label { display: flex; align-items: center; gap: 10px; margin-top: 18px; min-height: 44px; }
+#glass-motion { width: 20px; height: 20px; accent-color: #0066cc; }
+.glass-preferences-panel p { color: #42546b; font-size: 12px; line-height: 1.7; margin: 12px 0 0; }
+/* Highlight follows the pointer without moving content or interfering with links. */
+.capability-card, .premium-home .premium-story, .premium-home .premium-experience-list>a {
+  position: relative; overflow: hidden;
+  transition: transform .45s cubic-bezier(.16,1,.3,1), box-shadow .45s;
+}
+.capability-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at var(--light-x,30%) var(--light-y,0%),#ffffffb0,transparent 55%);
+  opacity: .3;
+}
+.capability-card>* { position: relative; }
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .capability-card:hover { transform: translateY(-5px); box-shadow: 0 28px 64px #284d7530,inset 0 1px 0 #fff; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  html:not([data-scene-motion='off']) .ambient-orb-blue { animation: glass-drift 24s ease-in-out infinite alternate; }
+  html:not([data-scene-motion='off']) .ambient-orb-mint { animation: glass-drift 30s ease-in-out -9s infinite alternate-reverse; }
+  html:not([data-scene-motion='off']) .ambient-orb-pearl { animation: glass-drift 28s ease-in-out -14s infinite alternate; }
+}
+@keyframes glass-drift {
+  from { translate: -3% -2%; scale: 1; }
+  to { translate: 7% 9%; scale: 1.12; }
+}
+@media (max-width:900px) {
+  .capability-grid { grid-template-columns: 1fr; gap: 16px; }
+  .capability-card { min-height: 0; padding: 28px; }
+  .premium-home .capability-card h3 { font-size: 29px; margin-top: 18px; }
+  .capability-card h3 br { display: none; }
+  .capability-link { margin-top: 14px; }
+}
+@media (max-width:760px) {
+  .premium-home .premium-hero { padding-top: 86px; padding-bottom: 28px; }
+  .hero-layout { grid-template-columns: minmax(0,1fr) 96px; gap: 24px 16px; }
+  .premium-home .hero-positioning { font-size: clamp(23px,5.5vw,31px); }
+  .premium-home .hero-specialties { font-size: 13px; }
+  .premium-home .premium-hero-intro { font-size: 16px; }
+  .hero-visual { align-self: start; margin-top: 5px; }
+  .capabilities { padding-top: 20px; }
+  .capabilities .premium-section-head { margin-bottom: 24px; }
+  .detail-page .detail-hero { padding-top: 86px; }
+  .contact-page .detail-hero { padding-top: 86px; }
+  .detail-page .detail-row { padding: 24px; }
+  .ambient-orb { width: 115vw; filter: blur(28px); }
+}
+/* An opaque fallback is deliberate when the platform cannot composite glass. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  :root { --glass-alpha: .94!important; }
+}
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  :root { --glass-alpha: .96!important; --glass-optics: none; }
+  .ambient-field { background: #eef3f8; }
+  .ambient-orb { display: none; }
+  .glass-dock, .glass-preferences>summary { background: #f8fbff; }
+  .capability-card::before { display: none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .ambient-orb { animation: none!important; transform: none; }
+  .capability-card { transition: none; }
+}
+html[data-scene-motion='off'] .ambient-orb { animation: none; transform: none; }
+@media (forced-colors:active) {
+  .ambient-field { display: none; }
+  .capability-card, .glass-preferences>summary, .glass-preferences-panel { border-color: CanvasText; }
+}
+@media print {
+  .glass-preferences, .ambient-field { display: none; }
+  .capability-grid { display: block; }
+  .capability-card { break-inside: avoid; margin-bottom: 16px; }
+  .capability-card, .detail-page .detail-row, .detail-page .detail-split>.detail-shell { background: white; box-shadow: none; backdrop-filter: none; }
+}

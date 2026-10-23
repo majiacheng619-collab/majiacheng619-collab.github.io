@@ -34,7 +34,10 @@ jobs:
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
-        run: python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Check current film cache
         id: film-cache
         run: echo "cached=$(python3 portfolio-source/film/cache_probe.py)" >> "$GITHUB_OUTPUT"
@@ -112,7 +115,10 @@ jobs:
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
-        run: python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Check current film cache

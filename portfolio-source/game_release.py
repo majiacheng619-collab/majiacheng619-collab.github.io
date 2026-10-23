@@ -15,6 +15,7 @@ def fingerprint(game):
     runtime = {alias:(source/name).read_text() for alias,name in aliases.items()}
     for stem in ('presentation.css','presentation.js'):
         runtime[stem]=(game/stem).read_text()
+    runtime['presentation.css']+='\n'+(Path(__file__).parent/'liquid-game.css').read_text()
     icon=Path(__file__).parent/'game-overrides/favicon.svg'
     if icon.exists():
         runtime['favicon.09a0d5017eeb.svg']=icon.read_text()
