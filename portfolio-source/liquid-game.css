@@ -60,3 +60,9 @@ body[data-page='index'] .seed-card:not(:disabled),
     background: #22353c;
   }
 }
+:root[data-world='eclipse'] body[data-page='index'] {
+  --ink: #edf3ed; --muted: #aec0bc;
+  color: var(--ink);
+  background: radial-gradient(ellipse at 15% 10%,#324c6055,transparent 55%),
+              radial-gradient(ellipse at 90% 70%,#294b4655,transparent 55%),#17252b;
+}
