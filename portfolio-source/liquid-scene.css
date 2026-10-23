@@ -181,3 +181,9 @@ html[data-scene-motion='off'] .ambient-orb { animation: none; transform: none; }
   .capability-card,.role-path { break-inside: avoid; margin-bottom: 16px; }
   .case-study,.capability-card,.detail-page .detail-row,.detail-page .detail-split>.detail-shell { background: white; box-shadow: none; backdrop-filter: none; }
 }
+
+/* This canvas samples the generated height/normal field at runtime. */
+.optical-scene { position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+.ambient-field>.optical-scene { position:absolute; }
+html[data-scene-motion='on'] .ambient-orb { opacity:.2; }
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more), print { .optical-scene { display:none; } }

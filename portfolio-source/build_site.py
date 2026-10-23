@@ -13,8 +13,9 @@ def asset(text,stem,ext):
  return name
 import sys
 sys.path.insert(0,str(Path(__file__).parent/'optics'))
-from render_field import build as build_optical_field
-optical_asset=build_optical_field(ROOT)
+optical_manifest=json.loads((ROOT/'assets/optical-field.json').read_text())
+optical_asset=optical_manifest['fallback']
+js+='\n'+(Path(__file__).parent/'optical-runtime.js').read_text().replace('OPTICAL_FLOW_ASSET',optical_manifest['flow'])
 css=css.replace('GLASS_FIELD_ASSET',optical_asset)
 CSS=asset(css,'portfolio','css'); JS=asset(js,'portfolio','js')
 def img(src,alt,classes='',eager=False):

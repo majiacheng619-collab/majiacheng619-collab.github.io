@@ -10,11 +10,11 @@ browser=await chromium.launch({args,executablePath:process.env.CHROME_PATH||unde
 const context=await browser.newContext(),page=await context.newPage(),origin=`http://127.0.0.1:${server.address().port}`;
 await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.goto(origin+'/game/');await page.waitForFunction(()=>globalThis.GardenEngine?.VERSION==='7.0.0');
-const cached=await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js',{scope:'./'});await navigator.serviceWorker.ready;const keys=await caches.keys();const key=keys.find(k=>k.includes('7.0.0-'));if(!key)throw Error('Current cache missing');const cache=await caches.open(key);return {key,entries:(await cache.keys()).length};});
+await page.goto(origin+'/game/');await page.waitForFunction(()=>globalThis.GardenEngine?.VERSION==='7.0.1');
+const cached=await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js',{scope:'./'});await navigator.serviceWorker.ready;const keys=await caches.keys();const key=keys.find(k=>k.includes('7.0.1-'));if(!key)throw Error('Current cache missing');const cache=await caches.open(key);const entries=await cache.keys();if(!entries.some(r=>r.url.includes('glass-flow.')))throw Error('Live optical field not precached');return {key,entries:entries.length};});
 assert.ok(cached.entries>=130,'Precache must contain complete playable game and reference pages');
 await page.waitForFunction(()=>!!navigator.serviceWorker.controller);await context.setOffline(true);
 for(const route of ['game/','game/codex.html','game/guide.html','game/about.html']){await page.goto(origin+'/'+route);assert.ok(await page.locator('main').isVisible());}
-await page.goto(origin+'/game/');await page.waitForFunction(()=>globalThis.GardenEngine?.VERSION==='7.0.0');await page.locator('[data-action="start"]').click();assert.ok(await page.locator('#garden').isVisible());assert.deepEqual(errors,[]);
+await page.goto(origin+'/game/');await page.waitForFunction(()=>globalThis.GardenEngine?.VERSION==='7.0.1');await page.locator('[data-action="start"]').click();assert.ok(await page.locator('#garden').isVisible());assert.deepEqual(errors,[]);
 console.log(JSON.stringify({ok:true,...cached,offlineRoutes:4,offlineBoot:true,errors}));
 }finally{await browser?.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
@@ -71,6 +71,9 @@ jobs:
       - name: Verify responsive pages and browser interactions
         timeout-minutes: 12
         run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/browser-audit.cjs _site
+      - name: Verify live optics and mobile lesson regressions
+        timeout-minutes: 6
+        run: node portfolio-source/game-repair-audit.cjs _site
       - name: Verify official device previews
         timeout-minutes: 3
         run: node portfolio-source/device-frame.browser.test.cjs
@@ -127,7 +130,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
@@ -170,6 +173,9 @@ jobs:
       - name: Verify responsive pages and browser interactions
         timeout-minutes: 12
         run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/browser-audit.cjs _site
+      - name: Verify live optics and mobile lesson regressions
+        timeout-minutes: 6
+        run: node portfolio-source/game-repair-audit.cjs _site
       - name: Verify official device previews
         timeout-minutes: 3
         run: node portfolio-source/device-frame.browser.test.cjs
