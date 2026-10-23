@@ -5,7 +5,7 @@ from identity import build as build_identity
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
-css=(Path(__file__).parent/'site.css').read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'device-frame.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()+'\n'+(Path(__file__).parent/'liquid-scene.css').read_text()
+css=(Path(__file__).parent/'site.css').read_text()+'\n'+(Path(__file__).parent/'foundation.css').read_text()+'\n'+(Path(__file__).parent/'experience.css').read_text()+'\n'+(Path(__file__).parent/'detail-premium.css').read_text()+'\n'+(Path(__file__).parent/'home-premium.css').read_text()+'\n'+(Path(__file__).parent/'liquid.css').read_text()+'\n'+(Path(__file__).parent/'contact.css').read_text()+'\n'+(Path(__file__).parent/'device-frame.css').read_text()+'\n'+(Path(__file__).parent/'glass-dock.css').read_text()+'\n'+(Path(__file__).parent/'liquid-scene.css').read_text()+'\n'+(Path(__file__).parent/'water-events.css').read_text()
 js=(Path(__file__).parent/'interactions.js').read_text()+'\n'+(Path(__file__).parent/'glass-dock.js').read_text()+'\n'+(Path(__file__).parent/'liquid-scene.js').read_text()
 def asset(text,stem,ext):
  name=f'assets/{stem}.{hashlib.sha256(text.encode()).hexdigest()[:12]}.{ext}'

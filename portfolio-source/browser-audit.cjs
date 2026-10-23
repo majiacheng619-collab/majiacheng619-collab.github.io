@@ -230,7 +230,9 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await page.goto(origin+'/projects/');
  assert.equal(await page.locator('.reveal-pending').count(),0);
  report.interactions.push('reduced motion keeps all reading content visible');
- await page.emulateMedia({reducedMotion:'no-preference'});
+ // Bulk geometry checks use a stationary frame; live water is tested separately
+ // by game-repair-audit at three widths with motion enabled.
+ await page.emulateMedia({reducedMotion:'reduce'});
  for(const width of [320,390,768,1024,1440]) {
    await page.setViewportSize({width,height:900});
    for(const route of pages) {

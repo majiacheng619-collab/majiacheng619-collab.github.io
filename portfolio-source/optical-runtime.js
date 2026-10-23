@@ -3,6 +3,18 @@
 (() => {
   'use strict';
   if (document.querySelector('[data-optical-scene]')) return;
+  const water = document.createElement('div');
+  water.className = 'water-events';
+  water.setAttribute('aria-hidden', 'true');
+  // Each event has an actual falling lens followed by two expanding surface rings.
+  for (const [x, y, delay] of [[16,28,0],[77,52,-1.3],[34,78,-2.6],[87,18,-3.9]]) {
+    const event = document.createElement('span');
+    event.className = 'water-event';
+    event.style.cssText = `--water-x:${x}%;--water-y:${y}%;--water-delay:${delay}s`;
+    event.innerHTML = '<i class="water-drop"></i><i class="water-ring"></i><i class="water-ring water-ring-echo"></i>';
+    water.append(event);
+  }
+  (document.querySelector('.ambient-field') || document.body).append(water);
   const source = new URL('OPTICAL_FLOW_ASSET', document.currentScript.src).href;
   const canvas = document.createElement('canvas');
   canvas.className = 'optical-scene';
@@ -21,60 +33,27 @@
   const fragment = `precision highp float;
     varying vec2 uv; uniform sampler2D field; uniform float clock;
     uniform vec2 pointer; uniform vec3 pulse; uniform float aspect;
-    float ring(vec2 p, vec2 center, float age){
-      float d=length(p-center);
-      float front=d-age*.19;
-      return sin(front*65.)*exp(-front*front*85.)*exp(-age*.85)
-        *smoothstep(0.,.16,age);
-    }
-    float height(vec2 p){
-      vec2 bend=p+vec2(sin(p.y*2.8+clock*.32),cos(p.x*2.4-clock*.27))*.24;
-      float h=sin(bend.x*7.+bend.y*4.-clock*.7)*.38;
-      h+=sin(bend.x*-3.+bend.y*9.+clock*.53)*.24;
-      h+=sin(bend.x*13.-bend.y*7.+clock*.41)*.10;
-      // Staggered water drops keep the scene alive without requiring input.
-      for(int i=0;i<3;i++){
-        float id=float(i), cycle=floor((clock+id*2.7)/8.1);
-        float age=mod(clock+id*2.7,8.1);
-        vec2 center=vec2(.15+fract(sin(cycle*12.7+id*9.2)*437.1)*.7,
-                         .12+fract(cos(cycle*7.9+id*4.8)*231.7)*.76);
-        h+=ring(p,center*vec2(aspect,1.),age)*.22;
-      }
-      if(pulse.z>=0.) h+=ring(p,pulse.xy*vec2(aspect,1.),max(0.,clock-pulse.z))*.48;
-      return h;
-    }
     void main(){
-      vec2 q=vec2(uv.x,1.-uv.y), p=q*vec2(aspect,1.);
-      p+=(pointer-.5)*.035;
-      float h=height(p), e=.003;
-      vec2 slope=vec2(height(p+vec2(e,0.))-h,height(p+vec2(0.,e))-h)/e;
-      vec2 drift=vec2(sin(clock*.13),cos(clock*.11))*.04;
+      vec2 q=vec2(uv.x,1.-uv.y), p=q*vec2(aspect,1.)+(pointer-.5)*.025;
+      float a=p.x*5.+p.y*3.-clock*.6;
+      float b=p.x*-3.+p.y*8.+clock*.43;
+      float h=sin(a)*.36+sin(b)*.22;
+      // Analytic gradients avoid repeated height evaluation and quantization bands.
+      vec2 slope=vec2(cos(a)*1.8-cos(b)*.66,cos(a)*1.08+cos(b)*1.76);
+      float age=max(0.,clock-pulse.z);
+      vec2 delta=p-pulse.xy*vec2(aspect,1.);
+      float radius=length(delta),front=radius-age*.28;
+      float ripple=sin(front*44.)*exp(-front*front*40.-age*.9)*step(0.,pulse.z);
+      slope+=delta/max(radius,.001)*ripple*2.;
+      vec2 drift=vec2(sin(clock*.16),cos(clock*.13))*.04;
       vec3 optical=texture2D(field,clamp(q*.88+.06+drift,.001,.999)).rgb;
-      // Use the baked normals directly: differentiating 8-bit heights causes bands.
-      vec3 normal=normalize(vec3(-slope*.18+(optical.gb-.5)*.32,1.));
-      vec2 refracted=q+normal.xy*.10;
-      vec3 color=mix(vec3(.66,.84,.94),vec3(.82,.94,.90),smoothstep(.1,.95,refracted.y));
-      color=mix(color,vec3(.86,.88,.98),smoothstep(.45,1.,refracted.x)*.32);
-      // Narrow dancing caustics make the moving water legible through glass.
-      float beam=pow(.5+.5*sin(h*9.+slope.x*.22+slope.y*.18),12.);
-      float light=pow(max(dot(normal,normalize(vec3(-.45,-.6,1.))),0.),18.);
-      color+=beam*.12+light*.13;
-      color-=smoothstep(.1,.9,length(normal.xy))*.035;
-      // Slow, lens-shaped beads with a lit rim and a small specular reflection.
-      for(int i=0;i<5;i++){
-        float id=float(i);
-        vec2 center=vec2(.09+fract(id*.618)*.84,.12+fract(id*.381+clock*(.009+id*.0015))*.80);
-        center.x+=sin(clock*.23+id*2.)*.025;
-        vec2 bead=(p-center*vec2(aspect,1.))/vec2(.037+id*.005,.054+id*.004);
-        float d=length(bead), mask=1.-smoothstep(.91,1.04,d);
-        float rim=exp(-pow((d-.90)*17.,2.));
-        float shine=exp(-dot(bead-vec2(-.30,-.38),bead-vec2(-.30,-.38))*26.);
-        color=mix(color,color*.91+vec3(.05,.07,.08),mask*.65);
-        color+=rim*.19+shine*.35*mask;
-      }
-      // Pearl illumination behind the central reading column.
-      float pearl=exp(-pow((q.x-.48)*2.,2.))*.14;
-      color=mix(color,vec3(.97,.985,1.),pearl);
+      vec3 normal=normalize(vec3(-slope*.16+(optical.gb-.5)*.18,1.));
+      vec2 refracted=q+normal.xy*.12;
+      vec3 color=mix(vec3(.74,.86,.94),vec3(.83,.94,.91),smoothstep(.1,.95,refracted.y));
+      color=mix(color,vec3(.87,.87,.97),smoothstep(.35,1.,refracted.x)*.3);
+      float caustic=pow(.5+.5*sin(h*7.+clock*.16),16.);
+      float light=pow(max(dot(normal,normalize(vec3(-.45,-.6,1.))),0.),15.);
+      color+=caustic*.075+light*.11+ripple*.035;
       gl_FragColor=vec4(clamp(color,0.,1.),1.);
     }`;
   function shader(type, text) {
@@ -114,6 +93,7 @@
   function resume() {
     if (frame) cancelAnimationFrame(frame);
     frame = 0; last = 0;
+    document.documentElement.dataset.waterPaused = document.hidden ? 'true' : 'false';
     canvas.dataset.opticalMotion = motion.matches ? 'still' : 'live';
     if (ready && !stopped() && (!motion.matches || needsPaint)) frame = requestAnimationFrame(draw);
   }

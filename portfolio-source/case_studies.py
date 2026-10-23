@@ -30,7 +30,7 @@ CASES = [
                   ('从筹备转入日常经营','参与线下定价、订单出餐和卫生维护，并在日常经营中复盘问题，覆盖从开店准备到门店运营的实际环节。')],
          result='与朋友共同推动门店从筹备进入实际营业。我负责的内容覆盖方案比较、资源采购、开业协调和日常经营。',
          transfer='对应门店运营、零售或餐饮运营、采购与供应协调、商务支持、开业筹备和项目执行等方向。我的经验是实际参与这些环节。',
-         facts=[('筹备 → 营业','完整过程参与'),('设备＋食材','采购与供应协调'),('合伙经营','分工边界明确')]),
+         facts=[('筹备至营业','完整过程参与'),('设备＋食材','采购与供应协调'),('合伙经营','分工边界明确')]),
     dict(id='field', title='面包挑战：活动规则与现场组织', time='2025.07—2025.08 / 2026.10 起', role='与朋友共同开展 · 策划与执行',
          context='基于南昌当地市场观察，我与朋友开展低投入的互动挑战活动。现场需要让路过的人看懂如何参与、如何收费、有什么奖励，再将参与规则落实到实际组织中。',
          task='共同完成活动规则与宣传物料，选择场地、准备物料，并在人流变化的情况下调整执行方式。',
@@ -48,7 +48,7 @@ CASES = [
                   ('完成发布与作品归档','独立完成成片，将作品发布并整理为可查阅的作品集，保留原作入口。')],
          result='完成成片发布并保留可观看的原作入口，贯通创意策划、素材生成和成片交付。故事属于虚构叙事，不是我的个人经历。',
          transfer='对应内容策划、新媒体内容运营、短视频制作、品牌或活动内容支持、AI 内容应用等方向。',
-         facts=[('3 支','已发布叙事作品'),('脚本 → 成片','独立完成流程'),('原作可查','保留观看入口')]),
+         facts=[('3 支','已发布叙事作品'),('脚本到成片','独立完成流程'),('原作可查','保留观看入口')]),
     dict(id='digital-work', title='Codex 辅助产品开发与网站交付', time='2026.10 发布游戏并持续迭代', role='独立策划与验收 · AI 辅助实现',
          context='我希望把植物成长与资源分配的想法做成可以实际玩的网页产品，同时需要一个能集中呈现视频、游戏、案例和荣誉的个人网站。',
          task='独立规划产品玩法和交互，拆解需求，借助 Codex 等 AI 工具实现代码，再通过实际体验和验收推动上线。',
@@ -87,7 +87,7 @@ def case_section(case, cta):
 
 def build_experience(cta, detail_rows):
     links = ''.join(f'<a href="#{escape(c["id"])}">{escape(t)}</a>' for c,t in zip(CASES,['电商业务','直播','门店','活动','AI 影像','数字产品']))
-    roles = ''.join(f'<article class="role-path"><h3>{escape(title)}</h3><p>{escape(names)}</p><a href="#{anchor}">{escape(proof)}<span aria-hidden="true"> ↗</span></a></article>' for title,names,anchor,proof in ROLES)
+    roles = ''.join(f'<article class="role-path"><h3>{escape(title)}</h3><p>{escape(names)}</p><a href="#{anchor}">{escape(proof)}</a></article>' for title,names,anchor,proof in ROLES)
     result = '<div class="detail-page detail-experience"><section class="detail-hero"><div class="detail-shell"><h1>实践经历</h1><p class="detail-intro">把一件事从想法推进到交付，是这些经历共同的线索。下面展开我面对的场景、承担的工作、具体行动和实际结果。</p><div class="case-jump" aria-label="经历目录">'+links+'</div></div></section>'
     result += '<section class="career-section detail-shell" id="roles"><h2>求职方向，从做过的事出发。</h2><p class="career-intro">我希望面向与这些经历相关的运营、市场、商务、用户服务、产品与项目执行岗位。以下按工作内容对应已有实践，具体职责与岗位要求可以进一步沟通。</p><div class="role-grid">'+roles+'</div></section>'
     result += ''.join(case_section(case,cta) for case in CASES)

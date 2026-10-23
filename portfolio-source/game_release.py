@@ -15,7 +15,7 @@ def fingerprint(game):
     runtime = {alias:(source/name).read_text() for alias,name in aliases.items()}
     for stem in ('presentation.css','presentation.js'):
         runtime[stem]=(game/stem).read_text()
-    runtime['presentation.css']+='\n'+(Path(__file__).parent/'liquid-game.css').read_text()
+    runtime['presentation.css']+='\n'+(Path(__file__).parent/'liquid-game.css').read_text()+'\n'+(Path(__file__).parent/'water-events.css').read_text()
     optical=json.loads((game.parent/'assets/optical-field.json').read_text())
     flow='assets/'+optical['flow']
     (game/flow).write_bytes((game.parent/'assets'/optical['flow']).read_bytes())

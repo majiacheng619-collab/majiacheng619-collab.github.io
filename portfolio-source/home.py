@@ -21,9 +21,9 @@ def build_home(img, cta, media, transcript):
 <section class="capabilities premium-shell" aria-labelledby="capabilities-title">
  <div class="premium-section-head"><h2 id="capabilities-title">先看三段真实实践。</h2></div>
  <div class="capability-grid">
-  <a class="capability-card" href="experience/index.html#ecommerce"><span class="capability-index">2022—2024 · 独立操盘</span><h3>把电商经验<br/>做成教学服务</h3><p>设计学费与经营辅导模式，承接咨询、报名和交付，把早期学员与朋友发展为推广伙伴。</p><span class="capability-proof">约 1,000 名学员 · 40–50 名推广伙伴</span><span class="capability-link">看业务如何运转 ↗</span></a>
-  <a class="capability-card" href="experience/index.html#livestream"><span class="capability-index">2026 · 独立策划与运营</span><h3>让直播有内容，<br/>让互动能延续</h3><p>从主题、封面到场地和户外专场持续调整，通过社群与私信维护用户关系。</p><span class="capability-proof">约 1 小时单场 · 最高曝光 30 万余</span><span class="capability-link">看内容与用户维护 ↗</span></a>
-  <a class="capability-card" href="experience/index.html#store"><span class="capability-index">2025 · 与朋友合伙</span><h3>从选址采购，<br/>做到门店营业</h3><p>比较加盟方案和设备渠道，推进租赁、开业准备，再进入定价、出餐与日常运营。</p><span class="capability-proof">筹备、开业、经营的完整参与</span><span class="capability-link">看线下经营过程 ↗</span></a>
+  <a class="capability-card" href="experience/index.html#ecommerce"><span class="capability-index">2022—2024 · 独立操盘</span><h3>把电商经验<br/>做成教学服务</h3><p>设计学费与经营辅导模式，承接咨询、报名和交付，把早期学员与朋友发展为推广伙伴。</p><span class="capability-proof">约 1,000 名学员 · 40–50 名推广伙伴</span><span class="capability-link">看业务如何运转</span></a>
+  <a class="capability-card" href="experience/index.html#livestream"><span class="capability-index">2026 · 独立策划与运营</span><h3>让直播有内容，<br/>让互动能延续</h3><p>从主题、封面到场地和户外专场持续调整，通过社群与私信维护用户关系。</p><span class="capability-proof">约 1 小时单场 · 最高曝光 30 万余</span><span class="capability-link">看内容与用户维护</span></a>
+  <a class="capability-card" href="experience/index.html#store"><span class="capability-index">2025 · 与朋友合伙</span><h3>从选址采购，<br/>做到门店营业</h3><p>比较加盟方案和设备渠道，推进租赁、开业准备，再进入定价、出餐与日常运营。</p><span class="capability-proof">筹备、开业、经营的完整参与</span><span class="capability-link">看线下经营过程</span></a>
  </div>
 </section>
 <section class="premium-selected" id="selected" aria-labelledby="selected-title">
