@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-10-23-clear-glass-stories-million'
+REVISION='2026-10-23-live-optics-game-repair'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -56,6 +56,10 @@ def prepare():
     if artwork.exists(): shutil.copytree(artwork,SITE/'assets',dirs_exist_ok=True)
     overrides=SOURCE/'game-overrides'
     if overrides.exists(): shutil.copytree(overrides,SITE/'game',dirs_exist_ok=True)
+    import sys
+    sys.path.insert(0, str(SOURCE/'optics'))
+    from render_field import build as build_optical_field
+    build_optical_field(SITE)
     from game_release import fingerprint
     fingerprint(SITE/'game')
     from clean_release import clean

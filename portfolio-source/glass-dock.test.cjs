@@ -148,10 +148,14 @@ test('the next document resumes the departure position, then settles to its own 
  const next=fixture({storage,pathname:'/contact/index.html',active:3});assert.equal(next.paint('--lens-x'),departure,'Boot must use the departure coordinate rather than reset to the destination');assert.equal(storage.size,0,'The handoff is consumed once');next.resizes[0].callback([{target:next.dock}]);assert.equal(next.paint('--lens-x'),departure,'Initial ResizeObserver delivery must not erase the incoming animation');next.settle();assert.equal(next.paint('--lens-x'),240);
 });
 test('unrelated or stale handoffs never change the current page and blocked storage keeps navigation working',()=>{
- for(const state of [{href:'https://example.test/unrelated/',at:Date.now(),fraction:.5,speed:0,lift:0},{href:'https://example.test/',at:Date.now()-3000,fraction:.5,speed:0,lift:0},{href:'http://[',at:Date.now(),fraction:.5,speed:0,lift:0}]){
+ for(const state of [{href:'https://example.test/unrelated/',at:Date.now(),fraction:.5,speed:0,lift:0},{href:'https://example.test/',at:Date.now()-11000,fraction:.5,speed:0,lift:0},{href:'http://[',at:Date.now(),fraction:.5,speed:0,lift:0}]){
   const storage=new Map([['portfolio-dock-handoff-v2',JSON.stringify(state)]]),f=fixture({storage});assert.equal(f.paint('--lens-x'),0);assert.equal(storage.size,0);assert.equal(f.frames.size,0);
  }
  const f=fixture({storageBlocked:true});f.links[1].href='https://example.test/projects/';f.dock.emit('click',{target:f.links[1],isTrusted:true,detail:1});f.advance(110);assert.deepEqual(f.navigations,['https://example.test/projects/']);
+});
+test('a three-second page load still restores the one-time destination handoff',()=>{
+ const storage=new Map([['portfolio-dock-handoff-v2',JSON.stringify({href:'https://example.test/contact/',at:Date.now()-3000,fraction:.2,speed:1,lift:1})]]);
+ const f=fixture({storage,pathname:'/contact/',active:4});assert.equal(f.paint('--lens-x'),64);assert.equal(storage.size,0);f.settle();assert.equal(f.paint('--lens-x'),320);
 });
 test('the destination discards handoff motion when reduced motion is requested',()=>{
  const storage=new Map([['portfolio-dock-handoff-v2',JSON.stringify({href:'https://example.test/contact/',at:Date.now(),fraction:.2,speed:1,lift:1})]]),f=fixture({storage,reduced:true,pathname:'/contact/',active:4});assert.equal(f.paint('--lens-x'),320);assert.equal(f.paint('--lens-stretch'),1);assert.equal(f.frames.size,0);assert.equal(storage.size,0);

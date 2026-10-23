@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 
-VERSION = '7.0.0'
+VERSION = '7.0.1'
 
 
 def fingerprint(game):
@@ -16,6 +16,12 @@ def fingerprint(game):
     for stem in ('presentation.css','presentation.js'):
         runtime[stem]=(game/stem).read_text()
     runtime['presentation.css']+='\n'+(Path(__file__).parent/'liquid-game.css').read_text()
+    optical=json.loads((game.parent/'assets/optical-field.json').read_text())
+    flow='assets/'+optical['flow']
+    (game/flow).write_bytes((game.parent/'assets'/optical['flow']).read_bytes())
+    for prior in (game/'assets').glob('glass-flow.*.png'):
+        if prior.name!=optical['flow']:prior.unlink()
+    runtime['presentation.js']+='\n'+(Path(__file__).parent/'optical-runtime.js').read_text().replace('OPTICAL_FLOW_ASSET',flow)
     icon=Path(__file__).parent/'game-overrides/favicon.svg'
     if icon.exists():
         runtime['favicon.09a0d5017eeb.svg']=icon.read_text()
@@ -72,6 +78,7 @@ def fingerprint(game):
     content=worker.read_text()
     core=json.loads(re.search(r'const CORE=(\[[^;]+\])',content).group(1))
     core=[name for name in core if not re.search(r'(?:^|/)garden-legacy[^/]*\.js$',name)]
+    core=[name for name in core if not re.search(r'glass-flow\.[a-f0-9]+\.png$',name)]+[flow]
     content=re.sub(r'const CORE=\[[^;]+\]', 'const CORE='+json.dumps(core,separators=(',',':')),content)
     digest=hashlib.sha256(b''.join(name.encode()+b'\0'+(game/name).read_bytes() for name in sorted(core))).hexdigest()[:12]
     content=re.sub(r"const CACHE=PREFIX\+'[^']+'", "const CACHE=PREFIX+'"+VERSION+"-"+digest+"'",content)

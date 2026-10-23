@@ -1,4 +1,4 @@
-"""我在构建时逐块渲染水波光场，浏览器只下载压缩后的背景纹理。"""
+"""Execute every sample, producing a fallback and a runtime height/normal field."""
 from pathlib import Path
 from math import sin, cos, exp, pi, sqrt
 import hashlib
@@ -33,9 +33,24 @@ def render_samples(put, color=shade):
 
 def build(root):
     from PIL import Image, ImageFilter
+    import numpy as np
     import io
+    import json
     image = Image.new('RGB', (WIDTH, HEIGHT))
     render_samples(image.putpixel)
+    # Every generated sample contributes to the height field. Its finite
+    # differences become normals used by the live refractive renderer.
+    pixels = np.asarray(image, dtype=np.float32)
+    height = (pixels[:, :, 0] - 222) / 40
+    dy, dx = np.gradient(height)
+    flow = np.stack((np.clip(height, 0, 1),
+                     np.clip(.5 + dx * 28, 0, 1),
+                     np.clip(.5 + dy * 28, 0, 1)), axis=-1)
+    flow_image = Image.fromarray(np.rint(flow * 255).astype('uint8'))
+    flow_buffer = io.BytesIO()
+    flow_image.save(flow_buffer, 'PNG', optimize=True)
+    flow_payload = flow_buffer.getvalue()
+    flow_name = 'glass-flow.' + hashlib.sha256(flow_payload).hexdigest()[:12] + '.png'
     image = image.filter(ImageFilter.GaussianBlur(.7))
     buffer = io.BytesIO()
     image.save(buffer, 'WEBP', quality=88, method=6)
@@ -44,10 +59,18 @@ def build(root):
     assets = root / 'assets'
     assets.mkdir(parents=True, exist_ok=True)
     (assets / name).write_bytes(payload)
+    (assets / flow_name).write_bytes(flow_payload)
+    for prior in assets.glob('glass-flow.*.png'):
+        if prior.name != flow_name:
+            prior.unlink()
+    manifest = {'fallback': name, 'flow': flow_name, 'width': WIDTH,
+                'height': HEIGHT, 'samples': WIDTH * HEIGHT,
+                'channels': ['height', 'normalX', 'normalY']}
+    (assets / 'optical-field.json').write_text(json.dumps(manifest))
     for prior in assets.glob('glass-field.*.webp'):
         if prior.name != name:
             prior.unlink()
-    print(f'Optical scene: {WIDTH}x{HEIGHT}, {len(payload):,} bytes; {name}')
+    print(f'Optical scene: {WIDTH}x{HEIGHT}, {len(payload):,} fallback bytes, {len(flow_payload):,} live field bytes')
     return name
 
 

@@ -1,68 +1,106 @@
-/* The same transparent optical language extends to the complete game microsite. */
+/* Light outside the arena; readable, self-contained glass inside it. */
 body.garden-presentation, body[data-page='index'] {
-  --gp-glass: linear-gradient(145deg,#ffffff4d,#ffffff1a);
-  --glass: #ffffff40;
   background: radial-gradient(ellipse at 15% 10%,#bddcfa80,transparent 55%),
-              radial-gradient(ellipse at 90% 70%,#b3e5d780,transparent 55%), #eff4f8;
+              radial-gradient(ellipse at 90% 70%,#b3e5d780,transparent 55%),#eff4f8;
+  isolation: isolate;
 }
-.gp-nav, .game-toolbar, .seed-tray,
-.garden-presentation .liquid, .garden-presentation .gp-info-card,
-.garden-presentation .guide-step, .garden-presentation .gp-world,
-.garden-presentation .gp-replay-panel,
-body[data-page='index'] .overlay-card,
-body[data-page='index'] .home-tools,
-body[data-page='index'] .game-status,
-body[data-page='index'] dialog {
-  background: linear-gradient(145deg,#ffffff30,#ffffff05 55%,#ffffff20),#ffffff0d;
-  border: 1px solid #ffffffcf;
-  box-shadow: inset 0 1px 0 #fff,inset 0 -1px 0 #ffffff7a,0 14px 42px #224d6021;
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
+.optical-scene { position:fixed; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+body[data-page='index'] > .optical-scene { opacity:.9; }
+/* Header inherits a light-page palette, never the arena's light text. */
+body[data-page='index'] .gp-nav {
+  border:1px solid #ffffffc9; border-radius:24px; padding:8px 12px;
+  background:#ffffff26; color:#213e36; box-shadow:inset 0 1px #fff;
+  -webkit-backdrop-filter:blur(18px) saturate(140%); backdrop-filter:blur(18px) saturate(140%);
 }
-body[data-page='index'] .seed-card:not(:disabled),
-.garden-presentation .button:not(.primary) {
-  background: linear-gradient(145deg,#ffffff85,#ffffff29);
-  border: 1px solid #ffffffbf;
-  box-shadow: inset 0 1px 0 #fff,0 4px 12px #244a3512;
+body[data-page='index'] .gp-nav .brand { color:#213e36; }
+body[data-page='index'] .gp-nav nav a { color:#34574b; }
+body[data-page='index'] .gp-nav nav a[aria-current] { color:#164b34; background:#ffffff80; }
+body[data-page='index'] .gp-nav .language,body[data-page='index'] .gp-menu { color:#274e3c; background:#ffffff52; border-color:#fff; }
+body[data-page='index'] .gp-menu span { background:currentColor; }
+body[data-page='index'] .gp-nav nav a:hover { color:#153c2b; background:#ffffff8a; }
+body[data-page='index'] .playfield {
+  background:linear-gradient(140deg,#243d30ef,#152a20ed); border-color:#ffffff94;
+  box-shadow:inset 0 1px #ffffff8a,0 24px 60px #203d4421;
+  -webkit-backdrop-filter:blur(24px) saturate(125%); backdrop-filter:blur(24px) saturate(125%);
 }
-:root[data-world='eclipse'] body[data-page='index'] .game-toolbar,
-:root[data-world='eclipse'] body[data-page='index'] .seed-tray,
-:root[data-world='eclipse'] body[data-page='index'] .overlay-card,
-:root[data-world='eclipse'] body[data-page='index'] dialog {
-  background: linear-gradient(145deg,#233c46eb,#1c303bd9);
-  border-color: #a8d4e340;
+/* Avoid bright square borders around contiguous toolbar/tray/status rows. */
+body[data-page='index'] :is(.game-toolbar,.seed-tray,.game-status) {
+  border:0; background:transparent; box-shadow:none;
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body[data-page='index'] .game-toolbar { color:#f0f7ef; }
+body[data-page='index'] .seed-card {
+  background:linear-gradient(145deg,#8cad8b38,#ffffff10);
+  border-color:#d6f1d252; box-shadow:inset 0 1px #ffffff35;
+}
+body[data-page='index'] .seed-card.selected {
+  background:linear-gradient(145deg,#e2f2d8,#c1dcb6); border-color:#edffe6;
+  box-shadow:inset 0 1px #fff,0 0 0 2px #8eb77a36;
+}
+body[data-page='index'] .seed-card.unaffordable { opacity:.82; }
+body[data-page='index'] .seed-card.selected.unaffordable { opacity:1; }
+body[data-page='index'] .seed-copy b { color:#f0f6eb; }
+body[data-page='index'] .seed-copy small { color:#d5e6ce; }
+body[data-page='index'] .seed-card.selected .seed-copy b { color:#203b25; }
+body[data-page='index'] .seed-card.selected .seed-copy small { color:#385431; }
+/* Lessons sit below the lawn; no instruction conceals a plant or token. */
+body[data-page='index'] .garden-wrap { overflow:visible; }
+body[data-page='index'] .tutorial-tip {
+  position:relative; inset:auto; margin:10px 0 0; max-width:none;
+  padding:12px 16px; border-radius:16px; background:#edf5e9ed;
+  color:#254331; border:1px solid #fff; font-size:13px;
+}
+body[data-page='index'] .game-status { color:#d4e2d1; }
+body[data-page='index'] .game-hints { color:#c8d9c7; }
+body[data-page='index'] .game-hints #selection-help { color:#c2e6bf; }
+body[data-page='index'] .overlay-card,body[data-page='index'] dialog.liquid {
+  background:linear-gradient(140deg,#fffffff0,#edf3e9ed);
+  border:1px solid #fffffff0; box-shadow:inset 0 1px #fff,0 24px 80px #06190b45;
+  -webkit-backdrop-filter:blur(24px) saturate(140%); backdrop-filter:blur(24px) saturate(140%);
+}
+body[data-page='index'] .first-tip,body[data-page='index'] #wave-banner {
+  background:#f1f6e9f2; color:#284632; border-color:#fff;
+}
+body[data-page='index'] .first-tip span { color:#435d49; }
+.garden-presentation :is(.liquid,.gp-info-card,.guide-step,.gp-world,.gp-replay-panel), .garden-presentation .gp-nav {
+  background:linear-gradient(145deg,#ffffff4a,#ffffff1a); border:1px solid #ffffffdb;
+  box-shadow:inset 0 1px #fff,0 14px 42px #224d6017;
+  -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%);
+}
+body[data-page='index'] .resume-count {
+  position:fixed; inset:0; z-index:200; pointer-events:none;
+}
+@media(max-width:760px) {
+  body[data-page='index'] .gp-nav { width:calc(100% - 24px); margin-top:12px; }
+  body[data-page='index'] .game-shell { padding-top:18px; }
+  body[data-page='index'] .playfield { padding:8px 8px 0; }
+  body[data-page='index'] .seed-tray { padding-inline:4px; }
+  body[data-page='index'] .game-toolbar { padding-inline:4px; }
+  body[data-page='index'] .seed-tray>#collect { display:flex; min-width:44px; }
+  body[data-page='index'] .seed-card { min-width:98px; }
+  body[data-page='index'] .game-status { gap:8px; font-size:11px; }
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .gp-nav, .game-toolbar, .seed-tray,
-  .garden-presentation .liquid, .garden-presentation .gp-info-card,
-  .garden-presentation .guide-step, .garden-presentation .gp-world,
-  .garden-presentation .gp-replay-panel,
-  body[data-page='index'] .overlay-card,body[data-page='index'] dialog { background: #f7faf8; }
+  body[data-page='index'] .gp-nav,.garden-presentation .liquid { background:#eff6f1; }
 }
 @media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
-  .gp-nav,.game-toolbar,.seed-tray,
-  .garden-presentation .liquid,.garden-presentation .gp-info-card,
-  .garden-presentation .guide-step,.garden-presentation .gp-world,
-  .garden-presentation .gp-replay-panel,
-  body[data-page='index'] .overlay-card,body[data-page='index'] dialog {
-    background: #f7faf8; backdrop-filter: none; -webkit-backdrop-filter: none;
-  }
+  .optical-scene { display:none; }
+  body[data-page='index'] .gp-nav,.garden-presentation .liquid { background:#f7faf8; }
+  body[data-page='index'] .playfield { background:#1b3024; }
+  body[data-page='index'] .overlay-card,body[data-page='index'] dialog.liquid { background:#f7faf0; }
 }
-@media print {
-  body.garden-presentation { background: white; }
-  .garden-presentation .liquid,.garden-presentation .gp-info-card { box-shadow: none; backdrop-filter: none; }
+@media print { .optical-scene { display:none; } }
+body[data-page='index'] .first-tip {
+  position:relative; inset:auto; max-width:none; margin:10px 0 0;
+  padding:10px 14px; border-radius:14px; background:#ffffff12;
+  border-color:#ffffff38; color:#edf6e9;
 }
-:root[data-world='eclipse'] body[data-page='index'] .seed-card:not(:disabled) {
-  background: linear-gradient(145deg,#36515bf2,#243d46e8); border-color: #a8d4e340;
-}
-@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
-  :root[data-world='eclipse'] body[data-page='index'] :is(.game-toolbar,.seed-tray,.overlay-card,dialog) {
-    background: #22353c;
-  }
-}
-:root[data-world='eclipse'] body[data-page='index'] {
-  --ink: #edf3ed; --muted: #aec0bc;
-  color: var(--ink);
-  background: radial-gradient(ellipse at 15% 10%,#324c6055,transparent 55%),
-              radial-gradient(ellipse at 90% 70%,#294b4655,transparent 55%),#17252b;
+body[data-page='index'] .first-tip span { color:#d3e3cf; }
+@media(max-width:450px) {
+  body[data-page='index'] .game-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px 8px; padding:8px 4px 14px; }
+  body[data-page='index'] .sun-counter { grid-row:1; grid-column:1; justify-self:start; }
+  body[data-page='index'] .toolbar-actions { grid-row:1; grid-column:2; margin-left:0; }
+  body[data-page='index'] .mission-heading { grid-row:2; grid-column:1/-1; flex-direction:row; align-items:baseline; gap:10px; }
+  body[data-page='index'] .mission-heading>span { white-space:nowrap; }
+  body[data-page='index'] .mission-heading b { font-size:14px; }
 }

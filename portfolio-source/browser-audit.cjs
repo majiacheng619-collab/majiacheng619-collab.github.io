@@ -181,7 +181,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
      if(!lens||!dock||!Number.isFinite(parseFloat(lens.style.getPropertyValue('--lens-x'))))return;
      const links=[...dock.querySelectorAll('[data-dock-link]')],rect=dock.getBoundingClientRect();
      const xs=links.map(a=>a.getBoundingClientRect().left-rect.left-dock.clientLeft);
-     window.__incomingDockFrame={x:parseFloat(lens.style.getPropertyValue('--lens-x')),expected:xs[0]+incoming.fraction*(xs.at(-1)-xs[0]),selected:links.find(a=>a.hasAttribute('aria-current')).getBoundingClientRect().left-rect.left-dock.clientLeft};
+     window.__incomingDockFrame={x:parseFloat(lens.style.getPropertyValue('--lens-x')),expected:xs[0]+incoming.fraction*(xs.at(-1)-xs[0]),selected:links.find(a=>a.hasAttribute('aria-current')).getBoundingClientRect().left-rect.left-dock.clientLeft,age:Date.now()-incoming.at};
      observer.disconnect();
    });observer.observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});
  });
@@ -189,7 +189,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await Promise.all([page.waitForURL('**/honor/index.html'),dockLinks.nth(3).click()]);
  const incomingFrame=await page.evaluate(()=>window.__incomingDockFrame);
  assert.ok(incomingFrame,'Cross-page activation supplies a destination animation handoff');
- assert.ok(Math.abs(incomingFrame.x-incomingFrame.expected)<1.5,'The first destination frame continues the departure lens position');
+ assert.ok(Math.abs(incomingFrame.x-incomingFrame.expected)<1.5,'The first destination frame continues the departure lens position: '+JSON.stringify(incomingFrame));
  report.interactions.push('cross-page first-frame lens continuity');
 
  report.interactions.push('liquid dock: five single-source items, five reachable links, five viewport bounds, real drag, cancellation, one current item, native Tab/Enter, long-press selection prevention, idle animation shutdown and reduced motion');
