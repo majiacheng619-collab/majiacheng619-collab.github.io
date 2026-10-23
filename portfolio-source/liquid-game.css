@@ -13,7 +13,7 @@ body[data-page='index'] .overlay-card,
 body[data-page='index'] .home-tools,
 body[data-page='index'] .game-status,
 body[data-page='index'] dialog {
-  background: linear-gradient(145deg,#ffffff5c,#ffffff14 55%,#ffffff3d),#ffffff26;
+  background: linear-gradient(145deg,#ffffff30,#ffffff05 55%,#ffffff20),#ffffff0d;
   border: 1px solid #ffffffcf;
   box-shadow: inset 0 1px 0 #fff,inset 0 -1px 0 #ffffff7a,0 14px 42px #224d6021;
   -webkit-backdrop-filter: blur(20px) saturate(140%);
