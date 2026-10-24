@@ -30,9 +30,19 @@ const server=http.createServer((req,res)=>{let f=path.resolve(root,'.'+new URL(r
  assert.equal(await inputCount(),count,'Changing motion preference clears contact ownership');
  assert.equal(await page.evaluate(()=>matchMedia('(hover:hover) and (pointer:fine)').matches),false,'Test a real coarse-input layout');
  await page.addStyleTag({content:'html{scroll-behavior:auto!important}'});
- const card=page.locator('.capability-card').first();await card.scrollIntoViewIfNeeded();await page.waitForTimeout(100);
+ const card=page.locator('.capability-card').first();await card.scrollIntoViewIfNeeded();
+ // A queued native scroll event cancels pressure by design. Begin the synthetic
+ // press only after scrolling and the emulated material preference have settled.
+ await page.waitForFunction(()=>{
+   const card=document.querySelector('.capability-card');
+   if(matchMedia('(prefers-reduced-motion: reduce)').matches||getComputedStyle(card,'::after').display==='none')return false;
+   const now=performance.now(),y=scrollY,probe=window.touchScrollProbe;
+   if(!probe||probe.y!==y){window.touchScrollProbe={y,since:now};return false;}
+   return now-probe.since>=500;
+ },undefined,{polling:100});
+ await page.evaluate(()=>{delete window.touchScrollProbe;});
  async function touch(type,dx=0){await card.evaluate((e,{type,dx})=>{const r=e.getBoundingClientRect();e.dispatchEvent(new PointerEvent(type,{bubbles:true,isPrimary:true,pointerId:23,pointerType:'touch',button:0,clientX:r.left+r.width*.35+dx,clientY:r.top+70}));},{type,dx});}
- await touch('pointerdown');await page.waitForFunction(()=>{const e=document.querySelector('.capability-card');return e?.dataset.glassPressed==='true'&&Number(getComputedStyle(e,'::after').opacity)>.5;});
+ await touch('pointerdown');try{await page.waitForFunction(()=>{const e=document.querySelector('.capability-card');return e?.dataset.glassPressed==='true'&&Number(getComputedStyle(e,'::after').opacity)>.5;});}catch(error){console.error('Touch material state',await card.evaluate(e=>({pressed:e.dataset.glassPressed,released:e.dataset.glassReleased,opacity:getComputedStyle(e,'::after').opacity,display:getComputedStyle(e,'::after').display,reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,scene:document.documentElement.dataset.sceneMotion,y:scrollY})));throw error;}
  assert.equal(await card.getAttribute('data-glass-pressed'),'true','Touch identifies the selected card');
  assert.notEqual(await card.evaluate(e=>getComputedStyle(e).transform),'none','Coarse touch visibly depresses the material');
  if(process.env.TOUCH_OUTPUT){fs.mkdirSync(process.env.TOUCH_OUTPUT,{recursive:true});await page.screenshot({path:path.join(process.env.TOUCH_OUTPUT,'pressed-phone.png')});}
