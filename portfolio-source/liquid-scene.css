@@ -232,7 +232,7 @@ html { background: #edf0f2; }
 .case-study,.role-path { background-color: #ffffff12; }
 .glass-dock__lens { border-color: #ffffffb8; box-shadow: 0 2px 8px #283a4a17,inset 0 1px 1px #fff,inset 0 -1px 1px #ffffffa3; }
 @media (hover:hover) and (prefers-reduced-motion:no-preference) {
-  .capability-card:hover,.premium-home .premium-story:hover,.premium-home .premium-experience-list>a:hover {
+  .capability-card:hover:not([data-glass-pressed]),.premium-home .premium-story:hover:not([data-glass-pressed]),.premium-home .premium-experience-list>a:hover:not([data-glass-pressed]) {
     transform: translateY(-3px);
     box-shadow: 0 18px 44px #2637471c,inset 0 1px 1px #fff,inset 0 -1px 1px #52687926;
   }

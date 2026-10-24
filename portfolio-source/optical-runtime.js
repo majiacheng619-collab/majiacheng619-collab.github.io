@@ -38,6 +38,7 @@
   const fragment = `precision highp float;
     varying vec2 uv; uniform sampler2D field; uniform float clock;
     uniform vec2 pointer; uniform vec3 pulses[4]; uniform float aspect; uniform float pressure;
+    uniform float contactRadius;
     // An environment with real tonal structure makes refraction visible without
     // adding a blue tint to every pane. Broad ribbons carry light through water.
     vec3 waterColor(vec2 q){
@@ -62,7 +63,9 @@
     vec2 waveSlope(vec2 delta,float age){
       float radius=length(delta),front=radius-age*.30;
       float envelope=exp(-front*front*180.-age*.85)*smoothstep(0.,.12,age);
-      return delta/max(radius,.002)*cos(front*72.)*envelope*1.9;
+      // A narrow leading ridge and softer wake catch opposite sides of the light.
+      float ridge=cos(front*72.)+cos((front+.035)*48.)*.32;
+      return delta/max(radius,.002)*ridge*envelope*2.35;
     }
     void main(){
       vec2 q=vec2(uv.x,1.-uv.y), metric=vec2(aspect,1.);
@@ -83,16 +86,23 @@
         if(age>=0.) slope+=waveSlope((q-center)*metric,age);
       }
       vec2 contact=(q-pointer)*metric;
-      slope+=contact*exp(-dot(contact,contact)*42.)*pressure*18.;
+      // Keep the fingertip lens a consistent physical size on phones and desktops.
+      float contactSize=max(.025,contactRadius);
+      vec2 finger=contact/contactSize;
+      float fingerDepth=exp(-dot(finger,finger)*1.8)*pressure;
+      slope+=finger*fingerDepth*3.8;
       vec2 drift=vec2(sin(clock*.16),cos(clock*.13))*.035;
       vec3 optical=texture2D(field,clamp(q*.88+.06+drift,.001,.999)).rgb;
       vec3 normal=normalize(vec3(-slope*.18+(optical.gb-.5)*.045,1.));
-      vec2 refracted=q+normal.xy*.15/metric;
+      vec2 refracted=q+normal.xy*.19/metric;
       vec3 color=waterColor(refracted);
       vec3 key=normalize(vec3(-.48,-.62,1.));
       float light=pow(max(dot(normal,key),0.),42.);
       float caustic=pow(.5+.5*sin(h*6.+optical.r*.6),22.);
-      color+=light*.14+caustic*.065;
+      color+=light*.17+caustic*.065;
+      // Pressure forms a shallow clear dimple with an illuminated meniscus.
+      float meniscus=exp(-pow((length(finger)-.84)*9.,2.))*pressure;
+      color+=meniscus*.075-fingerDepth*.026;
       // Three shallow, noncircular lenses have thickness, dispersion and a
       // grazing reflection. Their centers remain transparent to the water.
       for(int i=0;i<3;i++){
@@ -123,9 +133,9 @@
       for(int i=0;i<3;i++){
         float id=float(i),age=mod(clock+id*2.17,6.5)-1.05;
         if(age<0.){
-          float fall=clamp(age+1.05,0.,1.);
+          float fall=clamp((age+1.05)/1.05,0.,1.);
           vec2 center=vec2(.17+id*.32,.25+mod(id*.29,.6)-.26*(1.-fall*fall));
-          vec2 local=(q-center)*metric/vec2(.012,.021-.007*fall);
+          vec2 local=(q-center)*metric/vec2(.016,.028-.010*fall);
           float d=length(local),mask=1.-smoothstep(.94,1.04,d);
           vec3 bead=waterColor(q+local*.035/metric);
           bead+=pow(max(dot(normalize(vec3(local,sqrt(max(.001,1.-d*d)))),key),0.),24.)*.4;
@@ -143,7 +153,14 @@
   }
   let program, texture, frame = 0, last = 0, elapsed = 0, ready = false, lost = false, needsPaint = true, suspended = false;
   const pointer = [.5, .5], pulses = new Float32Array([.5,.5,-1,.5,.5,-1,.5,.5,-1,.5,.5,-1]);
-  let pulseIndex = 0, held = false, pressure = 0, lastTrail = 0;
+  let pulseIndex = 0, held = false, pressure = 0, lastTrail = 0, contactId = null;
+  let buffer = null, locations = null;
+  function clearPressure() { held = false; pressure = 0; contactId = null; }
+  function clearWaves() { for (let i = 2; i < pulses.length; i += 3) pulses[i] = -1; }
+  function position(event) {
+    pointer[0] = Math.max(0, Math.min(1, event.clientX / innerWidth));
+    pointer[1] = Math.max(0, Math.min(1, event.clientY / innerHeight));
+  }
   function stopped() { return suspended || battleActive || document.hidden || contrast.matches || transparency.matches || lost; }
   function resize() {
     // Native GPUs keep the full-resolution field. CPU-only rasterizers get a
@@ -164,12 +181,13 @@
     last = now;
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.useProgram(program);
-    gl.uniform1f(gl.getUniformLocation(program, 'clock'), elapsed);
-    gl.uniform1f(gl.getUniformLocation(program, 'aspect'), canvas.width / canvas.height);
-    gl.uniform2fv(gl.getUniformLocation(program, 'pointer'), pointer);
+    gl.uniform1f(locations.clock, elapsed);
+    gl.uniform1f(locations.aspect, canvas.width / canvas.height);
+    gl.uniform2fv(locations.pointer, pointer);
     pressure += ((held ? 1 : 0) - pressure) * .24;
-    gl.uniform1f(gl.getUniformLocation(program, 'pressure'), pressure);
-    gl.uniform3fv(gl.getUniformLocation(program, 'pulses[0]'), pulses);
+    gl.uniform1f(locations.pressure, pressure);
+    gl.uniform1f(locations.contactRadius, 72 / innerHeight);
+    gl.uniform3fv(locations.pulses, pulses);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     needsPaint = false;
     canvas.dataset.opticalFrames = String(Number(canvas.dataset.opticalFrames || 0) + 1);
@@ -178,6 +196,7 @@
   function resume() {
     if (frame) cancelAnimationFrame(frame);
     frame = 0; last = 0;
+    if (stopped() || motion.matches) { clearPressure(); clearWaves(); }
     document.documentElement.dataset.waterPaused = document.hidden || battleActive ? 'true' : 'false';
     canvas.dataset.opticalMotion = motion.matches ? 'still' : 'live';
     if (ready && !stopped() && (!motion.matches || needsPaint)) frame = requestAnimationFrame(draw);
@@ -190,13 +209,16 @@
   const image = new Image();
   function initialize() {
     try {
-      if (program && !lost) { gl.deleteProgram(program); gl.deleteTexture(texture); }
+      if (program && !lost) { gl.deleteProgram(program); gl.deleteTexture(texture); gl.deleteBuffer(buffer); }
       program = gl.createProgram();
-      gl.attachShader(program, shader(gl.VERTEX_SHADER, vertex));
-      gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fragment)); gl.linkProgram(program);
+      const vs = shader(gl.VERTEX_SHADER, vertex), fs = shader(gl.FRAGMENT_SHADER, fragment);
+      gl.attachShader(program, vs); gl.attachShader(program, fs); gl.linkProgram(program);
+      gl.deleteShader(vs); gl.deleteShader(fs);
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error('Optical shader linking failed');
       gl.useProgram(program);
-      const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      locations = Object.fromEntries(['clock','aspect','pointer','pressure','contactRadius'].map(name => [name, gl.getUniformLocation(program, name)]));
+      locations.pulses = gl.getUniformLocation(program, 'pulses[0]');
+      buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
       const attribute = gl.getAttribLocation(program, 'a');
       gl.enableVertexAttribArray(attribute); gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
@@ -224,10 +246,10 @@
     if (!event.persisted) gl.getExtension('WEBGL_lose_context')?.loseContext();
   });
   addEventListener('pageshow', () => { suspended = false; resume(); });
-  for (const preference of [motion, contrast, transparency]) preference.addEventListener('change', resume);
+  for (const preference of [motion, contrast, transparency]) preference.addEventListener('change', () => { needsPaint = true; resume(); });
   document.addEventListener('pointermove', event => {
-    if (motion.matches || stopped()) return;
-    pointer[0] = event.clientX / innerWidth; pointer[1] = event.clientY / innerHeight;
+    if (!event.isPrimary || motion.matches || stopped() || (contactId !== null && event.pointerId !== contactId)) return;
+    position(event);
     if (held && event.timeStamp - lastTrail > 90) { lastTrail = event.timeStamp; ripple(pointer[0], pointer[1]); }
   }, {passive: true});
   function ripple(x, y) {
@@ -237,11 +259,17 @@
     canvas.dataset.opticalInputs = String(Number(canvas.dataset.opticalInputs || 0) + 1);
   }
   document.addEventListener('pointerdown', event => {
-    if (!event.isPrimary || event.button !== 0) return;
-    pointer[0] = event.clientX / innerWidth; pointer[1] = event.clientY / innerHeight;
+    if (!event.isPrimary || event.button !== 0 || motion.matches || stopped()) return;
+    position(event); contactId = event.pointerId;
     held = true; ripple(pointer[0], pointer[1]);
   }, {passive: true});
-  for (const event of ['pointerup','pointercancel','blur','pagehide']) addEventListener(event, () => { held = false; }, {passive: true});
+  addEventListener('pointerup', event => {
+    if (event.pointerId !== contactId) return;
+    position(event); held = false; contactId = null;
+    ripple(pointer[0], pointer[1]);
+  }, {passive: true});
+  addEventListener('pointercancel', event => { if (event.pointerId === contactId) clearPressure(); }, {passive: true});
+  for (const event of ['blur','pagehide']) addEventListener(event, clearPressure, {passive: true});
   document.addEventListener('visibilitychange', () => { if (document.hidden) held = false; });
   addEventListener('gardenoptics', event => ripple(event.detail?.x ?? .5, event.detail?.y ?? .5));
   canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); lost = true; canvas.hidden = true; water.hidden = false; resume(); });

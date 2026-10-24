@@ -87,6 +87,7 @@
     const r = control.getBoundingClientRect();
     begin(control,r.left+r.width/2,r.top+r.height/2,'keyboard');
   });
+  document.addEventListener('focusout', event => { if (active?.id==='keyboard' && active.control===event.target) clearContact(false); });
   document.addEventListener('keyup', event => { if (['Enter',' '].includes(event.key) && active?.id==='keyboard') clearContact(true); });
   for (const event of ['blur','pagehide','resize','scroll','contextmenu']) addEventListener(event, () => clearContact(false), {passive:true});
   reduced.addEventListener('change', syncMotion);
