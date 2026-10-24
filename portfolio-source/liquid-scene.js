@@ -27,8 +27,8 @@
     const localY = Math.max(0, Math.min(r.height, y-r.top));
     control.style.setProperty('--press-x', `${localX}px`);
     control.style.setProperty('--press-y', `${localY}px`);
-    control.style.setProperty('--press-rx', `${-(localY/Math.max(1,r.height)-.5)*7}deg`);
-    control.style.setProperty('--press-ry', `${(localX/Math.max(1,r.width)-.5)*7}deg`);
+    control.style.setProperty('--press-rx', `${-(localY/Math.max(1,r.height)-.5)*2}deg`);
+    control.style.setProperty('--press-ry', `${(localX/Math.max(1,r.width)-.5)*2}deg`);
     control.style.setProperty('--light-x', `${localX}px`);
     control.style.setProperty('--light-y', `${localY}px`);
   }
