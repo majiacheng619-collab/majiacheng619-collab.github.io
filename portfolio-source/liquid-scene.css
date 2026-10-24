@@ -1,10 +1,10 @@
 /* Clear material: a stable visual decision, never a visitor configuration task. */
 :root {
-  --glass-alpha: .055;
+  --glass-alpha: .018;
   --glass-surface: rgb(255 255 255 / var(--glass-alpha));
   --glass-edge: rgb(255 255 255 / .78);
-  --glass-depth: 0 15px 40px #38567512, inset 0 1px 0 #ffffffe6, inset 0 -1px 0 #ffffff3b;
-  --glass-optics: blur(9px) saturate(145%);
+  --glass-depth: 0 22px 50px #24476226, inset 0 1px 0 #ffffffe6, inset 0 -1px 0 #81a7bf52;
+  --glass-optics: blur(4px) saturate(155%);
   --scene-x: 0px;
   --scene-y: 0px;
 }
@@ -60,7 +60,7 @@ body, body.home-page { background: transparent; }
 .detail-page .detail-row,.detail-page .detail-split>.detail-shell,.detail-page .detail-film>.detail-shell,
 .contact-page .contact-identity,.contact-page .contact-methods>div,.detail-page .growth-demo,
 .premium-home .premium-transcript,.image-dialog,.case-study,.role-path,.home-field {
-  background: linear-gradient(135deg,#ffffff21,#ffffff03 45%,#ffffff15),var(--glass-surface);
+  background: linear-gradient(135deg,#ffffff0c,#ffffff00 45%,#ffffff09),var(--glass-surface);
   border: 1px solid var(--glass-edge); border-radius: 28px;
   box-shadow: var(--glass-depth);
   -webkit-backdrop-filter: var(--glass-optics); backdrop-filter: var(--glass-optics);
@@ -191,6 +191,21 @@ html[data-scene-motion='on'] .ambient-orb { opacity:.08; }
 /* Water is the atmosphere; the glass keeps thin bright edges and deep soft shadows. */
 .ambient-field::after { opacity: .16; }
 .capability-card,.case-study,.role-path,.home-field,.premium-home .premium-story {
-  border-color: #ffffffa8;
-  box-shadow: 0 20px 60px #31597517,inset 0 1px 1px #ffffffed,inset 1px 0 0 #ffffff70,inset 0 -1px 1px #739fb333;
+  border-color: #ffffff9c;
+  box-shadow: 0 24px 60px #24476b26,0 3px 8px #24476b0d,inset 0 1px 1px #ffffffed,inset 1px 0 0 #ffffff66,inset 0 -1px 1px #527d993d;
 }
+
+/* Clear panes expose moving water; contact belongs to the selected control. */
+.glass-dock { background: linear-gradient(145deg,#ffffff17,#ffffff03 55%,#ffffff1c); -webkit-backdrop-filter: blur(8px) saturate(155%); backdrop-filter: blur(8px) saturate(155%); box-shadow: 0 16px 45px #21466830,inset 0 1px 1px #fff,inset 0 -1px 1px #ffffff70; }
+.premium-home .hero-summary,.premium-home .capability-card p,.premium-home .home-field p:not(.project-kicker),.detail-page .star-grid p,.detail-page .role-path p { color: #304960; }
+.premium-home .hero-kicker,.capability-index,.case-meta,.case-facts span { color: #38536b; }
+[data-glass-control] { position: relative; isolation: isolate; overflow: hidden; transform-origin: center; transition: transform .55s cubic-bezier(.18,1.5,.3,1),box-shadow .4s,border-color .2s; -webkit-tap-highlight-color: transparent; }
+[data-glass-control]::after { content: ''; position: absolute; pointer-events: none; z-index: 2; left: var(--press-x,50%); top: var(--press-y,50%); width: 220px; height: 220px; border-radius: 50%; opacity: 0; transform: translate(-50%,-50%) scale(.1); background: radial-gradient(circle,#ffffff4d,transparent 60%); border: 1px solid #ffffffd9; box-shadow: 0 1px 5px #356b8c38,inset 0 1px 7px #fff; }
+[data-glass-control][data-glass-pressed='true'] { transform: perspective(1000px) rotateX(var(--press-rx,0deg)) rotateY(var(--press-ry,0deg)) translateY(3px) scale(.975); box-shadow: 0 6px 18px #284c752b,inset 0 2px 12px #5989ad26,inset 0 1px 1px #fff; border-color: #fff; transition-duration: .09s; }
+[data-glass-control][data-glass-pressed='true']::after { opacity: .8; transform: translate(-50%,-50%) scale(.45); transition: transform .18s,opacity .09s; }
+[data-glass-control][data-glass-released='true']::after { animation: glass-contact-release .65s ease-out both; }
+@keyframes glass-contact-release { from { opacity: .8; transform: translate(-50%,-50%) scale(.35); } to { opacity: 0; transform: translate(-50%,-50%) scale(1.35); } }
+@media (prefers-reduced-motion:reduce) { [data-glass-control][data-glass-pressed='true'] { transform: none; outline: 2px solid #2168a8; outline-offset: 3px; } [data-glass-control]::after { display: none; } }
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) { .glass-dock { background: #f8fbff; } [data-glass-control]::after { display: none; } }
+
+.detail-page [data-glass-control]::after { content: ''; }

@@ -74,6 +74,9 @@ jobs:
       - name: Verify live optics and mobile lesson regressions
         timeout-minutes: 6
         run: node portfolio-source/game-repair-audit.cjs _site
+      - name: Verify direct touch feedback and native navigation
+        timeout-minutes: 3
+        run: node portfolio-source/material-touch.browser.test.cjs _site
       - name: Verify official device previews
         timeout-minutes: 3
         run: node portfolio-source/device-frame.browser.test.cjs
@@ -176,6 +179,9 @@ jobs:
       - name: Verify live optics and mobile lesson regressions
         timeout-minutes: 6
         run: node portfolio-source/game-repair-audit.cjs _site
+      - name: Verify direct touch feedback and native navigation
+        timeout-minutes: 3
+        run: node portfolio-source/material-touch.browser.test.cjs _site
       - name: Verify official device previews
         timeout-minutes: 3
         run: node portfolio-source/device-frame.browser.test.cjs

@@ -1,29 +1,29 @@
 /* Visible water events: fall, contact, then two expanding rings. */
 .water-events { position: fixed; z-index: -1; inset: 0; overflow: hidden; pointer-events: none; }
 .ambient-field > .water-events { position: absolute; z-index: 1; }
-.water-event { position: absolute; left: var(--water-x); top: var(--water-y); width: clamp(210px,32vw,480px); aspect-ratio: 1; transform: translate(-50%,-50%); }
-.water-event i { position: absolute; display: block; left: 50%; top: 50%; animation-duration: 5.2s; animation-delay: var(--water-delay); animation-iteration-count: infinite; animation-timing-function: linear; }
-.water-drop { width: 24px; height: 35px; margin: -35px 0 0 -12px; border-radius: 52% 48% 48% 52% / 65% 64% 36% 35%; background: radial-gradient(ellipse at 32% 26%,#fff 0%,#ffffffb3 10%,#ffffff14 30%,#b2dcf83b 58%,#ffffffb3 95%); border: 1px solid #ffffffe0; box-shadow: inset -3px -4px 7px #6495b02b,0 8px 20px #467e9e24; animation-name: water-fall; }
-.water-ring { width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 50%; border: 1.5px solid #ffffffc9; box-shadow: 0 2px 7px #4b829229,inset 0 2px 5px #ffffff96; animation-name: water-spread; }
+.water-event { position: absolute; left: var(--water-x); top: var(--water-y); width: clamp(280px,40vw,620px); aspect-ratio: 1; transform: translate(-50%,-50%); }
+.water-event i { position: absolute; display: block; left: 50%; top: 50%; animation-duration: 4.2s; animation-delay: var(--water-delay); animation-iteration-count: infinite; animation-timing-function: linear; }
+.water-drop { width: 36px; height: 52px; margin: -52px 0 0 -18px; border-radius: 52% 48% 48% 52% / 65% 64% 36% 35%; background: radial-gradient(ellipse at 32% 26%,#fff 0%,#ffffffb3 10%,#ffffff14 30%,#b2dcf83b 58%,#ffffffb3 95%); border: 1px solid #ffffffe0; box-shadow: inset -3px -4px 7px #6495b02b,0 8px 20px #467e9e24; animation-name: water-fall; }
+.water-ring { width: 100%; height: 100%; margin: -50% 0 0 -50%; border-radius: 50%; border: 2px solid #ffffffe6; box-shadow: 0 3px 9px #2c6b8945,inset 0 2px 6px #ffffffbd; animation-name: water-spread; }
 .water-ring-echo { animation-name: water-echo; border-color: #ffffff96; }
 @keyframes water-fall {
-  0% { opacity: 0; transform: translate3d(0,-150px,0) scale(.65,1.3); }
-  8% { opacity: .95; transform: translate3d(0,-135px,0) scale(.75,1.2); }
+  0% { opacity: 0; transform: translate3d(0,-230px,0) scale(.65,1.3); }
+  8% { opacity: .95; transform: translate3d(0,-205px,0) scale(.75,1.2); }
   28% { opacity: 1; transform: translate3d(0,-12px,0) scale(.9,1.1); }
   34% { opacity: .8; transform: translate3d(0,0,0) scale(1.7,.35); }
   40%,100% { opacity: 0; transform: translate3d(0,0,0) scale(2,.1); }
 }
 @keyframes water-spread {
-  0%,29% { opacity: 0; transform: scale(.015); }
-  34% { opacity: .85; transform: scale(.08); }
-  66% { opacity: .55; transform: scale(.6); }
-  100% { opacity: 0; transform: scale(1); }
+  0%,29% { opacity: 0; transform: perspective(900px) rotateX(62deg) scale(.015); }
+  34% { opacity: .85; transform: perspective(900px) rotateX(62deg) scale(.08); }
+  66% { opacity: .55; transform: perspective(900px) rotateX(62deg) scale(.6); }
+  100% { opacity: 0; transform: perspective(900px) rotateX(62deg) scale(1); }
 }
 @keyframes water-echo {
-  0%,36% { opacity: 0; transform: scale(.015); }
-  42% { opacity: .65; transform: scale(.08); }
-  75% { opacity: .35; transform: scale(.48); }
-  100% { opacity: 0; transform: scale(.8); }
+  0%,36% { opacity: 0; transform: perspective(900px) rotateX(62deg) scale(.015); }
+  42% { opacity: .65; transform: perspective(900px) rotateX(62deg) scale(.08); }
+  75% { opacity: .35; transform: perspective(900px) rotateX(62deg) scale(.48); }
+  100% { opacity: 0; transform: perspective(900px) rotateX(62deg) scale(.8); }
 }
 html[data-water-paused='true'] .water-event i { animation-play-state: paused; }
 @media (prefers-reduced-motion:reduce), (prefers-reduced-transparency:reduce), (prefers-contrast:more), (forced-colors:active), print { .water-events { display: none; } }
