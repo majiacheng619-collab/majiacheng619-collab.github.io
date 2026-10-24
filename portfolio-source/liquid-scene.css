@@ -214,3 +214,5 @@ html[data-scene-motion='on'] .ambient-orb { opacity:.08; }
 .detail-page { --case-muted: #344e65; }
 .premium-home p,.premium-home .premium-content-note,.premium-transcript summary,.contact-page .contact-identity p,.contact-page .contact-methods dt,.site-footer { color: #344e65; }
 .detail-page .growth-demo button[data-growth-step]:not([aria-pressed="true"]) { color: #344e65; }
+:root { --blue: #004b95; --glass-blue: #004b95; }
+.capability-link,.premium-home .button.secondary,.detail-page .button.secondary,.button.secondary,.case-jump a,.role-path a,.glass-dock__link[aria-current] { color: #004b95; }
