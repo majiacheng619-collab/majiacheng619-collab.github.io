@@ -9,6 +9,13 @@ const server=http.createServer((req,res)=>{let f=path.resolve(root,'.'+new URL(r
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  const origin=`http://127.0.0.1:${server.address().port}`;
  await page.goto(origin+'/');await page.waitForSelector('[data-optical-scene="webgl"]',{state:'attached'});
+ assert.equal(await page.locator('.water-events').evaluate(e=>e.hidden),true,'Live optics replace the decorative CSS fallback');
+ const optical=page.locator('[data-optical-scene]');
+ await optical.evaluate(c=>{const loss=c.getContext('webgl').getExtension('WEBGL_lose_context');c.restoreOpticalTestContext=()=>loss.restoreContext();loss.loseContext();});
+ await page.waitForFunction(()=>document.querySelector('[data-optical-scene]').hidden);
+ assert.equal(await page.locator('.water-events').evaluate(e=>e.hidden),false,'Context loss restores the authored fallback');
+ await optical.evaluate(c=>{c.restoreOpticalTestContext();delete c.restoreOpticalTestContext;});
+ await page.waitForFunction(()=>!document.querySelector('[data-optical-scene]').hidden&&document.querySelector('.water-events').hidden);
  assert.equal(await page.evaluate(()=>matchMedia('(hover:hover) and (pointer:fine)').matches),false,'Test a real coarse-input layout');
  const card=page.locator('.capability-card').first();await card.scrollIntoViewIfNeeded();await page.waitForTimeout(100);
  async function touch(type,dx=0){await card.evaluate((e,{type,dx})=>{const r=e.getBoundingClientRect();e.dispatchEvent(new PointerEvent(type,{bubbles:true,isPrimary:true,pointerId:23,pointerType:'touch',button:0,clientX:r.left+r.width*.35+dx,clientY:r.top+70}));},{type,dx});}
