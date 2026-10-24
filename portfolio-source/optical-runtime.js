@@ -39,33 +39,45 @@
     varying vec2 uv; uniform sampler2D field; uniform float clock;
     uniform vec2 pointer; uniform vec3 pulses[4]; uniform float aspect; uniform float pressure;
     uniform float contactRadius;
-    // An environment with real tonal structure makes refraction visible without
-    // adding a blue tint to every pane. Broad ribbons carry light through water.
+    // Champagne, pearl and blue-grey folds: a luminous adaptation of the
+    // supplied wallpaper. The floor preserves contrast under transparent type.
     vec3 waterColor(vec2 q){
-      float bend=q.x*.72+q.y*.38+.13*sin(q.y*3.8-clock*.24);
-      float ribbon=sin(bend*8.6-clock*.20);
-      float seam=exp(-pow((ribbon-.42)*9.,2.));
-      float shadow=exp(-pow((ribbon-.13)*4.,2.));
-      vec3 c=mix(vec3(.88,.92,.95),vec3(.96,.97,.95),smoothstep(0.,1.,q.y));
-      c-=shadow*vec3(.075,.065,.047);
-      c+=seam*vec3(.065,.059,.044);
-      vec2 pool=q-vec2(.83+.08*sin(clock*.17),.72);
-      c=mix(c,vec3(.76,.85,.88),exp(-dot(pool,pool)*5.)*.32);
-      return c;
+      float breath=sin(clock*.30)*.055;
+      vec3 pearl=vec3(.94,.925,.90);
+      vec3 champagne=vec3(.86,.74,.57);
+      vec3 blueGrey=vec3(.62,.69,.79);
+      vec3 c=mix(pearl,champagne,exp(-length((q-vec2(.12,.13))*vec2(1.1,1.6))*2.4)*.68);
+      c=mix(c,blueGrey,smoothstep(.42,1.12,q.y)*.57);
+      // Broad S-shaped sheets have an illuminated lip and a graduated shadow.
+      // They drift independently; all lenses sample the same moving environment.
+      for(int j=0;j<3;j++){
+        float id=float(j);
+        float curve=.14+id*.34+.20*sin(q.x*3.9+id*.85+clock*.19)
+                    -.32*q.x+breath*sin(q.x*3.+id*1.7);
+        float distance=q.y-curve;
+        float sheet=exp(-pow((distance-.075)/.115,2.));
+        float edge=exp(-pow(distance/.006,2.));
+        float glow=exp(-pow((distance+.018)/.045,2.));
+        c-=sheet*vec3(.105,.098,.084);
+        c+=glow*vec3(.065,.061,.055)+edge*vec3(.12,.115,.105);
+      }
+      vec2 amber=(q-vec2(.17+sin(clock*.21)*.12,.27))*vec2(1.,1.7);
+      c+=exp(-dot(amber,amber)*9.)*vec3(.048,.018,-.018);
+      return clamp(c,vec3(.69,.70,.72),vec3(.98));
     }
     float surface(vec2 p){
-      return sin(p.x*4.8+p.y*3.2-clock*.47)*.40
-        +sin(p.x*-2.7+p.y*7.1+clock*.38)*.23
+      return sin(p.x*4.8+p.y*3.2-clock*.67)*.46
+        +sin(p.x*-2.7+p.y*7.1+clock*.53)*.28
         +sin(p.x*8.2-p.y*2.4+sin(p.y*3.-clock*.31))*.08;
     }
     // A wave packet has a finite front and a trailing wake, rather than a
     // CSS outline expanding independently from the refracted environment.
     vec2 waveSlope(vec2 delta,float age){
-      float radius=length(delta),front=radius-age*.30;
-      float envelope=exp(-front*front*180.-age*.85)*smoothstep(0.,.12,age);
+      float radius=length(delta),front=radius-age*.36;
+      float envelope=exp(-front*front*145.-age*.72)*smoothstep(0.,.12,age);
       // A narrow leading ridge and softer wake catch opposite sides of the light.
       float ridge=cos(front*72.)+cos((front+.035)*48.)*.32;
-      return delta/max(radius,.002)*ridge*envelope*2.35;
+      return delta/max(radius,.002)*ridge*envelope*3.15;
     }
     void main(){
       vec2 q=vec2(uv.x,1.-uv.y), metric=vec2(aspect,1.);
@@ -81,7 +93,7 @@
       // Automatic droplets share one clock with their impact waves. They land
       // in the same coordinate system; refraction continues into the wake.
       for(int i=0;i<3;i++){
-        float id=float(i),age=mod(clock+id*2.17,6.5)-1.05;
+        float id=float(i),age=mod(clock+id*1.83,5.5)-1.05;
         vec2 center=vec2(.17+id*.32,.25+mod(id*.29,.6));
         if(age>=0.) slope+=waveSlope((q-center)*metric,age);
       }
@@ -94,12 +106,12 @@
       vec2 drift=vec2(sin(clock*.16),cos(clock*.13))*.035;
       vec3 optical=texture2D(field,clamp(q*.88+.06+drift,.001,.999)).rgb;
       vec3 normal=normalize(vec3(-slope*.18+(optical.gb-.5)*.045,1.));
-      vec2 refracted=q+normal.xy*.19/metric;
+      vec2 refracted=q+normal.xy*.24/metric;
       vec3 color=waterColor(refracted);
       vec3 key=normalize(vec3(-.48,-.62,1.));
       float light=pow(max(dot(normal,key),0.),42.);
-      float caustic=pow(.5+.5*sin(h*6.+optical.r*.6),22.);
-      color+=light*.17+caustic*.065;
+      float caustic=pow(.5+.5*sin(h*6.+optical.r*.6),26.);
+      color+=light*.19+caustic*.045;
       // Pressure forms a shallow clear dimple with an illuminated meniscus.
       float meniscus=exp(-pow((length(finger)-.84)*9.,2.))*pressure;
       color+=meniscus*.075-fingerDepth*.026;
@@ -107,8 +119,8 @@
       // grazing reflection. Their centers remain transparent to the water.
       for(int i=0;i<3;i++){
         float id=float(i),r=.12+id*.045;
-        vec2 center=vec2(.14+id*.35+sin(clock*(.16-id*.025)+id*3.)*.065,
-                         .20+id*.27+cos(clock*.14+id*2.)*.065);
+        vec2 center=vec2(.14+id*.35+sin(clock*(.23-id*.025)+id*3.)*.065,
+                         .20+id*.27+cos(clock*.20+id*2.)*.065);
         vec2 local=(q-center)*metric/vec2(r*1.35,r);
         float angle=atan(local.y,local.x);
         float d=length(local)/(1.+.055*sin(angle*3.+clock*.22+id));
@@ -131,11 +143,11 @@
       }
       // A falling bead shrinks into its impact; no decorative overlay covers text.
       for(int i=0;i<3;i++){
-        float id=float(i),age=mod(clock+id*2.17,6.5)-1.05;
+        float id=float(i),age=mod(clock+id*1.83,5.5)-1.05;
         if(age<0.){
           float fall=clamp((age+1.05)/1.05,0.,1.);
           vec2 center=vec2(.17+id*.32,.25+mod(id*.29,.6)-.26*(1.-fall*fall));
-          vec2 local=(q-center)*metric/vec2(.016,.028-.010*fall);
+          vec2 local=(q-center)*metric/vec2(.021,.037-.013*fall);
           float d=length(local),mask=1.-smoothstep(.94,1.04,d);
           vec3 bead=waterColor(q+local*.035/metric);
           bead+=pow(max(dot(normalize(vec3(local,sqrt(max(.001,1.-d*d)))),key),0.),24.)*.4;

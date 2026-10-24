@@ -218,7 +218,7 @@ html[data-scene-motion='on'] .ambient-orb { opacity:.08; }
 .capability-link,.premium-home .button.secondary,.detail-page .button.secondary,.button.secondary,.case-jump a,.role-path a,.glass-dock__link[aria-current] { color: #004b95; }
 
 /* A neutral optical environment lets type and artwork supply the color. */
-html { background: #edf0f2; }
+html { background: #e8e1d8; }
 .ambient-field::after { display: none; }
 .premium-home .hero-kicker { letter-spacing: .025em; }
 .premium-home .premium-hero { padding-block: clamp(48px,7vw,96px) 52px; }
@@ -250,3 +250,29 @@ html { background: #edf0f2; }
 }
 
 @media print { .case-study,.role-path { background: white; } }
+
+/* Authored no-WebGL atmosphere shares the live field's champagne/pearl palette. */
+.ambient-field {
+  background:
+    radial-gradient(ellipse at 8% 12%,#d6b386a6,transparent 54%),
+    radial-gradient(ellipse at 85% 100%,#8b9cbab3,transparent 62%),
+    linear-gradient(155deg,#ece5dc,#e2dcd5 48%,#c4cbd8);
+}
+.ambient-orb-blue { background: radial-gradient(circle,#cfb08799,#e7d5bd66 42%,transparent 69%); }
+.ambient-orb-mint { background: radial-gradient(circle,#e9e2dacc,#bcb0a066 42%,transparent 70%); }
+.ambient-orb-pearl { background: radial-gradient(circle,#8c9cbd99,#bac5d666 42%,transparent 69%); }
+/* Sculpted sheets remain visible while WebGL loads or its context is lost. */
+.ambient-field::before {
+  content: ''; position: absolute; inset: -30%; pointer-events: none;
+  background: repeating-radial-gradient(ellipse at 0% 15%,transparent 0 19%,#fff8 19.2%,#fff2 19.8%,#786c5f22 23%,transparent 30%);
+  transform: rotate(-22deg); opacity: .75;
+}
+@media (prefers-reduced-motion:no-preference) {
+  html[data-scene-motion='on']:not([data-scene-paused='true']) .ambient-field::before { animation: pearl-sheet-flow 12s ease-in-out infinite alternate; }
+}
+@keyframes pearl-sheet-flow { to { transform: translate3d(5%,7%,0) rotate(-14deg) scale(1.08); } }
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  .ambient-field { background: #eef3f8; }
+  .ambient-field::before { display: none; }
+}
+@media (forced-colors:active), print { .ambient-field::before { display: none; } }
