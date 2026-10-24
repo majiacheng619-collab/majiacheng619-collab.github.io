@@ -21,6 +21,7 @@
   canvas.dataset.opticalScene = 'loading';
   canvas.setAttribute('aria-hidden', 'true');
   (document.querySelector('.ambient-field') || document.body).prepend(canvas);
+  const gameplay = !!document.querySelector('#garden');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const contrast = matchMedia('(prefers-contrast: more)');
   const transparency = matchMedia('(prefers-reduced-transparency: reduce)');
@@ -68,7 +69,9 @@
   function stopped() { return document.hidden || contrast.matches || transparency.matches || lost; }
   function resize() {
     // Crisp on phones and tablets; bound the full-screen fragment workload.
-    const scale = Math.min(devicePixelRatio || 1, 1.5, 1920 / innerWidth, 1440 / innerHeight);
+    const scale = gameplay
+      ? Math.min(.75, 640 / innerWidth, 480 / innerHeight)
+      : Math.min(devicePixelRatio || 1, 1.5, 1920 / innerWidth, 1440 / innerHeight);
     needsPaint = true;
     canvas.width = Math.max(1, Math.round(innerWidth * scale));
     canvas.height = Math.max(1, Math.round(innerHeight * scale));
@@ -76,7 +79,7 @@
   function draw(now = 0) {
     frame = 0;
     if (!ready || stopped() || (motion.matches && !needsPaint)) { last = 0; return; }
-    if (last && now - last < 15 && !motion.matches) { frame = requestAnimationFrame(draw); return; }
+    if (last && now - last < (gameplay ? 50 : 15) && !motion.matches) { frame = requestAnimationFrame(draw); return; }
     if (last && !motion.matches) elapsed += Math.min(.1, (now - last) / 1000);
     last = now;
     gl.viewport(0, 0, canvas.width, canvas.height);

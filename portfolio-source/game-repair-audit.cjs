@@ -46,7 +46,7 @@ async function tapCell(page,row,col){await page.locator('#garden').evaluate((c,{
   assert.deepEqual(axe.violations,[],'Actual playing UI passes accessibility checks');
   await page.locator('#pause').click();await page.reload();await page.locator('[data-action="resume"]').click();await page.waitForSelector('#overlay',{state:'hidden',timeout:1500});
   const resumed=await checkpoint(page);assert.equal(resumed.status,'paused'); // Snapshot stores playing battles paused.
-  await page.waitForTimeout(250);assert.ok((await checkpoint(page)).ticks>resumed.ticks,'Explicit resume starts immediately');
+  await page.waitForFunction(ticks=>{dispatchEvent(new Event('gardencheckpoint'));return JSON.parse(sessionStorage.getItem('sprout-battle-v5')).data.ticks>ticks;},resumed.ticks,{timeout:2000}); // Wait for a simulation frame, including on software GPU runners.
   assert.deepEqual(errors,[]);report.push({width,liveField:true,changedPixels:true,touch:true,lesson:true,resume:true,accessibility:true});await context.close();
  }
  console.log(JSON.stringify({ok:true,report}));
