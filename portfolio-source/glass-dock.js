@@ -91,9 +91,10 @@
   function tick(time) {
     frame = 0;
     if (document.hidden) return;
-    const dt = clamp((time - (lastTime || time - 16.667)) / 1000, .001, .04);
+    const dt = clamp((time - (lastTime || time - 16.667)) / 1000, .001, 1);
     lastTime = time;
-    // Exact critically damped spring; its response is independent of 60/120 Hz.
+    // Closed-form springs are stable across long frames: use real elapsed time
+    // so rendering pressure cannot stretch a short release into idle animation.
     if (gesture?.dragging) {
       // Coalesce input into one paint per display frame; do not make the finger
       // chase a spring. Only the released lens settles with inertia.
@@ -133,7 +134,10 @@
       frame = 0; velocity = 0; lastTime = 0; current = target; width = targetWidth; heldScale = 0; heldVelocity = 0;
       paint(); return;
     }
-    if (!frame && !document.hidden) frame = requestAnimationFrame(tick);
+    if (!frame && !document.hidden) {
+      if (!lastTime) lastTime = performance.now();
+      frame = requestAnimationFrame(tick);
+    }
   }
   function measure(snap = false) {
     const rect = dock.getBoundingClientRect();

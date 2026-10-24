@@ -194,3 +194,14 @@ test('desktop context menus keep native open-in-new-tab actions available',()=>{
   const f=fixture();assert.ok(!f.dock.emit('contextmenu',{target:f.links[1],...properties}).defaultPrevented);
  }
 });
+
+
+test('a release settles within real time even when display frames arrive at 5 Hz',()=>{
+ const f=fixture({frameDuration:200});
+ f.dock.emit('pointerdown');f.settle();f.advance(700);f.dock.emit('pointerup');
+ for(let n=0;n<6;n++)f.step();
+ assert.equal(f.frames.size,0,'Dropped frames must not keep an idle navigation spring alive');
+ assert.equal(f.paint('--lens-stretch'),1);
+ assert.equal(f.paint('--lens-squash'),1);
+ assert.equal(f.navigations.length,0);
+});
