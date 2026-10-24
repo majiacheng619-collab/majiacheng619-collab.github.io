@@ -209,3 +209,8 @@ html[data-scene-motion='on'] .ambient-orb { opacity:.08; }
 @media (prefers-reduced-transparency:reduce), (prefers-contrast:more) { .glass-dock { background: #f8fbff; } [data-glass-control]::after { display: none; } }
 
 .detail-page [data-glass-control]::after { content: ''; }
+
+/* Text stays legible as the water's luminance changes beneath a clear pane. */
+.detail-page { --case-muted: #344e65; }
+.premium-home p,.premium-home .premium-content-note,.premium-transcript summary,.contact-page .contact-identity p,.contact-page .contact-methods dt,.site-footer { color: #344e65; }
+.detail-page .growth-demo button[data-growth-step]:not([aria-pressed="true"]) { color: #344e65; }
