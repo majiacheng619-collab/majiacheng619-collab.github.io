@@ -22,6 +22,8 @@
   canvas.setAttribute('aria-hidden', 'true');
   (document.querySelector('.ambient-field') || document.body).prepend(canvas);
   const gameplay = !!document.querySelector('#garden');
+  const arenaOverlay = gameplay ? document.querySelector('#overlay') : null;
+  let battleActive = !!arenaOverlay?.hidden;
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const contrast = matchMedia('(prefers-contrast: more)');
   const transparency = matchMedia('(prefers-reduced-transparency: reduce)');
@@ -99,7 +101,7 @@
   let program, texture, frame = 0, last = 0, elapsed = 0, ready = false, lost = false, needsPaint = true, suspended = false;
   const pointer = [.5, .5], pulses = new Float32Array([.5,.5,-1,.5,.5,-1,.5,.5,-1,.5,.5,-1]);
   let pulseIndex = 0, held = false, pressure = 0, lastTrail = 0;
-  function stopped() { return suspended || document.hidden || contrast.matches || transparency.matches || lost; }
+  function stopped() { return suspended || battleActive || document.hidden || contrast.matches || transparency.matches || lost; }
   function resize() {
     // Native GPUs keep the full-resolution field. CPU-only rasterizers get a
     // smaller backing buffer so material never competes with direct manipulation.
@@ -133,10 +135,15 @@
   function resume() {
     if (frame) cancelAnimationFrame(frame);
     frame = 0; last = 0;
-    document.documentElement.dataset.waterPaused = document.hidden ? 'true' : 'false';
+    document.documentElement.dataset.waterPaused = document.hidden || battleActive ? 'true' : 'false';
     canvas.dataset.opticalMotion = motion.matches ? 'still' : 'live';
     if (ready && !stopped() && (!motion.matches || needsPaint)) frame = requestAnimationFrame(draw);
   }
+  if (arenaOverlay) new MutationObserver(() => {
+    const next = arenaOverlay.hidden;
+    if (next === battleActive) return;
+    battleActive = next; resume();
+  }).observe(arenaOverlay, {attributes:true, attributeFilter:['hidden']});
   const image = new Image();
   function initialize() {
     try {
