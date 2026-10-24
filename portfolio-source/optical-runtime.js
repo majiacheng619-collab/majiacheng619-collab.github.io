@@ -48,19 +48,18 @@
       vec3 blueGrey=vec3(.62,.69,.79);
       vec3 c=mix(pearl,champagne,exp(-length((q-vec2(.12,.13))*vec2(1.1,1.6))*2.4)*.68);
       c=mix(c,blueGrey,smoothstep(.42,1.12,q.y)*.57);
-      // Broad S-shaped sheets have an illuminated lip and a graduated shadow.
-      // They drift independently; all lenses sample the same moving environment.
-      for(int j=0;j<3;j++){
-        float id=float(j);
-        float curve=.14+id*.34+.20*sin(q.x*3.9+id*.85+clock*.19)
-                    -.32*q.x+breath*sin(q.x*3.+id*1.7);
-        float distance=q.y-curve;
-        float sheet=exp(-pow((distance-.075)/.115,2.));
-        float edge=exp(-pow(distance/.006,2.));
-        float glow=exp(-pow((distance+.018)/.045,2.));
-        c-=sheet*vec3(.105,.098,.084);
-        c+=glow*vec3(.065,.061,.055)+edge*vec3(.12,.115,.105);
-      }
+      // Fold the coordinate once instead of shading each sheet separately.
+      // Parallel S-curves preserve the lip/shadow profile at a third of the cost
+      // in every refracted lens sample, including on mobile fragment processors.
+      float folded=q.y+.32*q.x-.20*sin(q.x*3.9+clock*.19)
+                   -breath*sin(q.x*3.);
+      float distance=(fract((folded-.14)/.34+.5)-.5)*.34;
+      float sheet=exp(-pow((distance-.075)/.115,2.));
+      float edge=exp(-pow(distance/.006,2.));
+      float glow=exp(-pow((distance+.018)/.045,2.));
+      float taper=1.-smoothstep(.12,.17,abs(distance));
+      c-=sheet*taper*vec3(.105,.098,.084);
+      c+=glow*vec3(.065,.061,.055)+edge*vec3(.12,.115,.105);
       vec2 amber=(q-vec2(.17+sin(clock*.21)*.12,.27))*vec2(1.,1.7);
       c+=exp(-dot(amber,amber)*9.)*vec3(.048,.018,-.018);
       return clamp(c,vec3(.69,.70,.72),vec3(.98));
@@ -179,7 +178,7 @@
     // smaller backing buffer so material never competes with direct manipulation.
     const scale = gameplay
       ? Math.min(.75, 640 / innerWidth, 480 / innerHeight)
-      : software ? Math.min(1, 960 / innerWidth, 720 / innerHeight)
+      : software ? Math.min(1, 640 / innerWidth, 480 / innerHeight)
       : Math.min(devicePixelRatio || 1, 1.5, 1920 / innerWidth, 1440 / innerHeight);
     needsPaint = true;
     canvas.width = Math.max(1, Math.round(innerWidth * scale));
