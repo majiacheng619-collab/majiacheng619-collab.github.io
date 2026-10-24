@@ -32,7 +32,7 @@ const server=http.createServer((req,res)=>{let f=path.resolve(root,'.'+new URL(r
  await page.addStyleTag({content:'html{scroll-behavior:auto!important}'});
  const card=page.locator('.capability-card').first();await card.scrollIntoViewIfNeeded();await page.waitForTimeout(100);
  async function touch(type,dx=0){await card.evaluate((e,{type,dx})=>{const r=e.getBoundingClientRect();e.dispatchEvent(new PointerEvent(type,{bubbles:true,isPrimary:true,pointerId:23,pointerType:'touch',button:0,clientX:r.left+r.width*.35+dx,clientY:r.top+70}));},{type,dx});}
- await touch('pointerdown');await page.waitForTimeout(120);
+ await touch('pointerdown');await page.waitForFunction(()=>{const e=document.querySelector('.capability-card');return e?.dataset.glassPressed==='true'&&Number(getComputedStyle(e,'::after').opacity)>.5;});
  assert.equal(await card.getAttribute('data-glass-pressed'),'true','Touch identifies the selected card');
  assert.notEqual(await card.evaluate(e=>getComputedStyle(e).transform),'none','Coarse touch visibly depresses the material');
  if(process.env.TOUCH_OUTPUT){fs.mkdirSync(process.env.TOUCH_OUTPUT,{recursive:true});await page.screenshot({path:path.join(process.env.TOUCH_OUTPUT,'pressed-phone.png')});}
@@ -60,7 +60,7 @@ const server=http.createServer((req,res)=>{let f=path.resolve(root,'.'+new URL(r
  const desktop=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
  const desktopPage=await desktop.newPage();await desktopPage.goto(origin+'/');
  await desktopPage.addStyleTag({content:'html{scroll-behavior:auto!important}'});
- const story=desktopPage.locator('.premium-story').first();await story.hover();await desktopPage.mouse.down();await desktopPage.waitForTimeout(120);
+ const story=desktopPage.locator('.premium-story').first();await story.hover();await desktopPage.mouse.down();await desktopPage.waitForFunction(()=>{const e=document.querySelector('.premium-story');return e?.dataset.glassPressed==='true'&&new DOMMatrix(getComputedStyle(e).transform).m11<1;});
  assert.equal(await story.getAttribute('data-glass-pressed'),'true');
  assert.equal(await story.evaluate(e=>getComputedStyle(e).transitionDuration.split(',')[0]),'0.09s','Hover does not override the immediate press transition');
  assert.ok(await story.evaluate(e=>new DOMMatrix(getComputedStyle(e).transform).m11<1),'Hovered control still compresses');
