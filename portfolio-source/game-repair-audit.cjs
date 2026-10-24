@@ -20,7 +20,11 @@ async function tapCell(page,row,col){await page.locator('#garden').evaluate((c,{
   assert.equal(a.equals(b),false,'Actual rendered pixels change with time');
   const inputs=Number(await optical.getAttribute('data-optical-inputs')||0);await page.mouse.click(width*.75,200);
   assert.ok(Number(await optical.getAttribute('data-optical-inputs'))>inputs,'Pointer input reaches the optical field');
-  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForTimeout(200);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  // Media changes and the final stationary paint are asynchronous on software
+  // GPUs. Observe the applied preference, then let that paint finish.
+  await page.waitForFunction(()=>document.querySelector('[data-optical-scene]')?.dataset.opticalMotion==='still');
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   const stopped=await optical.getAttribute('data-optical-frames');await page.waitForTimeout(250);assert.equal(await optical.getAttribute('data-optical-frames'),stopped,'Reduced motion stops the renderer');
   await page.emulateMedia({reducedMotion:'no-preference'});await page.screenshot({path:path.join(output,'home-'+width+'.png')});
   await page.goto(origin+'/game/');await page.waitForFunction(()=>GardenEngine.VERSION==='7.0.1');
