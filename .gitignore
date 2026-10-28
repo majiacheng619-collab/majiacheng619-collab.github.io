@@ -1,0 +1,10 @@
+portfolio-source/site/
+__pycache__/
+*.pyc
+portfolio-source/film-manifest.json
+portfolio-source/film/work/
+_site/
+deploy.next.zip
+portfolio-source/film/.build/
+portfolio-source/optics/sample_tile_*.py
+

@@ -1,0 +1,23 @@
+{
+  "description": "我核对当前影片的输入与成片。",
+  "renderKey": "90b982f2608ebe1c4f035405a521f379a105a3293d0a69570e43a29a1e4d9269",
+  "sources": {
+    "render.py": "af4e2d628ad0bc6bc009dc5575cc959ad790c41dac3e4cec79b1819351e96136",
+    "scenes_v3.py": "b23a1f53fdfec4f95787c4a3ed4eb59982bf45e37d4fcb0c2358a52bf0f981d7",
+    "mix_v3.py": "7c92e8497b9b3b0477ba0747b1d29265354cc27e1d22ffb00001ceb86e2be186",
+    "inputs/game-demo.mp4": "5942a6ddd5d99344b4c4d312f16a7f08387ec3d790fb2814147806edafbbc5ab",
+    "inputs/film-font.otf": "c913fd7406ff7fad43f1c4d435d6246f7a6e95fd02da7289a7df330c91e6e3fc",
+    "inputs/score-license.json": "68e630cc8cf05945ef07e60c13dc1f406c7f6eb327eb7b37c3ea0b7d5fd633a6",
+    "credits.md": "6041429a109fc76a8c537bae29a06c89b5d8dafb6f3ebdbb8450d7b48213aec5"
+  },
+  "assets": {
+    "poster/poster.png": "d3b5366d25ae07bdbbf4d8368edab68b103722f8a8a93b1e22347a32e5b53b18",
+    "honor/live-honor-2026.jpeg": "4ab2bcdcd70ff97dcf086ad41560bf4e0e546ea1d28acce9d3e6524bddb51e53",
+    "assets/portrait-white-960.b8bfe698eef3.webp": "b8bfe698eef33b040671a1bf96159c0d4c48700156a0fd9542ba903464954620"
+  },
+  "outputs": {
+    "assets/media/intro.3ede6a45308a.mp4": "3ede6a45308affeab7b12cae2323a80f70c67adb2db314ecef56f74ee5d6dd8c",
+    "assets/media/intro-poster.7e66d21e8a04.jpg": "7e66d21e8a0493cad2800bd658e4174e321e835ae9f1e1a53ae1b98d792e0941",
+    "assets/media/intro.f430089a6891.vtt": "f430089a6891430877318d824e793c96e9d00ac9828324f73c9fcf3c2d782b4e"
+  }
+}

@@ -1,0 +1,363 @@
+/* Portfolio controls use the same clear shell and moving lens as the dock.
+   The dock and game own their existing material and are deliberately excluded. */
+body:is(.home-page,.inner-page) {
+  --control-shell:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.045) 55%,rgba(236,244,252,.1));
+  --control-edge:rgba(255,255,255,.68);
+  --control-depth:0 6px 24px rgba(25,40,58,.1),0 1px 3px rgba(25,40,58,.05),inset 0 1px 0 rgba(255,255,255,.75);
+  --control-ink:#344e68;
+  --control-selected:#07548e;
+  --control-return:cubic-bezier(.2,1.4,.35,1);
+}
+
+/* A single transparent rail; selected labels never supply a second plate. */
+body.inner-page .detail-page .case-jump,
+body.inner-page .detail-page .growth-demo .growth-steps,
+body.home-page .premium-home .studio-tabs {
+  position:relative;
+  isolation:isolate;
+  box-sizing:border-box;
+  overflow:hidden;
+  padding:5px;
+  gap:4px;
+  border:1px solid var(--control-edge);
+  border-radius:999px;
+  background:var(--control-shell);
+  box-shadow:var(--control-depth);
+  -webkit-backdrop-filter:blur(7px) saturate(1.25);
+  backdrop-filter:blur(7px) saturate(1.25);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:pan-y pinch-zoom;
+}
+body.home-page .premium-home .studio-tabs::before { content:none; display:none; }
+body:is(.home-page,.inner-page) [data-control-glass] {
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+body:is(.home-page,.inner-page) [data-control-dragging] { cursor:grabbing; }
+body:is(.home-page,.inner-page) [data-control-dragging] :is(a,button) {
+  color:var(--control-ink)!important;font-weight:500;
+}
+body:is(.home-page,.inner-page) [data-control-dragging] [data-control-preview] {
+  color:var(--control-selected)!important;font-weight:600;
+}
+body:is(.home-page,.inner-page) [data-control-dragging]>.control-lens {
+  border-color:#fff;box-shadow:0 4px 14px #234c7829,inset 0 1px 2px #fff,inset 0 -1px 2px #b3ddfa80;
+}
+body.inner-page .detail-page .case-jump a,
+body.inner-page .detail-page .growth-demo .growth-steps button[data-growth-step],
+body.home-page .premium-home .studio-tabs button {
+  position:relative;
+  z-index:2;
+  box-sizing:border-box;
+  min-width:0;
+  min-height:46px;
+  margin:0;
+  padding:11px 18px;
+  border:1px solid transparent;
+  border-radius:999px;
+  background:transparent;
+  box-shadow:none;
+  color:var(--control-ink);
+  font-family:inherit;
+  font-size:15px;
+  font-weight:500;
+  line-height:1.5;
+  text-align:center;
+  text-decoration:none;
+  cursor:pointer;
+  scale:1;
+  transition:color .18s,transform .42s var(--control-return),box-shadow .22s;
+}
+body.inner-page .detail-page .growth-demo .growth-steps button[data-growth-step] strong {
+  font-size:18px;
+  font-weight:550;
+  line-height:1.5;
+}
+body.inner-page .detail-page .case-jump a[aria-current],
+body.inner-page .detail-page .growth-demo .growth-steps button[aria-pressed="true"],
+body.home-page .premium-home .studio-tabs button[aria-selected="true"],
+body.home-page .premium-home .studio-tabs button[aria-selected="true"]:hover {
+  border-color:transparent;
+  background:transparent;
+  box-shadow:none;
+  color:var(--control-selected);
+  font-weight:600;
+}
+/* The no-script selection stays clear and legible without a moving element. */
+body.inner-page .detail-page .case-jump:not([data-control-ready]) a[aria-current],
+body.inner-page .detail-page .growth-demo .growth-steps:not([data-control-ready]) button[aria-pressed="true"],
+body.home-page .premium-home .studio-tabs:not([data-control-ready]) button[aria-selected="true"] {
+  border-color:rgba(255,255,255,.8);
+  background:rgba(255,255,255,.12);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.75),inset 0 -1px 1px rgba(255,255,255,.4);
+}
+
+/* JS sets the measured x/y/width/height and spring scale on this one pane. */
+body:is(.home-page,.inner-page) .control-lens {
+  position:absolute;
+  top:0;
+  left:0;
+  z-index:1;
+  display:block;
+  width:var(--control-width,0px);
+  height:var(--control-height,0px);
+  box-sizing:border-box;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.95);
+  border-radius:999px;
+  background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(244,250,255,.02) 42%,rgba(222,238,249,.065) 68%,rgba(255,255,255,.18));
+  box-shadow:0 2px 6px rgba(34,52,68,.1),inset 0 1px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.64);
+  transform:translate3d(var(--control-x,0px),var(--control-y,0px),0) scale(var(--control-stretch,1),var(--control-squash,1));
+  transform-origin:center;
+  pointer-events:none;
+}
+body:is(.home-page,.inner-page) .control-lens::before {
+  content:"";
+  position:absolute;
+  inset:-22% 48% -22% -6%;
+  border-radius:50%;
+  background:linear-gradient(100deg,transparent 10%,rgba(255,255,255,.6) 48%,rgba(255,255,255,.04) 70%,transparent);
+  transform:translate3d(calc(var(--control-glint,0) * 22px),0,0) rotate(-22deg);
+  opacity:calc(.2 + var(--control-glint,0) * .35);
+  pointer-events:none;
+}
+body:is(.home-page,.inner-page) .control-lens::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(98,121,143,.14);
+  border-radius:inherit;
+  background:radial-gradient(ellipse at 80% 0%,rgba(255,255,255,.28),transparent 55%);
+  box-shadow:inset 1px 0 0 rgba(255,255,255,.6),inset -1px 0 0 rgba(167,214,244,.22);
+  pointer-events:none;
+}
+body:is(.home-page,.inner-page) :not([data-control-ready])>.control-lens { visibility:hidden; }
+body:is(.home-page,.inner-page) .control-lens[hidden] { display:none; }
+
+/* Actions have clear edges and depth while the scene remains visible through. */
+body:is(.home-page,.inner-page) .button,
+body.home-page .premium-home .practice-link,
+body:is(.home-page,.inner-page) main summary {
+  position:relative;
+  isolation:isolate;
+  box-sizing:border-box;
+  overflow:hidden;
+  min-height:48px;
+  padding:12px 22px;
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:999px;
+  background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(230,243,255,.02) 48%,rgba(255,255,255,.07));
+  box-shadow:var(--control-depth);
+  -webkit-backdrop-filter:blur(7px) saturate(1.25);
+  backdrop-filter:blur(7px) saturate(1.25);
+  color:#145585;
+  font-size:15px;
+  font-weight:550;
+  line-height:1.5;
+  text-decoration:none;
+  opacity:1;
+  scale:1;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .42s var(--control-return),box-shadow .24s,border-color .18s,background .22s,color .18s;
+}
+body:is(.home-page,.inner-page) .button.primary,
+body:is(.home-page,.inner-page) .button.primary:hover {
+  -webkit-backdrop-filter:blur(7px) saturate(1.25);
+  backdrop-filter:blur(7px) saturate(1.25);
+  border-color:rgba(191,223,255,.95);
+  background:linear-gradient(145deg,rgba(151,207,255,.14),rgba(185,221,255,.025) 48%,rgba(178,216,253,.09));
+  color:#074c86;
+  box-shadow:0 6px 24px rgba(26,84,135,.14),inset 0 1px 1px rgba(255,255,255,.9),inset 0 -1px 1px rgba(130,184,227,.3);
+}
+body.home-page .premium-home .studio-hero .button {
+  border-color:rgba(210,236,255,.62);
+  background:linear-gradient(145deg,rgba(166,213,255,.19),rgba(202,229,255,.035) 48%,rgba(153,198,247,.12));
+  box-shadow:0 6px 24px rgba(0,9,24,.2),inset 0 1px 1px rgba(235,247,255,.66),inset 0 -1px 1px rgba(151,200,255,.18);
+  color:#e5f3ff;
+}
+body:is(.home-page,.inner-page) main summary {
+  width:fit-content;
+  max-width:100%;
+  padding-inline:17px;
+  border-radius:17px;
+  cursor:pointer;
+}
+body.inner-page .detail-page .case-context summary,
+body.home-page .premium-home .premium-transcript summary {
+  min-height:48px;
+  padding:12px 17px;
+  border-radius:17px;
+  font-size:15px;
+  opacity:1;
+}
+body.inner-page .detail-page .case-context,
+body.inner-page .detail-page .case-context[open] {
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+body.inner-page .detail-page .case-context summary { width:100%; }
+body.inner-page .detail-page .case-context p { margin:18px 0 0; padding-inline:4px; }
+body:is(.home-page,.inner-page) main summary::marker { color:currentColor; }
+body:is(.home-page,.inner-page) main details[open]>summary {
+  border-color:rgba(128,176,216,.6);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.85),0 3px 14px rgba(31,75,115,.1);
+}
+
+/* Contact illuminates where it happened, rather than fading the label. */
+body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button)::after {
+  content:"";
+  position:absolute;
+  z-index:3;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(ellipse at var(--press-x,50%) var(--press-y,50%),rgba(255,255,255,.6),rgba(201,235,255,.12) 45%,transparent 76%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 1px rgba(120,177,214,.35);
+}
+body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary):is(:active,[data-glass-pressed="true"]) {
+  transform:perspective(1000px) rotateX(var(--press-rx,0deg)) rotateY(var(--press-ry,0deg)) translateY(1px) scale(.95)!important;
+  scale:1!important;
+  opacity:1!important;
+  border-color:rgba(255,255,255,.98)!important;
+  box-shadow:0 2px 7px rgba(21,56,87,.15),inset 0 2px 10px rgba(91,146,187,.19),inset 0 1px 1px rgba(255,255,255,.95)!important;
+  transition-duration:.085s;
+}
+body.inner-page .detail-page .case-jump a:is(:active,[data-glass-pressed="true"]),
+body.inner-page .detail-page .growth-demo .growth-steps button:is(:active,[data-glass-pressed="true"]),
+body.home-page .premium-home .studio-tabs button:is(:active,[data-glass-pressed="true"]) {
+  transform:translateY(1px) scale(.96);
+  scale:1;
+  background:transparent;
+  box-shadow:inset 0 1px 8px rgba(50,102,143,.09);
+  transition-duration:.085s;
+}
+body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button):is(:active,[data-glass-pressed="true"])::after { opacity:.85; }
+body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button)[data-glass-released="true"]::after { animation:control-contact-release .48s ease-out both; }
+body:is(.home-page,.inner-page) [data-control-glass]:has([data-glass-pressed="true"])>.control-lens {
+  border-color:rgba(255,255,255,1);
+  box-shadow:0 1px 4px rgba(34,52,68,.15),inset 0 2px 9px rgba(87,149,195,.14),inset 0 1px 1px rgba(255,255,255,.95);
+}
+@keyframes control-contact-release { from { opacity:.7; } to { opacity:0; } }
+
+@media(hover:hover) {
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary):hover:not(:active):not([data-glass-pressed="true"]) {
+    transform:translateY(-2px);
+    border-color:rgba(255,255,255,.98);
+    box-shadow:0 9px 26px rgba(25,65,102,.16),inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 1px rgba(255,255,255,.5);
+  }
+  body:is(.home-page,.inner-page) .button.secondary:hover {
+    background:linear-gradient(145deg,rgba(166,213,255,.23),rgba(202,229,255,.05) 48%,rgba(153,198,247,.15))!important;
+    color:#145585!important;
+  }
+  body.home-page .premium-home .studio-hero .button.secondary:hover { color:#e5f3ff!important; }
+  body.inner-page .detail-page .case-jump a:hover,
+  body.inner-page .detail-page .growth-demo .growth-steps button:hover,
+  body.home-page .premium-home .studio-tabs button:hover {
+    background:transparent;
+    color:var(--control-selected);
+  }
+}
+body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button):focus-visible {
+  outline:3px solid #1574c4;
+  outline-offset:3px;
+  border-color:rgba(255,255,255,.95);
+}
+body.home-page .premium-home .studio-hero .button:focus-visible { outline-color:#91d1ff; }
+@media(max-width:767px) {
+  body.inner-page .detail-page .case-jump { border-radius:25px; }
+  body.inner-page .detail-page .case-jump a { padding:11px 8px; font-size:14px; }
+  body.inner-page .detail-page .growth-demo .growth-steps button[data-growth-step] { padding-inline:8px; }
+  body.home-page .premium-home .studio-tabs button { padding-inline:7px; font-size:14px; }
+}
+@media(max-width:359px) {
+  body.home-page .premium-home .studio-tabs button { padding-inline:4px; font-size:12px; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button),
+  body:is(.home-page,.inner-page) .control-lens { transition:none!important; }
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button):is(:active,:hover,[data-glass-pressed="true"]) { transform:none!important; scale:1!important; }
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button)::after { animation:none; }
+  body:is(.home-page,.inner-page) .control-lens::before { transform:none; opacity:.2; }
+}
+
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+  body.inner-page .detail-page .case-jump,
+  body.inner-page .detail-page .growth-demo .growth-steps,
+  body.home-page .premium-home .studio-tabs,
+  body:is(.home-page,.inner-page) .button,
+  body:is(.home-page,.inner-page) .button.secondary:hover,
+  body.home-page .premium-home .practice-link,
+  body:is(.home-page,.inner-page) main summary {
+    background:#f0f5fa!important;
+    border-color:#90a8bc;
+    color:#17476b;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  body:is(.home-page,.inner-page) .control-lens { background:#d9e8f4; border-color:#789bb6; }
+  body:is(.home-page,.inner-page) .control-lens::before,
+  body:is(.home-page,.inner-page) .control-lens::after,
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary)::after { display:none; }
+  body.home-page .premium-home .studio-hero .button { background:#1a334a!important; border-color:#a3bfd8; color:#f0f7ff; }
+  body:is(.home-page,.inner-page) .button.secondary:hover { background:#1a334a!important; }
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  body.inner-page .detail-page .case-jump,
+  body.inner-page .detail-page .growth-demo .growth-steps,
+  body.home-page .premium-home .studio-tabs,
+  body:is(.home-page,.inner-page) .button.secondary:hover,
+  body:is(.home-page,.inner-page) .button,
+  body.home-page .premium-home .practice-link,
+  body:is(.home-page,.inner-page) main summary { background:#edf4fa; }
+  body.home-page .premium-home .studio-hero .button { background:#1a334a; }
+}
+@media(forced-colors:active) {
+  body.inner-page .detail-page .case-jump,
+  body.inner-page .detail-page .growth-demo .growth-steps,
+  body.home-page .premium-home .studio-tabs,
+  body.home-page .premium-home .studio-hero .button.secondary:hover,
+  body:is(.home-page,.inner-page) .button.secondary:hover,
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary) {
+    background:Canvas!important;
+    border:1px solid CanvasText;
+    box-shadow:none;
+    color:LinkText!important;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  body:is(.home-page,.inner-page) .control-lens,
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary)::after { display:none; }
+  body.inner-page .detail-page .case-jump a,
+  body.inner-page .detail-page .growth-demo .growth-steps button,
+  body.home-page .premium-home .studio-tabs button { color:ButtonText; }
+  body.inner-page .detail-page .case-jump a[aria-current],
+  body.inner-page .detail-page .growth-demo .growth-steps button[aria-pressed="true"],
+  body.home-page .premium-home .studio-tabs button[aria-selected="true"] { background:Highlight!important; color:HighlightText; outline:1px solid Highlight; }
+  body:is(.home-page,.inner-page) :is(.button,.practice-link,main summary,[data-control-glass] a,[data-control-glass] button):focus-visible { outline-color:Highlight; }
+}
+
+/* A content pane need not blur the scene a second time beneath its controls. */
+body.inner-page .detail-page .growth-demo {
+  background:rgba(255,255,255,.045);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+
+/* Scrolling text recedes behind the pinned rail; the lens itself stays clear. */
+body.inner-page .detail-page .case-index::before {
+  content:"";position:absolute;inset:-10px -6px -16px;z-index:-1;
+  pointer-events:none;border-radius:30px;
+  background:linear-gradient(180deg,#f4f7fa00,#f4f7fa70 24%,#f4f7fa70 70%,#f4f7fa00);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  -webkit-mask-image:linear-gradient(transparent,#000 22%,#000 75%,transparent);
+  mask-image:linear-gradient(transparent,#000 22%,#000 75%,transparent);
+}
+@media (prefers-reduced-transparency:reduce),(prefers-contrast:more),(forced-colors:active),print {
+  body.inner-page .detail-page .case-index::before { display:none; }
+}

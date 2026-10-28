@@ -1,0 +1,60 @@
+{
+  "asset": "assets/ipad-pro-m5.d67558d91a2d.jpg",
+  "sourceType": "Apple official product photograph",
+  "sourceURL": "https://www.apple.com/v/ipad-pro/aw/images/overview/chip/chip_hero_endframe__becrgbad20j6_large_2x.jpg",
+  "sourcePage": "https://www.apple.com/ipad-pro/",
+  "device": "2025 iPad Pro M5 with Magic Keyboard",
+  "sha256": "d67558d91a2d025a66be99a7bf2c5b33ac7a77c179ff906dd86d13a1158bb815",
+  "sourceSize": [
+    3504,
+    2784
+  ],
+  "viewport": [
+    600,
+    40,
+    2300,
+    1700
+  ],
+  "screenCorners": [
+    [
+      850,
+      118
+    ],
+    [
+      2654,
+      118
+    ],
+    [
+      2696,
+      1382
+    ],
+    [
+      808,
+      1382
+    ]
+  ],
+  "screenSourceRatio": [
+    4,
+    3
+  ],
+  "screenMatrix": [
+    0.7843478260869565,
+    0.0,
+    -0.0,
+    0,
+    -0.023264554163596175,
+    0.7001522967329894,
+    0.05932203389830517,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+  ],
+  "model": "ipad-pro-2025",
+  "year": 2025
+}
