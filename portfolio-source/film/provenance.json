@@ -1,12 +1,13 @@
 {
   "description": "我核对当前影片的输入与成片。",
-  "renderKey": "20ae38bda59495032d9ddf7d7917f8c03ad39f1397e5f51cb4e1a3645d916aa0",
+  "renderKey": "7517ac416dee50de351914008e4bf11441d1286fe9c609841d6b509113895d56",
   "sources": {
-    "render.py": "af4e2d628ad0bc6bc009dc5575cc959ad790c41dac3e4cec79b1819351e96136",
-    "scenes_v3.py": "4f33cc49a7052107ed6ae5395e879a0186d281d534e67b173d59c5f2a79fd283",
+    "render.py": "06cae15ef5defd478bf0660e593306a37b4de3e67b6ed8d84a13d3860e85b556",
+    "scenes.py": "636aef158e34268e170c55096cd2b3acb951ae725b1868a5a9ac182d765d2bcc",
+    "glass.glsl": "7e7867e8dab7978935a87abdf60e017734891d36478ffbb70fa3c35a34a2fdd9",
     "mix_v3.py": "7c92e8497b9b3b0477ba0747b1d29265354cc27e1d22ffb00001ceb86e2be186",
     "inputs/game-demo.mp4": "5942a6ddd5d99344b4c4d312f16a7f08387ec3d790fb2814147806edafbbc5ab",
-    "inputs/film-font.otf": "c913fd7406ff7fad43f1c4d435d6246f7a6e95fd02da7289a7df330c91e6e3fc",
+    "inputs/film-font.otf": "8c56e7243e5fce1d8aa58310795de8ed19d2d687755462baec5d6249cc10d4a2",
     "inputs/score-license.json": "68e630cc8cf05945ef07e60c13dc1f406c7f6eb327eb7b37c3ea0b7d5fd633a6",
     "credits.md": "6041429a109fc76a8c537bae29a06c89b5d8dafb6f3ebdbb8450d7b48213aec5"
   },
@@ -16,8 +17,8 @@
     "assets/portrait-white-960.b8bfe698eef3.webp": "b8bfe698eef33b040671a1bf96159c0d4c48700156a0fd9542ba903464954620"
   },
   "outputs": {
-    "assets/media/intro.3b704a61f5b7.mp4": "3b704a61f5b779f58ee71b684c961dbd0e6504cc3e42f59615d3d36771dac268",
-    "assets/media/intro-poster.7e66d21e8a04.jpg": "7e66d21e8a0493cad2800bd658e4174e321e835ae9f1e1a53ae1b98d792e0941",
-    "assets/media/intro.639c3d636caf.vtt": "639c3d636caff0b9f4985b9a601b5ac77508bd0094381d7348ea888975d391df"
+    "assets/media/intro.56c159d33e18.mp4": "56c159d33e18e63a09ead319de5acbfa356d6ffbbfe5297bf76820ee68f6096f",
+    "assets/media/intro-poster.dd0c6049fdc0.jpg": "dd0c6049fdc07f2030f0e36a03db9c7b62fabec584b411047d383f47a7ff5240",
+    "assets/media/intro.49d1c5ba9d3e.vtt": "49d1c5ba9d3ed5df4f82030c283a92b739521dfba153910a740d00b37089e122"
   }
 }

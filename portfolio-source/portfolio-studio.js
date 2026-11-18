@@ -97,14 +97,6 @@
     reduced.addEventListener('change',()=>{transition?.cancel();heightTransition?.cancel();clearGesture();measureSelection();});
     addEventListener('pagehide',()=>{heightTransition?.cancel();transition?.cancel();clearGesture();clearTimeout(clickTimer);suppressClick=false;});
   }
-  document.addEventListener('click',event=>{
-    const trigger=event.target.closest?.('[data-play-intro]');
-    if(!trigger||event.defaultPrevented||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-    const video=document.querySelector('#intro-video');if(!video)return;
-    event.preventDefault();
-    video.scrollIntoView({behavior:reduced.matches?'instant':'smooth',block:'center'});
-    video.play().catch(()=>{video.tabIndex=0;video.focus({preventScroll:true});});
-  });
   // Offscreen geometry pauses instead of running unseen for the full page.
   if('IntersectionObserver' in window){
     const scenes=new IntersectionObserver(entries=>{

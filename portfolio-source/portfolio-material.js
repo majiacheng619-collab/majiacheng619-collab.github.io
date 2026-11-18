@@ -8,7 +8,7 @@
   for(const surface of surfaces)surface.dataset.materialSurface='';
   const timers=new Map();
   let held=null,surfaceHeld=null,frame=0,pending=null;
-  const selector='.button,.practice-link,summary,.contact-copy,.dialog-close,.sprite-close,.sprite-form button,.sprite-answer-source,.sprite-resume,[data-control-glass] a,[data-control-glass] button';
+  const selector='.button,.practice-link,summary,.contact-copy,.dialog-close,.sprite-close,.sprite-form button,.sprite-answer-source,.sprite-resume,[data-control-glass] a,[data-control-glass] button,.film-button,.film-chapters button';
   const targetFor=target=>target?.closest?.(selector);
   function illuminate(node,x,y){
     const b=node.getBoundingClientRect();

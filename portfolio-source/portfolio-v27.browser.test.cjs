@@ -140,8 +140,8 @@ const server = http.createServer((req,res) => {
     await previewTabs.nth(0).focus();await page.keyboard.press('ArrowRight');
     assert.equal(await previewTabs.nth(1).getAttribute('aria-selected'),'true','Keyboard switches previews');
     assert.equal(await page.locator('#intro-video').evaluate(v=>v.paused),true,'Switching previews never autoplays media');
-    assert.equal(await page.locator('[data-play-intro]').count(),0,'The overview uses one native video control surface');
-    assert.equal(await page.locator('#intro-video').evaluate(v=>v.controls),true,'The overview retains native playback controls');
+    assert.equal(await page.locator('[data-film-play]:visible').count(),1,'The overview has one play control');
+    assert.equal(await page.locator('#intro-video').evaluate(v=>v.controls),false,'The enhanced control surface replaces browser chrome');
     await page.locator('[data-studio-panel="field"] a.button').first().click();
     await page.waitForURL('**/poster/index.html');
     assert.equal(await page.locator('main h1').count(),1,'The event preview opens its real material');

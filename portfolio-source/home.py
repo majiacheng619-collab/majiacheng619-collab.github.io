@@ -1,5 +1,6 @@
 """我以真实作品、业务证据和可直接操作的预览组织首页。"""
 from device_frames import device_frame
+from film_player import build_film
 from silk_art import silk_art
 
 
@@ -63,11 +64,7 @@ def build_home(img, cta, media, transcript):
  </div>
 </section>
 
-<section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
- <div class="premium-section-head"><h2 id="film-title">24 秒作品速览</h2></div>
- <div class="premium-film-player"><video id="intro-video" controls playsinline preload="none" poster="{media['poster']}" aria-label="马嘉程24秒作品介绍，无旁白，含授权器乐配乐和画面文字"><source src="{media['video']}" type="video/mp4"><track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。</video></div>
- <details class="premium-transcript"><summary>阅读文字稿</summary><p>{transcript}</p></details>
-</section>
+{build_film(media, transcript)}
 </div>'''
 
 

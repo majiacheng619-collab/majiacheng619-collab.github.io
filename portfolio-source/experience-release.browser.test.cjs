@@ -119,10 +119,22 @@ const server=http.createServer((req,res)=>{
     await page.keyboard.press('End');assert.equal(await tabs.last().getAttribute('aria-selected'),'true');
     await page.keyboard.press('Home');
     assert.equal(await tabs.first().getAttribute('aria-selected'),'true');
+    const film=page.locator('[data-intro-player]');
+    const filmSettings=await film.locator('video').evaluate(video=>({
+     paused:video.paused,preload:video.preload,inline:video.playsInline,nativeControls:video.controls
+    }));
+    assert.deepEqual(filmSettings,{paused:true,preload:'none',inline:true,nativeControls:false});
+    const filmTargets=await film.locator('button:visible, input:visible').evaluateAll(controls=>controls.map(control=>{
+     const {width,height}=control.getBoundingClientRect();
+     return {width,height};
+    }));
+    assert.ok(filmTargets.every(control=>control.width>=44&&control.height>=44),'Film controls remain usable at '+width);
+    assert.equal(await film.locator('[data-film-start]').count(),5);
     if(screenshot&&(width===390||width===1440)){
      await page.evaluate(async()=>{scrollTo(0,0);await document.fonts.ready;await Promise.all([...document.images].filter(image=>image.loading!=='lazy').map(image=>image.decode().catch(()=>{})));});
      await page.screenshot({path:path.join(screenshot,'home-'+width+'.png')});
      await page.locator('#career-lens').screenshot({path:path.join(screenshot,'practice-'+width+'.png')});
+     await film.screenshot({path:path.join(screenshot,'film-'+width+'.png')});
     }
    }
    if(Axe&&width===390&&['','experience/','contact/'].includes(route)){
@@ -198,6 +210,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await fallback.locator('[data-studio-panel]:visible').count(),2,'Works remain readable without scripts');
  assert.equal(await fallback.locator('.sprite-launcher').isVisible(),false);
  assert.equal(await fallback.locator('#career-lens a').count(),4,'Every practice stays reachable without scripts');
+ assert.equal(await fallback.locator('#intro-video').evaluate(video=>video.controls),true,'Browser video controls work without scripts');
  // Printing excludes the floating search without clearing an in-progress query.
  await page.goto(origin);await launcher.click();await input.fill('学历');await input.press('Enter');
  await page.locator('.sprite-answer').waitFor();

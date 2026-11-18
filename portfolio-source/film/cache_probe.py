@@ -7,7 +7,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parent
 REPO=ROOT.parent.parent
-SOURCES=('render.py','scenes_v3.py','mix_v3.py','inputs/game-demo.mp4','inputs/film-font.otf','inputs/score-license.json')
+SOURCES=('render.py','scenes.py','glass.glsl','mix_v3.py','inputs/game-demo.mp4','inputs/film-font.otf','inputs/score-license.json')
 
 def signature(read_asset, names, credits=None):
     assets=['poster/poster.png','honor/live-honor-2026.jpeg']

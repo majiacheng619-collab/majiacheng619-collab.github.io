@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-11-18-liquid-glass'
+REVISION='2026-11-18-liquid-glass-film'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -88,7 +88,7 @@ def prepare(preserve_game=False):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(payload)
     film=json.loads((SOURCE/'film-manifest.json').read_text())
-    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
+    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames','chapters')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))
     if (SOURCE/'audit_release.py').exists(): run('python3','portfolio-source/audit_release.py',str(SITE))
     temporary=REPO/'deploy.next.zip'
