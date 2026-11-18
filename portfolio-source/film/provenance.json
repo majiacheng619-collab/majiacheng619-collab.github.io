@@ -1,24 +1,20 @@
 {
-  "description": "我核对当前影片的输入与成片。",
-  "renderKey": "7517ac416dee50de351914008e4bf11441d1286fe9c609841d6b509113895d56",
+  "renderKey": "0d45a85a1e9d59af2d4cdeb50762a442df697c5a4f021950583c514bf1133149",
   "sources": {
-    "render.py": "06cae15ef5defd478bf0660e593306a37b4de3e67b6ed8d84a13d3860e85b556",
-    "scenes.py": "636aef158e34268e170c55096cd2b3acb951ae725b1868a5a9ac182d765d2bcc",
-    "glass.glsl": "7e7867e8dab7978935a87abdf60e017734891d36478ffbb70fa3c35a34a2fdd9",
-    "mix_v3.py": "7c92e8497b9b3b0477ba0747b1d29265354cc27e1d22ffb00001ceb86e2be186",
-    "inputs/game-demo.mp4": "5942a6ddd5d99344b4c4d312f16a7f08387ec3d790fb2814147806edafbbc5ab",
-    "inputs/film-font.otf": "8c56e7243e5fce1d8aa58310795de8ed19d2d687755462baec5d6249cc10d4a2",
-    "inputs/score-license.json": "68e630cc8cf05945ef07e60c13dc1f406c7f6eb327eb7b37c3ea0b7d5fd633a6",
-    "credits.md": "6041429a109fc76a8c537bae29a06c89b5d8dafb6f3ebdbb8450d7b48213aec5"
+    "export.mjs": "cf245018559ab63c1b1312f6cd692088de797f3343462a4df2d05badcc9847cc",
+    "cards.mjs": "f8aa95a78b26b8bffaa7ede112952904578fc642af1e23afd8b542e28dd6f0de",
+    "score.mjs": "5d1a920963e0145b5e11e5eae9e3aa96072b7aa3b8ac0ba9eb4c1056c5afba41",
+    "inputs/ice-title.woff": "7ec80cc24cf7f54cd25f026cedc328ebab2af2e59fb1d87a09d237ab5c6166cf",
+    "ice/scene.mjs": "cb660525f95ab22792a065cd39aab4274a98a642ca7287b481d61a757ab5797e",
+    "ice/environment.mjs": "a00cd35c9705404948fb3eabb25ed1b11544fdd52d962413f371ab497f508b39",
+    "ice/vessels.mjs": "f278456c72c97f2b6ef140e8bf65aa6516620de1241a07a0a6daf4fcfe4f24de",
+    "ice/three.module.min.js": "0a61c95f14e0fa015b3083475c73424f360e5f6f5b74c282b50fdbc2f4c228fc",
+    "ice/three.core.min.js": "0a9c2f0672c7b8d993ba7639e71919db181ca50c9dff99c78476d3e19057ca9c"
   },
-  "assets": {
-    "poster/poster.png": "d3b5366d25ae07bdbbf4d8368edab68b103722f8a8a93b1e22347a32e5b53b18",
-    "honor/live-honor-2026.jpeg": "4ab2bcdcd70ff97dcf086ad41560bf4e0e546ea1d28acce9d3e6524bddb51e53",
-    "assets/portrait-white-960.b8bfe698eef3.webp": "b8bfe698eef33b040671a1bf96159c0d4c48700156a0fd9542ba903464954620"
-  },
+  "gameFrameSHA256": "5f63e9ccc8b3693b13b94a10f6abb41cdc0a8f621400904e5274ff39d17f7ca3",
   "outputs": {
-    "assets/media/intro.19f929519185.mp4": "19f9295191852d8ea62d4c5d452d0748e8d1c1585636fbcc0289bc2e90476d4f",
-    "assets/media/intro-poster.2770aec877c5.jpg": "2770aec877c5c90a3c2838f91223b4d9e433849328b81efc789cb5fddb084578",
-    "assets/media/intro.49d1c5ba9d3e.vtt": "49d1c5ba9d3ed5df4f82030c283a92b739521dfba153910a740d00b37089e122"
+    "assets/media/intro.9125f54ff629.mp4": "9125f54ff6298a5157ee156381a6a24477ac999d5480624d08a86d4182f0464c",
+    "assets/media/intro-poster.0a80afeea7fe.jpg": "0a80afeea7feeab90d837bd12eee7654eae7a2b70b887b0428c4a0be414da165",
+    "assets/media/intro.f149ba24d91a.vtt": "f149ba24d91a83926b573ffef5e5bba695baa55f3c8de840af6ff71e99257e6d"
   }
 }

@@ -14,7 +14,7 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media):
   }
   entries=[('首页','index.html','home'),('作品','projects/index.html','work'),('经历','experience/index.html','journey'),('荣誉','honor/index.html','award'),('联系','contact/index.html','contact')]
   links=[]
-  group_path='projects/index.html' if path.startswith('poster/') else 'experience/index.html' if path.startswith('updates/') else path
+  group_path='projects/index.html' if path.startswith(('poster/', 'ice/')) else 'experience/index.html' if path.startswith('updates/') else path
   for label,href,icon in entries:
    active=group_path==href or (href!='index.html' and '#' not in href and group_path.startswith(href.removesuffix('index.html')))
    current=' aria-current="page"' if active else ''

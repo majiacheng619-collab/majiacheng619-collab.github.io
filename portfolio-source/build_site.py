@@ -49,8 +49,10 @@ for old in (ROOT/'assets').glob('poster-preview.*.webp'):
 
 
 from home import build_home, event_preview
+from film_player import build_live
 home=build_home(img, cta, media, transcript)
 render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
+render('ice/index.html', '冰之圣殿', '25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。', build_live(media, media['preview']))
 
 # A shared, quiet layout for every portfolio destination.
 def detail_open(name): return f'<div class="detail-page detail-{name}">'
@@ -123,7 +125,7 @@ text = page.read_text()
 text = re.sub(r'(href|src|poster)="(?!https?:|mailto:|tel:|#|data:|/)([^"]+)"', r'\1="/\2"', text)
 page.write_text(text.replace('</head>', '<meta name="robots" content="noindex"/></head>'))
 origin='https://majiacheng619-collab.github.io/'
-urls=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/','game/','game/guide.html','game/codex.html','game/about.html']
+urls=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/','ice/','game/','game/guide.html','game/codex.html','game/about.html']
 (ROOT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join('<url><loc>'+origin+u+'</loc></url>' for u in urls)+'</urlset>\n')
 (ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+origin+'sitemap.xml\n')
 # Metadata does not require JavaScript or remote fonts to be useful.

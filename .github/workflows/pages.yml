@@ -39,18 +39,8 @@ jobs:
           python3 -m unittest discover -s portfolio-source -p sprite_content_test.py
           python3 portfolio-source/optics/generate_field.py --check
           python3 -m unittest discover -s portfolio-source -p optics_test.py
-      - name: Check current film cache
-        id: film-cache
-        run: echo "cached=$(python3 portfolio-source/film/cache_probe.py)" >> "$GITHUB_OUTPUT"
       - name: Install static build dependencies
         run: python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
-      - name: Install film renderer dependencies when needed
-        if: steps.film-cache.outputs.cached != 'true'
-        run: |
-          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
-          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
-          sudo apt-get install -y ffmpeg fonts-noto-cjk libegl1 libgl1-mesa-dri
-          python3 -m pip install moderngl glcontext contourpy
       - name: Build and validate the complete release
         run: python3 portfolio-source/prepare_release.py --preserve-game
       - name: Verify my repository cleanup and current-file integrity
@@ -127,18 +117,21 @@ jobs:
           python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Check current film cache
-        id: film-cache
-        run: echo "cached=$(python3 portfolio-source/film/cache_probe.py)" >> "$GITHUB_OUTPUT"
+      - name: Restore the verified Cathedral of Ice archive
+        run: |
+          if [[ "$(git hash-object deploy.zip)" == "8b64d0262a7f2efe2cdf25e60af5e8ef71f62632" ]]; then
+            set -o pipefail
+            archive_commit="d19d3f5899858df228ba009d7946800f8f9f4f9f"
+            archive="$RUNNER_TEMP/cathedral-deploy.zip"
+            git fetch --no-tags --depth=1 origin "$archive_commit"
+            git ls-tree --name-only "$archive_commit" | while IFS= read -r part; do
+              git show "$archive_commit:$part" || exit 1
+            done > "$archive"
+            printf '%s  %s\n' 'fc9f3df3fc2a6d5bf3fe29de049da6fa389e7da288551fd568c816190c82e2e9' "$archive" | sha256sum --check --status
+            mv "$archive" deploy.zip
+          fi
       - name: Install static build dependencies
         run: python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
-      - name: Install film renderer dependencies when needed
-        if: steps.film-cache.outputs.cached != 'true'
-        run: |
-          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
-          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
-          sudo apt-get install -y ffmpeg fonts-noto-cjk libegl1 libgl1-mesa-dri
-          python3 -m pip install moderngl glcontext contourpy
       - name: Build and validate the complete release
         run: python3 portfolio-source/prepare_release.py --preserve-game
       - name: Verify my repository cleanup and current-file integrity
@@ -174,7 +167,7 @@ jobs:
             git config user.name "马嘉程"
             git config user.email "majiacheng619@gmail.com"
             git add deploy.zip portfolio-source/film/timeline.json portfolio-source/film/provenance.json
-            git commit -m "我的网站与24秒作品影片"
+            git commit -m "同步个人网站发布归档"
             git push origin HEAD:main
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

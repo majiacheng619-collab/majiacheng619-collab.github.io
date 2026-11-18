@@ -237,8 +237,7 @@ class PublishedAssetCleanup(unittest.TestCase):
                 (root/folder/'cache').write_bytes(b'local cache')
             (root/'assets/.DS_Store').write_bytes(b'finder metadata')
             (root/'game/unused.pyc').write_bytes(b'python cache')
-            with patch('film.cache_probe.refresh_documentation'):
-                clean(root)
+            clean(root)
             self.assertEqual(sorted(p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()),
                              ['assets/current.webp', 'game/save-policy.txt'])
 

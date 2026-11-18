@@ -91,7 +91,7 @@ def audit():
             errors.append('My game permission notice differs from its source')
         from film.cache_probe import signature,artifacts_valid,provenance_valid
         cache=json.loads(archive.read('assets/media/film-build.json'))
-        if cache.get('renderKey')!=signature(archive.read,paths): errors.append('Film cache signature is stale')
+        if cache.get('renderKey')!=signature(): errors.append('Film cache signature is stale')
         if not artifacts_valid(archive.read,cache.get('manifest',{})): errors.append('Current film hash validation failed')
         if not provenance_valid(archive.read,paths): errors.append('Current film provenance differs from the archive')
     report={'ok':not errors,'sourceFiles':len(files),'authoredDocuments':len(DOCS),'currentResumeSHA256':hashlib.sha256((ROOT/'resume.pdf').read_bytes()).hexdigest(),'archiveFiles':len(entries),'archiveDirectoryEntries':sum(entry.is_dir() for entry in entries),'errors':errors}

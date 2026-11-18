@@ -1,65 +1,87 @@
 {
-  "version": 6,
-  "duration": 24,
-  "fps": 60,
-  "output_frames": 1440,
-  "master_fps": 480,
-  "master_frames": 11520,
-  "speech": false,
-  "procedural_music": false,
-  "gameplay_seconds": 2.2,
-  "gameplay_source": [
-    5.5,
-    7.7
-  ],
-  "scenes": [
+  "title": "Cathedral of Ice",
+  "title_zh": "冰之圣殿",
+  "duration": 25,
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "frames": 750,
+  "chapters": [
     {
-      "id": "1",
       "start": 0,
-      "end": 2.2,
-      "text": "把想法做成作品"
+      "label": "极夜入海"
     },
     {
-      "id": "2",
-      "start": 2.2,
-      "end": 4.4,
-      "text": "萌芽保卫队 · 实际游戏录屏"
+      "start": 4,
+      "label": "跟随科考船"
     },
     {
-      "id": "3",
-      "start": 4.4,
-      "end": 9,
-      "text": "面包挑战 · 从规则到现场"
+      "start": 10,
+      "label": "峡谷鲸跃"
     },
     {
-      "id": "4",
-      "start": 9,
-      "end": 12.2,
-      "text": "电商教学 · 累计服务约 1,000 名学员"
-    },
-    {
-      "id": "5",
-      "start": 12.2,
-      "end": 14.4,
-      "text": "宿舍打印店 · 黑白打印 0.2 元，1 份起送"
-    },
-    {
-      "id": "6",
-      "start": 14.4,
-      "end": 17,
-      "text": "直播内容与互动 · 2026 家乡荣耀季，青山湖区区县100强"
-    },
-    {
-      "id": "7",
       "start": 17,
-      "end": 20,
-      "text": "马嘉程 · 产品与运营"
+      "label": "驶向冰拱"
+    }
+  ],
+  "cards": [
+    {
+      "start": 0.3,
+      "end": 3.8,
+      "heading": "冰之圣殿",
+      "lines": [
+        "CATHEDRAL OF ICE"
+      ]
     },
     {
-      "id": "8",
-      "start": 20,
-      "end": 24,
-      "text": "马嘉程 · 继续看我的作品"
+      "start": 4.15,
+      "end": 7.72,
+      "heading": "萌芽保卫队",
+      "lines": [
+        "独立策划 · 4 个世界 · 20 关"
+      ]
+    },
+    {
+      "start": 7.8,
+      "end": 10.85,
+      "heading": "面包挑战",
+      "lines": [
+        "规则设计 · 活动物料 · 现场执行",
+        "19.9 元／次"
+      ]
+    },
+    {
+      "start": 10.92,
+      "end": 12.53,
+      "heading": "电商教学与用户增长",
+      "lines": [
+        "40 万+ 项目净利润",
+        "近 1,000 名去重学员"
+      ]
+    },
+    {
+      "start": 17.1,
+      "end": 20.08,
+      "heading": "宿舍打印店",
+      "lines": [
+        "黑白打印 0.2 元 · 1 份起送"
+      ]
+    },
+    {
+      "start": 20.18,
+      "end": 22.76,
+      "heading": "直播内容与用户运营",
+      "lines": [
+        "1 万+ 抖音粉丝 · 单场最高曝光 30 万+"
+      ]
+    },
+    {
+      "start": 22.82,
+      "end": 25,
+      "heading": "马嘉程",
+      "lines": [
+        "产品与运营"
+      ]
     }
   ]
 }

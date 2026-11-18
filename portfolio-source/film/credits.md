@@ -1,7 +1,5 @@
-# 我的影片素材
+# 冰之圣殿 · Cathedral of Ice
 
-我使用自己的肖像、游戏录屏、活动海报与荣誉图片制作这支 24 秒影片，网页成片为 1920 × 1080、60 fps。
+我用 25 秒介绍做过的产品与业务。影片里的极光、冰山、冰拱、科考船、鲸和海面使用 Three.js 与 GLSL 实时渲染。我用作品截图和可核对的业务数据组成半透明信息层，在鲸跃和落水时留出完整画面。
 
-我使用已取得许可的 Adobe Stock 配乐 [The Signs Of Progress](https://stock.adobe.com/audio/the-signs-of-progress/511566807)（素材 511566807）。授权与剪辑记录见 `inputs/score-license.json`。
-
-我使用 Noto Sans CJK SC 字体，保留原版权声明与 SIL OFL 许可。
+画面为 1920 × 1080，30 fps，共 750 帧。器乐与海面声由本项目合成。我使用萌芽保卫队的实机截图和 Noto Sans CJK SC 字体。字体许可见源码的 `inputs/Noto-OFL.txt`，Three.js 许可见 `ice/three-LICENSE.txt`。

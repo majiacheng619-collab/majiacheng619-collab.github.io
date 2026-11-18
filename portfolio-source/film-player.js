@@ -21,6 +21,7 @@
   let nativeFullscreen = false;
   let loadingTimer;
   let pendingSeek;
+  let motionFrame;
 
   const formatTime = time => Math.floor(time / 60) + ':' + String(Math.floor(time % 60)).padStart(2, '0');
   function updatePosition() {
@@ -33,12 +34,16 @@
     scrub.value = time;
     scrub.style.setProperty('--film-progress', Math.min(100, 100 * time / duration) + '%');
     const current = chapters.findLast(chapter => time >= Number(chapter.dataset.filmStart));
-    for (const chapter of chapters) {
-      if (chapter === current) chapter.setAttribute('aria-current', 'true');
-      else chapter.removeAttribute('aria-current');
+    if (current && !current.hasAttribute('aria-current')) {
+      find('chapters').querySelector('[aria-current]')?.removeAttribute('aria-current');
+      current.setAttribute('aria-current', 'true');
     }
   }
 
+  function animatePosition() {
+    updatePosition();
+    if (!video.paused && !video.ended) motionFrame = requestAnimationFrame(animatePosition);
+  }
   function stopBuffering() {
     clearTimeout(loadingTimer);
     loading.hidden = true;
@@ -63,6 +68,7 @@
     startBuffering();
     video.play().catch(failure => {
       if (failure.name !== 'AbortError') showError();
+      else stopBuffering();
     });
     updatePlayback();
   }
@@ -87,7 +93,6 @@
     else video.pause();
   });
   video.addEventListener('click', () => {
-    if (!player.hasAttribute('data-film-engaged')) return;
     if (video.paused || video.ended) start();
     else video.pause();
   });
@@ -100,6 +105,7 @@
   }
   mute.addEventListener('click', () => { video.muted = !video.muted; });
   captions.addEventListener('click', () => {
+    if (!track) return;
     track.mode = track.mode === 'showing' ? 'disabled' : 'showing';
   });
   fullscreen.addEventListener('click', async () => {
@@ -126,7 +132,9 @@
   for (const event of ['playing', 'pause', 'ended']) {
     video.addEventListener(event, () => {
       stopBuffering();
+      cancelAnimationFrame(motionFrame);
       updatePlayback();
+      if (event === 'playing') motionFrame = requestAnimationFrame(animatePosition);
     });
   }
   video.addEventListener('waiting', () => { if (!video.paused) startBuffering(); });

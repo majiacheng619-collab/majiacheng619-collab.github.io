@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-11-18-liquid-glass-film'
+REVISION='2026-11-18-cathedral-of-ice'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -43,7 +43,7 @@ def fingerprint_portfolio_artwork(root):
         if old.name not in current:
             old.unlink()
 
-def prepare(preserve_game=False):
+def prepare(preserve_game=False, film_output=None):
     # Every release starts from the sole current archive, never a stale build folder.
     if SITE.exists(): shutil.rmtree(SITE)
     SITE.mkdir(parents=True)
@@ -70,13 +70,9 @@ def prepare(preserve_game=False):
     clean(SITE)
     for retired in (SITE/'assets').glob('search-index*.json'):
         retired.unlink()
-    run('python3','portfolio-source/film/render.py')
-    from film.cache_probe import write_provenance
-    write_provenance(SITE)
-    media=json.loads((SOURCE/'film-manifest.json').read_text())
-    for pattern,key in [('intro.*.mp4','video'),('intro.*.vtt','captions'),('intro-poster.*.jpg','poster')]:
-        for old in (SITE/'assets/media').glob(pattern):
-            if old != SITE/media[key]: old.unlink()
+    from film.cache_probe import install_film
+    film = install_film(SITE, film_output)
+    (SOURCE/'film-manifest.json').write_text(json.dumps(film, ensure_ascii=False))
     run('python3','portfolio-source/build_site.py')
     fingerprint_portfolio_artwork(SITE)
     # A portfolio-only release keeps the published game and its offline cache exact.
@@ -87,8 +83,7 @@ def prepare(preserve_game=False):
             target = SITE/name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(payload)
-    film=json.loads((SOURCE/'film-manifest.json').read_text())
-    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','master_fps','master_frames','chapters')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
+    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','poster','captions','duration','width','height','fps','frames','title','title_zh','chapters')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))
     if (SOURCE/'audit_release.py').exists(): run('python3','portfolio-source/audit_release.py',str(SITE))
     temporary=REPO/'deploy.next.zip'
@@ -129,4 +124,6 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--preserve-game', action='store_true',
                         help='Publish portfolio changes while retaining every current game file byte-for-byte')
-    prepare(preserve_game=parser.parse_args().preserve_game)
+    parser.add_argument('--film-output', type=Path, help='Use a freshly rendered film export')
+    args = parser.parse_args()
+    prepare(preserve_game=args.preserve_game, film_output=args.film_output)

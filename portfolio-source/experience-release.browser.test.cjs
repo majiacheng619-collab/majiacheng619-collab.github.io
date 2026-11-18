@@ -3,7 +3,7 @@
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const root=path.resolve(process.argv[2]||'_site');
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.mp4':'video/mp4','.vtt':'text/vtt','.pdf':'application/pdf'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.mp4':'video/mp4','.vtt':'text/vtt','.pdf':'application/pdf'};
 const server=http.createServer((req,res)=>{
  let file=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://local').pathname));
  if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
@@ -129,7 +129,7 @@ const server=http.createServer((req,res)=>{
      return {width,height};
     }));
     assert.ok(filmTargets.every(control=>control.width>=44&&control.height>=44),'Film controls remain usable at '+width);
-    assert.equal(await film.locator('[data-film-start]').count(),5);
+    assert.deepEqual(await film.locator('[data-film-start]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.filmStart))),[0,4,10,17]);
     if(screenshot&&(width===390||width===1440)){
      await page.evaluate(async()=>{scrollTo(0,0);await document.fonts.ready;await Promise.all([...document.images].filter(image=>image.loading!=='lazy').map(image=>image.decode().catch(()=>{})));});
      await page.screenshot({path:path.join(screenshot,'home-'+width+'.png')});

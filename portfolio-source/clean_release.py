@@ -40,8 +40,6 @@ def remove_retired(root):
 
 
 def clean(root):
-    from film.cache_probe import refresh_documentation
-    refresh_documentation(root)
     remove_retired(root)
     # These are local operating-system/build caches, never site resources.
     for folder in sorted(root.rglob('*'), key=lambda path: len(path.parts), reverse=True):

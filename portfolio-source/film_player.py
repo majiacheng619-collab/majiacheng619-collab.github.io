@@ -29,11 +29,14 @@ def build_film(media, transcript):
     )
     return f'''
 <section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
- <div class="premium-section-head"><h2 id="film-title">{duration} 秒作品速览</h2></div>
+ <div class="film-heading">
+  <div><p class="film-kicker">{duration} 秒作品影片</p><h2 id="film-title">冰之圣殿 <span lang="en">Cathedral of Ice</span></h2></div>
+  <a class="film-live-link" href="ice/index.html">实时 3D 场景</a>
+ </div>
  <div class="premium-film-player" data-intro-player data-dock-tone="dark">
   <div class="film-stage">
    <video id="intro-video" controls playsinline preload="none" width="{media['width']}" height="{media['height']}"
-    poster="{media['poster']}" aria-label="马嘉程{duration}秒作品介绍，无旁白，含器乐配乐和画面文字">
+    poster="{media['poster']}" aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
     <source src="{media['video']}" type="video/mp4">
     <track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">
     你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。
@@ -61,3 +64,25 @@ def build_film(media, transcript):
  </div>
  <details class="premium-transcript"><summary>阅读文字稿</summary><p>{transcript}</p></details>
 </section>'''
+
+
+def build_live(media, preview):
+    return f'''
+<section class="ice-theater premium-shell" data-ice-theater aria-labelledby="ice-title">
+ <div class="film-heading">
+  <div><p class="film-kicker">实时 3D 场景</p><h1 id="ice-title">冰之圣殿 <span lang="en">Cathedral of Ice</span></h1></div>
+  <a class="film-live-link" href="index.html#introduction">返回作品影片</a>
+ </div>
+ <div class="ice-screen" data-dock-tone="dark">
+  <img src="{media['poster']}" width="{media['width']}" height="{media['height']}" alt="极光下，科考船驶入蓝色冰川峡谷">
+  <canvas aria-label="实时三维动画，包含极光、冰川、科考船与鲸跃" role="img" hidden></canvas>
+ </div>
+ <div class="ice-transport" role="group" aria-label="实时场景控制">
+  <button type="button" class="film-live-link" data-ice-play hidden>播放实时场景</button>
+  <input type="range" class="film-scrub" min="0" max="{media['duration']}" step="0.1" value="0" aria-label="实时场景进度" disabled hidden>
+  <span class="ice-clock" aria-hidden="true"><span data-ice-clock>0:00</span> / 0:{media['duration']:02}</span>
+  <a class="film-live-link" href="{media['video']}" download="Cathedral-of-Ice-Portfolio.mp4">下载作品影片</a>
+ </div>
+ <p class="ice-status" data-ice-status role="status"></p>
+</section>
+<script type="module" src="{preview}"></script>'''
