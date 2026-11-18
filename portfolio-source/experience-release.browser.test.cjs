@@ -32,7 +32,7 @@ const server=http.createServer((req,res)=>{
  const routes=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
  const screenshot=process.env.AUDIT_OUTPUT;if(screenshot)fs.mkdirSync(screenshot,{recursive:true});
  const scope=process.env.AUDIT_SCOPE||'all';
- const resume=JSON.parse(fs.readFileSync(path.join(root,'release.json'),'utf8')).resume;
+ const {resume,film:filmMedia}=JSON.parse(fs.readFileSync(path.join(root,'release.json'),'utf8'));
  const digest=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
  assert.equal(digest(resume.file),resume.sha256,'Fingerprint download is the current resume');
  assert.equal(digest('resume.pdf'),resume.sha256,'Stable download alias is the same current resume');
@@ -152,6 +152,35 @@ const server=http.createServer((req,res)=>{
     assert.equal(await details.getAttribute('open'),'');
     assert.ok((await details.textContent()).includes('在校学生'));
     await details.locator('summary').click();assert.equal(await details.getAttribute('open'),null);
+   }
+  }
+ }
+ if(scope==='all'||scope==='film'){
+  const variants=[
+   {width:390,network:'4g',asset:filmMedia.mobileVideo,videoWidth:1280},
+   {width:1440,network:'4g',asset:filmMedia.video,videoWidth:1920},
+   {width:1440,network:'3g',asset:filmMedia.mobileVideo,videoWidth:1280},
+  ];
+  for(const {width,network,asset,videoWidth} of variants){
+   await page.setViewportSize({width,height:844});
+   const mediaRequests=[];
+   const recordMedia=request=>{if(request.url().endsWith('.mp4'))mediaRequests.push(request.url());};
+   page.on('request',recordMedia);
+   try{
+    await page.goto(origin+`/?film-test=${width}-${network}#introduction`);
+    await page.evaluate(effectiveType=>{
+     Object.defineProperty(navigator,'connection',{value:{effectiveType,saveData:false},configurable:true});
+    },network);
+    assert.deepEqual(mediaRequests,[],'The poster view defers the video download');
+    await page.locator('[data-film-start="10"]').click();
+    await page.waitForFunction(()=>{
+     const video=document.querySelector('#intro-video');
+     return !video.paused&&video.currentTime>10&&video.currentTime<17;
+    });
+    assert.equal(await page.locator('#intro-video').evaluate(video=>video.videoWidth),videoWidth);
+    assert.ok(mediaRequests.length>0&&mediaRequests.every(url=>url===origin+'/'+asset),'The browser requests a single rendition');
+   } finally {
+    page.off('request',recordMedia);
    }
   }
  }

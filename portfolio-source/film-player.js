@@ -4,6 +4,7 @@
   if (!player) return;
   const video = player.querySelector('video');
   if (typeof video.play !== 'function') return;
+  const source = video.querySelector('source');
   const find = name => player.querySelector('[data-film-' + name + ']');
   const play = find('play');
   const scrub = find('scrub');
@@ -13,13 +14,16 @@
   const fullscreen = find('fullscreen');
   const loading = find('loading');
   const error = find('error');
+  const errorMessage = error.querySelector('[role="status"]');
   const retry = find('retry');
   const chapters = [...player.querySelectorAll('[data-film-start]')];
   const track = video.textTracks?.[0];
   const duration = Number(scrub.max);
   const supportsFullscreen = Boolean(document.fullscreenEnabled && player.requestFullscreen);
   let nativeFullscreen = false;
+  let sourceSelected = false;
   let loadingTimer;
+  let stallTimer;
   let pendingSeek;
   let motionFrame;
 
@@ -46,11 +50,17 @@
   }
   function stopBuffering() {
     clearTimeout(loadingTimer);
+    clearTimeout(stallTimer);
+    stallTimer = undefined;
     loading.hidden = true;
   }
   function startBuffering() {
     clearTimeout(loadingTimer);
     loadingTimer = setTimeout(() => { loading.hidden = false; }, 550);
+    stallTimer ??= setTimeout(() => {
+      video.pause();
+      showError('影片连接超时。');
+    }, 12000);
   }
   function updatePlayback() {
     const state = video.ended ? 'replay' : video.paused ? 'play' : 'pause';
@@ -58,21 +68,32 @@
     play.setAttribute('aria-label', {play: '播放影片', pause: '暂停影片', replay: '重播影片'}[state]);
     updatePosition();
   }
-  function showError() {
+  function showError(message = '影片加载失败。') {
     stopBuffering();
+    errorMessage.textContent = message;
     error.hidden = false;
     updatePlayback();
   }
+  function selectSource() {
+    if (sourceSelected) return;
+    sourceSelected = true;
+    const compact = source.dataset.filmMobileSrc;
+    const phone = matchMedia('(max-width: 640px), (pointer: coarse) and (max-height: 640px)').matches;
+    const connection = navigator.connection;
+    const constrained = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType);
+    if (compact && (phone || constrained)) video.src = compact;
+  }
   function start() {
+    selectSource();
     error.hidden = true;
     startBuffering();
     video.play().catch(failure => {
       if (failure.name !== 'AbortError') showError();
-      else stopBuffering();
     });
     updatePlayback();
   }
   function seek(time) {
+    selectSource();
     if (video.readyState) {
       video.currentTime = time;
     } else {
@@ -151,8 +172,8 @@
   video.textTracks?.addEventListener('change', () => {
     captions.setAttribute('aria-pressed', String(track?.mode === 'showing'));
   });
-  video.addEventListener('error', showError);
-  video.querySelector('source').addEventListener('error', showError);
+  video.addEventListener('error', () => showError());
+  source.addEventListener('error', () => showError());
   document.addEventListener('fullscreenchange', updateFullscreen);
   video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; updateFullscreen(); });
   video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; updateFullscreen(); });

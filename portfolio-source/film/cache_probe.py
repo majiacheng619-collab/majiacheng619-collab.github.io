@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from tempfile import TemporaryDirectory
 import zipfile
 
 ROOT = Path(__file__).resolve().parent
@@ -21,7 +22,15 @@ RENDER_INPUTS = (
     'export.mjs', 'cards.mjs', 'score.mjs', 'inputs/ice-title.woff',
     *(f'ice/{name}' for name in RUNTIME if name not in ('preview.mjs', 'three-LICENSE.txt')),
 )
-OUTPUTS = ('video', 'poster', 'captions')
+RENDERED_OUTPUTS = ('video', 'poster', 'captions')
+ASSETS = {
+    'video': ('intro', 'mp4'),
+    'mobileVideo': ('intro-mobile', 'mp4'),
+    'poster': ('intro-poster', 'jpg'),
+    'captions': ('intro', 'vtt'),
+}
+MOBILE_PROFILE = 1
+MOBILE_SIZE = (1280, 720)
 
 
 def digest(data):
@@ -37,46 +46,60 @@ def signature():
     return digest(json.dumps(inputs, sort_keys=True).encode())
 
 
-def artifacts_valid(read, manifest):
-    extensions = {'video': 'mp4', 'poster': 'jpg', 'captions': 'vtt'}
-    for key, extension in extensions.items():
+def artifacts_valid(read, manifest, keys=ASSETS):
+    for key in keys:
+        prefix, extension = ASSETS[key]
         name = manifest.get(key, '')
-        hashed = re.fullmatch(rf'assets/media/intro(?:-poster)?\.([0-9a-f]{{12}})\.{extension}', name)
-        if not hashed or digest(read(name))[:12] != hashed[1]:
+        hashed = re.fullmatch(rf'assets/media/{prefix}\.([0-9a-f]{{12}})\.{extension}', name)
+        try:
+            if not hashed or digest(read(name))[:12] != hashed[1]:
+                return False
+        except (FileNotFoundError, KeyError):
             return False
     return True
+
+
+def mobile_current(read, cache):
+    return cache.get('mobileProfile') == MOBILE_PROFILE and artifacts_valid(
+        read, cache['manifest'], ('mobileVideo',),
+    )
 
 
 def provenance_valid(read, paths):
     cache = json.loads(read(CACHE))
     manifest = cache['manifest']
+    if cache.get('mobileProfile') != MOBILE_PROFILE or any(manifest.get(key) not in paths for key in ASSETS):
+        return False
     expected = {
         'renderKey': signature(),
         'sources': source_hashes(),
         'gameFrameSHA256': digest(GAME_FRAME.read_bytes()),
-        'outputs': {manifest[key]: digest(read(manifest[key])) for key in OUTPUTS},
+        'outputs': {manifest[key]: digest(read(manifest[key])) for key in ASSETS},
     }
-    return all(manifest[key] in paths for key in OUTPUTS) and expected == json.loads((ROOT / 'provenance.json').read_text())
+    return expected == json.loads((ROOT / 'provenance.json').read_text())
 
 
 def cached():
     try:
         with zipfile.ZipFile(REPO / 'deploy.zip') as archive:
             info = json.loads(archive.read(CACHE))
-            return info['renderKey'] == signature() and artifacts_valid(archive.read, info['manifest'])
+            return (info['renderKey'] == signature()
+                    and artifacts_valid(archive.read, info['manifest'], RENDERED_OUTPUTS)
+                    and mobile_current(archive.read, info))
     except (OSError, ValueError, KeyError, zipfile.BadZipFile):
         return False
 
 
-def probe_video(file, timeline):
+def probe_video(file, timeline, size=None):
     data = json.loads(subprocess.check_output(
         ['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(file)],
     ))
     video = next(track for track in data['streams'] if track['codec_type'] == 'video')
     audio = next(track for track in data['streams'] if track['codec_type'] == 'audio')
-    assert (video['width'], video['height'], int(video['nb_frames'])) == (
-        timeline['width'], timeline['height'], timeline['frames'],
-    ), 'Exported video size or frame count does not match timeline'
+    width, height = size or (timeline['width'], timeline['height'])
+    assert (video['width'], video['height'], int(video['nb_frames'])) == (width, height, timeline['frames']), (
+        'Exported video size or frame count does not match timeline'
+    )
     assert video['r_frame_rate'] == f'{timeline["fps"]}/1', 'Exported video has an unexpected frame rate'
     assert abs(float(data['format']['duration']) - timeline['duration']) < .015, 'Exported video duration is wrong'
     assert (video['codec_name'], video['pix_fmt'], audio['codec_name'], audio['channels']) == (
@@ -95,7 +118,30 @@ def card_text(card):
     return card['heading'] + '　' + '　'.join(card['lines'])
 
 
-def register_export(site, output, render_key):
+def register_asset(site, key, data):
+    prefix, suffix = ASSETS[key]
+    name = f'assets/media/{prefix}.{digest(data)[:12]}.{suffix}'
+    (site / name).write_bytes(data)
+    return name
+
+
+def register_mobile(site, master, timeline):
+    width, height = MOBILE_SIZE
+    with TemporaryDirectory() as temporary:
+        file = Path(temporary) / 'film.mp4'
+        subprocess.run([
+            'ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error', '-filter_threads', '2',
+            '-i', str(site / master), '-map', '0:v:0', '-map', '0:a:0',
+            '-vf', f'scale={width}:{height}:flags=lanczos', '-c:v', 'libx264',
+            '-threads', '4', '-preset', 'medium', '-crf', '20', '-maxrate', '1800k', '-bufsize', '1100k',
+            '-g', str(timeline['fps']), '-sc_threshold', '0', '-pix_fmt', 'yuv420p',
+            '-profile:v', 'high', '-level:v', '3.1', '-c:a', 'copy', '-movflags', '+faststart', str(file),
+        ], check=True)
+        probe_video(file, timeline, MOBILE_SIZE)
+        return register_asset(site, 'mobileVideo', file.read_bytes())
+
+
+def register_export(site, output):
     timeline = json.loads((output / 'timeline.json').read_text())
     probe_video(output / 'film.mp4', timeline)
     from PIL import Image
@@ -111,34 +157,32 @@ def register_export(site, output, render_key):
         if card['end'] == 12.53:
             cue_lines.extend(('00:00:14.800 --> 00:00:16.500', '［鲸鱼落水与海浪声］', ''))
     assets = {
-        'video': ('intro', 'mp4', (output / 'film.mp4').read_bytes()),
-        'poster': ('intro-poster', 'jpg', (output / 'poster.jpg').read_bytes()),
-        'captions': ('intro', 'vtt', '\n'.join(cue_lines).encode()),
+        'video': (output / 'film.mp4').read_bytes(),
+        'poster': (output / 'poster.jpg').read_bytes(),
+        'captions': '\n'.join(cue_lines).encode(),
     }
     manifest = {key: timeline[key] for key in ('title', 'title_zh', 'duration', 'width', 'height', 'fps', 'frames', 'chapters')}
-    for key, (prefix, suffix, data) in assets.items():
-        name = f'assets/media/{prefix}.{digest(data)[:12]}.{suffix}'
-        (site / name).write_bytes(data)
-        manifest[key] = name
+    for key, data in assets.items():
+        manifest[key] = register_asset(site, key, data)
     (ROOT / 'timeline.json').write_text(json.dumps(timeline, ensure_ascii=False, indent=2) + '\n')
-    (site / CACHE).write_text(json.dumps({'renderKey': render_key, 'manifest': manifest}, ensure_ascii=False, indent=2) + '\n')
     return manifest
 
 
 def install_film(site, output=None):
     render_key = signature()
     read = lambda name: (site / name).read_bytes()
-    if output:
-        manifest = register_export(site, Path(output).resolve(), render_key)
-    else:
-        cache = json.loads(read(CACHE))
-        manifest = cache['manifest']
-        if cache['renderKey'] != render_key or not artifacts_valid(read, manifest):
-            raise RuntimeError('The film archive does not match its sources. Run film/export.mjs and pass --film-output.')
+    cache = {'manifest': register_export(site, Path(output).resolve())} if output else json.loads(read(CACHE))
+    manifest = cache['manifest']
+    if not output and (cache['renderKey'] != render_key or not artifacts_valid(read, manifest, RENDERED_OUTPUTS)):
+        raise RuntimeError('The film archive does not match its sources. Run film/export.mjs and pass --film-output.')
     timeline = json.loads((ROOT / 'timeline.json').read_text())
+    if not mobile_current(read, cache):
+        manifest['mobileVideo'] = register_mobile(site, manifest['video'], timeline)
+    cache = {'renderKey': render_key, 'mobileProfile': MOBILE_PROFILE, 'manifest': manifest}
+    (site / CACHE).write_text(json.dumps(cache, ensure_ascii=False, indent=2) + '\n')
     media = site / 'assets/media'
-    for pattern, key in [('intro.*.mp4', 'video'), ('intro.*.vtt', 'captions'), ('intro-poster.*.jpg', 'poster')]:
-        for asset in media.glob(pattern):
+    for key, (prefix, suffix) in ASSETS.items():
+        for asset in media.glob(f'{prefix}.*.{suffix}'):
             if asset != site / manifest[key]:
                 asset.unlink()
     (media / 'intro-script.txt').write_text('\n'.join(card_text(card) for card in timeline['cards']) + '\n')
@@ -147,7 +191,7 @@ def install_film(site, output=None):
         'renderKey': render_key,
         'sources': source_hashes(),
         'gameFrameSHA256': digest(GAME_FRAME.read_bytes()),
-        'outputs': {manifest[key]: digest(read(manifest[key])) for key in OUTPUTS},
+        'outputs': {manifest[key]: digest(read(manifest[key])) for key in ASSETS},
     }
     (ROOT / 'provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
     runtime_key = digest(b''.join((ROOT / 'ice' / name).read_bytes() for name in RUNTIME))[:12]
