@@ -22,7 +22,7 @@ test('real tuition and expanded passage keep their project and source anchor',()
 });
 test('Chinese questions and aliases find actual site topics',()=>{
   assert.ok(context.search('有什么求职方向').some(x=>/岗位|求职/.test(x.text+x.title)));
-  assert.ok(context.search('AI 影像').some(x=>x.url.startsWith('projects/ai-content')));
+  assert.ok(context.search('校园打印').some(x=>x.url.endsWith('#printing')));
   assert.ok(context.search('联系方式').some(x=>x.url.startsWith('contact/')));
   assert.ok(context.search('学费').some(x=>x.text.includes('288')));
 });
@@ -31,7 +31,7 @@ test('empty and unknown queries return no invented answers',()=>{
   assert.equal(context.search('<script>alert(919191)</script>').length,0);
 });
 test('every result comes from the same release and has a local safe URL',()=>{
-  assert.ok(records.length>0);for(const anchor of ['education','roles','skills','ecommerce','livestream','store','field','ai-work','digital-work'])assert.ok(records.some(record=>record.url==='experience/index.html#'+anchor),'Missing published section: '+anchor);for(const record of records){assert.ok(record.text);assert.ok(record.title);assert.ok(!/^(https?:|javascript:|\/\/)/.test(record.url));assert.ok(fixture.paths.includes(record.url.split('#')[0]));}
+  assert.ok(records.length>0);for(const anchor of ['education','roles','skills','ecommerce','printing','livestream','store','field','digital-work'])assert.ok(records.some(record=>record.url==='experience/index.html#'+anchor),'Missing published section: '+anchor);for(const record of records){assert.ok(record.text);assert.ok(record.title);assert.ok(!/^(https?:|javascript:|\/\/)/.test(record.url));assert.ok(fixture.paths.includes(record.url.split('#')[0]));}
 });
 test('education synonyms, questions, traditional characters and typo rank real degrees first',()=>{
   for(const query of ['学历','学校','毕业院校','教育背景','学 历','學歷','畢業院校','你是什么学历？','在哪里读书','学厉','教育经厉','educaton','DEGREE']) {

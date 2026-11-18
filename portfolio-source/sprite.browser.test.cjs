@@ -23,7 +23,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await input.evaluate(e=>document.activeElement===e),true);
   assert.equal(await panel.locator('button').count(),3,'Only done, clear and search controls exist');
   assert.equal(await panel.locator('[data-sprite-query],[data-sprite-mode],.sprite-suggestions,.sprite-local-ai,.sprite-tabs,.sprite-filters').count(),0,'No mode selectors, AI panel or shortcut destinations');
-  assert.equal(await page.locator('.sprite-close').textContent(),'完成');
+  assert.equal(await page.locator('.sprite-close').getAttribute('aria-label'),'收起小程');
   assert.ok((await panel.boundingBox()).height<180,'An empty search is compact');
   assert.ok(await page.locator('.sprite-close').evaluate(e=>e.offsetWidth>=44&&e.offsetHeight>=44));
   assert.equal(await panel.locator('button[type="submit"]').isDisabled(),true);
@@ -77,7 +77,7 @@ const server=http.createServer((req,res)=>{
   }
   await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.sprite-body').first().evaluate(e=>getComputedStyle(e).animationName),'none');
   if(process.env.SPRITE_OUTPUT){fs.mkdirSync(process.env.SPRITE_OUTPUT,{recursive:true});await page.screenshot({path:path.join(process.env.SPRITE_OUTPUT,`sprite-${viewport.width}.png`)});}
-  for(const route of ['/experience/','/projects/ai-content/','/contact/']){
+  for(const route of ['/experience/','/projects/sprout-patrol/','/contact/']){
    await page.goto(origin+route);await page.locator('.sprite-launcher').click();await input.fill('学历');await input.press('Enter');await answer.waitFor();
    const destination=answer.locator('.sprite-answer-source').first();const target=new URL(await destination.getAttribute('href'));
    assert.equal(target.origin,origin);assert.equal(target.pathname,'/experience/index.html');assert.equal(target.hash,'#education');

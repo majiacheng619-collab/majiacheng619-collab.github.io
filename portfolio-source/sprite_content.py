@@ -14,13 +14,11 @@ SECTIONS = {
     'livestream': ('直播运营', '直播 抖音 主播 内容运营 新媒体 用户维护 曝光量 直播间 社群 私信 粉丝 互动 传播 封面 直播策划 livestream content'),
     'store': ('门店经营', '门店 餐饮 炸鸡 加盟 实体店 餐厅 零售 开业 选址 采购 供应商 食材 设备 商务支持 资源协调 store retail procurement'),
     'field': ('活动实践', '活动 面包 挑战 策划 执行 地推 线下推广 现场组织 规则设计 宣传物料 海报 统筹 event campaign'),
-    'ai-work': ('AI 影像', 'ai影像 ai视频 短视频 叙事 影片 剪辑 脚本 分镜 提示词 素材 配音 字幕 成片 内容策划 seedance seedream 剪映 video storytelling'),
     'digital-work': ('数字产品交付', '游戏 萌芽 保卫队 塔防 数字产品 网站 产品助理 产品运营 项目助理 项目执行 需求拆解 交付 验收 人工智能 辅助开发 codex game product project'),
 }
 ROUTES = {
     'projects/index.html': ('作品与项目', '作品 项目 作品集 做过什么 项目经历 portfolio projects'),
     'projects/sprout-patrol/index.html': ('萌芽保卫队', SECTIONS['digital-work'][1]),
-    'projects/ai-content/index.html': ('AI 影像', SECTIONS['ai-work'][1]),
     'poster/index.html': ('面包挑战', SECTIONS['field'][1]),
     'honor/index.html': ('荣誉与证书', '荣誉 证书 获奖 奖项 奖励 凭证 学生干部 家乡荣耀季 区县100强 award certificate'),
     'contact/index.html': ('联系与合作', '联系 联系方式 怎么联系 联络 邮箱 邮件 电话 手机号码 微信 合作 简历 履历 下载简历 contact email resume cv'),
@@ -133,7 +131,7 @@ class Passages(HTMLParser):
 def build(root):
     records = []
     for route in ('index.html', 'experience/index.html', 'projects/index.html',
-                  'projects/sprout-patrol/index.html', 'projects/ai-content/index.html',
+                  'projects/sprout-patrol/index.html',
                   'poster/index.html', 'honor/index.html', 'updates/index.html', 'contact/index.html'):
         parser = Passages(route)
         parser.feed((Path(root)/route).read_text())

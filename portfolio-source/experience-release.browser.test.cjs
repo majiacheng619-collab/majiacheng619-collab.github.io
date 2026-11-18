@@ -29,7 +29,7 @@ const server=http.createServer((req,res)=>{
  const Axe=process.env.AUDIT_ACCESSIBILITY==='1'?require('@axe-core/playwright').default:null;
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  page.on('response',r=>{if(r.status()>=400)missing.push(r.url());});
- const routes=['','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','poster/','honor/','updates/','contact/'];
+ const routes=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
  const screenshot=process.env.AUDIT_OUTPUT;if(screenshot)fs.mkdirSync(screenshot,{recursive:true});
  const scope=process.env.AUDIT_SCOPE||'all';
  const resume=JSON.parse(fs.readFileSync(path.join(root,'release.json'),'utf8')).resume;
@@ -116,8 +116,9 @@ const server=http.createServer((req,res)=>{
     await tabs.first().focus();await page.keyboard.press('ArrowRight');
     assert.equal(await tabs.nth(1).getAttribute('aria-selected'),'true');
     assert.equal(await page.locator('[data-studio-panel]:visible').count(),1);
-    await page.keyboard.press('End');assert.equal(await tabs.nth(2).getAttribute('aria-selected'),'true');
+    await page.keyboard.press('End');assert.equal(await tabs.last().getAttribute('aria-selected'),'true');
     await page.keyboard.press('Home');
+    assert.equal(await tabs.first().getAttribute('aria-selected'),'true');
     if(screenshot&&(width===390||width===1440)){
      await page.evaluate(async()=>{scrollTo(0,0);await document.fonts.ready;await Promise.all([...document.images].filter(image=>image.loading!=='lazy').map(image=>image.decode().catch(()=>{})));});
      await page.screenshot({path:path.join(screenshot,'home-'+width+'.png')});
@@ -133,7 +134,7 @@ const server=http.createServer((req,res)=>{
     assert.ok(await email.evaluate(node=>node.getBoundingClientRect().height<=parseFloat(getComputedStyle(node).lineHeight)+1),'Email address never leaves an orphaned character');
    }
    if(route==='experience/'){
-    assert.equal(await page.locator('.case-study').count(),7);
+    assert.equal(await page.locator('.case-study').count(),6);
     assert.equal(await page.locator('.case-transfer').count(),0);
     const details=page.locator('.case-context').first();await details.locator('summary').click();
     assert.equal(await details.getAttribute('open'),'');
@@ -143,6 +144,13 @@ const server=http.createServer((req,res)=>{
   }
  }
  if(scope==='all'||scope==='cleanup'){
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(origin);
+  await page.waitForSelector('.glass-dock[data-over-media]');
+  await page.locator('#career-lens').evaluate(section=>section.scrollIntoView({block:'start',behavior:'instant'}));
+  await page.waitForSelector('.glass-dock:not([data-over-media])');
+  await page.goto(origin+'/projects/');
+  assert.equal(await page.locator('.glass-dock[data-over-media]').count(),0,'Navigation uses dark text on pale work cards');
   for(const [old,anchor] of [['service-work','ecommerce'],['campus-work','printing']]){
    await page.goto(origin+'/projects/index.html#'+old);
    await page.waitForURL('**/experience/index.html#'+anchor);
@@ -187,7 +195,7 @@ const server=http.createServer((req,res)=>{
  assert.deepEqual(missing,[]);assert.deepEqual(errors,[]);
  const noJS=await browser.newContext({javaScriptEnabled:false,viewport:{width:390,height:844}});
  const fallback=await noJS.newPage();await fallback.goto(origin);
- assert.equal(await fallback.locator('[data-studio-panel]:visible').count(),3,'Works remain readable without scripts');
+ assert.equal(await fallback.locator('[data-studio-panel]:visible').count(),2,'Works remain readable without scripts');
  assert.equal(await fallback.locator('.sprite-launcher').isVisible(),false);
  assert.equal(await fallback.locator('#career-lens a').count(),4,'Every practice stays reachable without scripts');
  // Printing excludes the floating search without clearing an in-progress query.
@@ -196,7 +204,7 @@ const server=http.createServer((req,res)=>{
  await page.emulateMedia({media:'print'});
  assert.equal(await page.locator('[data-sprite]').isVisible(),false,'Search stays out of print and PDF output');
  assert.equal(await page.locator('main').isVisible(),true);
- assert.equal(await page.locator('[data-studio-panel]:visible').count(),3,'Printed work previews remain readable');
+ assert.equal(await page.locator('[data-studio-panel]:visible').count(),2,'Printed work previews remain readable');
  await page.emulateMedia({media:'screen'});
  assert.equal(await page.locator('#sprite-panel').isVisible(),true,'Returning from print preserves the open search');
  assert.equal(await input.inputValue(),'学历');

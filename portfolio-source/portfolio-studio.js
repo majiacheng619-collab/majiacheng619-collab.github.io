@@ -105,20 +105,6 @@
     video.scrollIntoView({behavior:reduced.matches?'instant':'smooth',block:'center'});
     video.play().catch(()=>{video.tabIndex=0;video.focus({preventScroll:true});});
   });
-  // Material follows the surface beneath the dock; no extra navigation layer.
-  const hero=document.querySelector('[data-era-hero]');
-  const dock=document.querySelector('[data-glass-dock]');
-  if(hero&&dock){
-    let scheduled=false;
-    const update=()=>{
-      scheduled=false;
-      const scene=hero.getBoundingClientRect(),control=dock.getBoundingClientRect();
-      document.body.dataset.eraDark=String(scene.top<=control.top&&scene.bottom>=control.bottom);
-    };
-    const schedule=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(update);}};
-    addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule,{passive:true});
-    update();
-  }
   // Offscreen geometry pauses instead of running unseen for the full page.
   if('IntersectionObserver' in window){
     const scenes=new IntersectionObserver(entries=>{

@@ -12,6 +12,8 @@ OBSOLETE=(
     'assets/fonts/OFL.txt',
     'assets/game-cover.jpg',
     'assets/portrait-white-480.d1f641e10fd2.webp',
+    'assets/film-editorial.3a98fa9db256.webp',
+    'projects/ai-content/index.html',
 )
 
 def remove_retired(root):

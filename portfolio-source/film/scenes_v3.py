@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image,ImageDraw,ImageOps
 W,H=1920,1080
 CUTS=[0,2.2,4.4,9,12.2,14.4,17,20,24]
-TITLES=['做。把想法做成作品','萌芽保卫队 · 实际游戏录屏','真实活动海报 · 从规则到现场','累计服务约 1,000 名学员','3 支 AI 叙事短片 · 独立完成全流程','直播内容与互动 · 2026 家乡荣耀季','马嘉程 · 产品与运营','马嘉程 · 继续看我的作品']
+TITLES=['做。把想法做成作品','萌芽保卫队 · 实际游戏录屏','真实活动海报 · 从规则到现场','累计服务约 1,000 名学员','宿舍打印店 · 黑白 0.2 元，1 份起送','直播内容与互动 · 2026 家乡荣耀季','马嘉程 · 产品与运营','马嘉程 · 继续看我的作品']
 def smooth(x):
  x=max(0.,min(1.,x));return x*x*(3-2*x)
 def mix(a,b,k):return a+(b-a)*k
@@ -59,7 +59,7 @@ def create_scenes(ctx):
     normal=(float(tangent[1]/length),float(-tangent[0]/length),0.)
     for p in [(*p1,0),(*p2,0),(*p2,-depth),(*p1,0),(*p2,-depth),(*p1,-depth)]:arr.append((*p,*normal,0,0))
   return q,mesh(arr),tx
- hero=glyph3d('做。',6.8,.5);three=glyph3d('3',5.5,.6)
+ hero=glyph3d('做。',6.8,.5);print_price=glyph3d('0.2',7.5,.46)
  # Separate authentic glyph meshes retain the complete number's baseline.
  num_im,_=lettering('1,000',400);ft=font(400,True);edges=[0]+[6+int(ft.getlength('1,000'[:j])) for j in range(1,5)]+[num_im.width];numberparts=[]
  for left,right in zip(edges[:-1],edges[1:]):
@@ -110,10 +110,11 @@ def create_scenes(ctx):
     extrude(obj,model(x=cx+.6*(1-settle),y=.3+(.45 if j%2 else -.45)*(1-settle),z=-6*(1-settle),ry=1.48*(1-settle)+mix(.10,-.06,k),rx=.025,rz=-.01),front=(.88,1.,.76),side=(.28,.59,.31))
    label('约',56,150,245,(.84,.96,.72));label('累计服务学员',46,111,811,(.94,.95,.9),smooth((u-.3)/.65));label('电商知识付费项目 / 独立发起与操盘',29,115,923,(.68,.76,.67),smooth((u-.7)/.65))
   elif t<23:
-   u=t-18;k=smooth(u/5);fb.clear(.88,.13,.08,1,depth=1);camera((mix(2.6,-.6,k),mix(.5,.1,k),mix(8,11.8,k)),(0,0,0),44)
-   extrude(three,model(x=-2.25,z=-2.5*(1-smooth(u/1.0)),ry=1.48*(1-smooth(u/1.0))+mix(-.06,.10,k),rz=.04),front=(.98,.94,.85),side=(.48,.055,.025))
-   label('支',88,990,320,(.99,.94,.85),smooth((u-.15)/.45));label('AI 叙事短片',74,986,470,(.99,.94,.85),smooth((u-.35)/.6));label('脚本  /  镜头  /  声音  /  发布',31,995,690,(.99,.86,.76),1,reveal=smooth((u-.9)/2.5))
-   label('独立完成全流程',32,111,930,(.99,.94,.85),smooth((u-1.1)/.7))
+   u=t-18;k=smooth(u/5);fb.clear(.048,.096,.145,1,depth=1);camera((mix(1.5,-.3,k),mix(.45,.12,k),mix(12.2,13.4,k)),(-.3,0,0),44)
+   extrude(print_price,model(x=-1.4,y=.05,z=-1.6*(1-smooth(u/.95)),ry=.48*(1-smooth(u/.95))+mix(-.04,.08,k),rz=-.025),front=(.88,.97,1.),side=(.28,.54,.76))
+   label('宿舍打印店',56,112,109,(.90,.97,1.),smooth(u/.5))
+   label('元',54,1465,493,(.88,.97,1.),smooth((u-.3)/.5))
+   label('黑白打印  /  1 份起送  /  送货上门',35,116,904,(.72,.85,.94),smooth((u-.55)/.7))
   elif t<27:
    u=t-23;k=smooth(u/4);camera((mix(1.4,0,k),0,mix(10.7,12,k)),(0,0,0),43)
    draw(portrait_q,model(x=3.0,y=-.1,ry=mix(-.15,0,k)),portrait,flat=True)

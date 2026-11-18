@@ -1,8 +1,7 @@
 """Shared page shell and the single cross-device navigation."""
 from pathlib import Path
 import re
-from silk_art import silk_art
-from sprite_shell import companion
+from sprite_shell import CLOSE_ICON, companion
 
 def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media):
  def glass_dock(path):
@@ -20,20 +19,20 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media):
    active=group_path==href or (href!='index.html' and '#' not in href and group_path.startswith(href.removesuffix('index.html')))
    current=' aria-current="page"' if active else ''
    links.append(f'<a class="glass-dock__link" data-dock-item data-dock-link href="{href}"{current}><svg viewBox="0 0 24 24" aria-hidden="true">{icons[icon]}</svg><span>{label}</span></a>')
-  return '<nav class="glass-dock" data-glass-dock aria-label="快捷导航"><span class="glass-dock__lens" data-dock-lens aria-hidden="true"></span>'+''.join(links)+'</nav>'
+  initial_tone = ' data-over-media' if path == 'index.html' else ''
+  return f'<nav class="glass-dock" data-glass-dock{initial_tone} aria-label="快捷导航"><span class="glass-dock__lens" data-dock-lens aria-hidden="true"></span>'+''.join(links)+'</nav>'
 
 
  def render(path,title,desc,body):
   depth=len(Path(path).parts)-1; prefix='../'*depth
   scene = 'home' if path=='index.html' else 'experience' if path.startswith(('experience/','updates/')) else 'honor' if path.startswith('honor/') else 'contact' if path.startswith('contact/') else 'work'
   footer='<footer class="site-footer"><div class="footer-bottom">© 2026 马嘉程</div></footer>'
-  dialogs='<dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图"><button type="button" class="dialog-close" data-dialog-close aria-label="关闭大图">完成</button><img data-dialog-image loading="lazy" decoding="async" src="assets/portrait-white-960.b8bfe698eef3.webp" alt="马嘉程证件照" width="960" height="960"/></dialog>'
+  dialogs=f'<dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图"><button type="button" class="dialog-close" data-dialog-close aria-label="关闭大图">{CLOSE_ICON}</button><img data-dialog-image loading="lazy" decoding="async" src="assets/portrait-white-960.b8bfe698eef3.webp" alt="马嘉程证件照" width="960" height="960"/></dialog>'
 
-  doc=f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>{title if path=="index.html" else title+"｜马嘉程"}</title><meta name="description" content="{desc}"/><meta property="og:title" content="{title if path=="index.html" else title+"｜马嘉程"}"/><meta property="og:description" content="{desc}"/><meta name="theme-color" content="{"#070d19" if path=="index.html" else "#edf5ff"}"/><link rel="canonical" href="https://majiacheng619-collab.github.io/{"" if path=="index.html" else path.replace("index.html","")}"/><link rel="icon" href="{ICON}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{TOUCH_ICON}"/><link rel="stylesheet" href="{CSS}"/><script defer src="{JS}"></script></head><body class="{'home-page' if path=='index.html' else 'inner-page'}" data-portfolio-ui="34" data-atmosphere="{scene}"><a class="skip-link" href="#main">跳转到正文</a><main id="main" tabindex="-1">{body}{footer}</main>{dialogs}{glass_dock(path)}{companion()}</body></html>'
+  doc=f'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>{title if path=="index.html" else title+"｜马嘉程"}</title><meta name="description" content="{desc}"/><meta property="og:title" content="{title if path=="index.html" else title+"｜马嘉程"}"/><meta property="og:description" content="{desc}"/><meta name="theme-color" content="{"#070d19" if path=="index.html" else "#edf5ff"}"/><link rel="canonical" href="https://majiacheng619-collab.github.io/{"" if path=="index.html" else path.replace("index.html","")}"/><link rel="icon" href="{ICON}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{TOUCH_ICON}"/><link rel="stylesheet" href="{CSS}"/><script defer src="{JS}"></script></head><body class="{'home-page' if path=='index.html' else 'inner-page'}" data-portfolio-ui="35" data-atmosphere="{scene}"><a class="skip-link" href="#main">跳转到正文</a><main id="main" tabindex="-1">{body}{footer}</main>{dialogs}{glass_dock(path)}{companion()}</body></html>'
   if path!='index.html':
    brand=f'<div class="studio-site-brand"><a href="index.html"><img src="{ICON}" alt="" width="27" height="27"/>马嘉程</a></div>'
    doc=doc.replace(f'<main id="main" tabindex="-1">',f'<main id="main" tabindex="-1">{brand}')
-  doc=doc.replace('<section class="detail-hero"><div class="detail-shell">', '<section class="detail-hero" data-era-hero>'+silk_art()+'<div class="detail-shell">')
   doc=doc.replace('</head>', '<meta name="color-scheme" content="light"/><meta name="format-detection" content="telephone=no"/> <meta property="og:locale" content="zh_CN"/></head>')
   doc=doc.replace(f'{footer}</main>',f'</main>{footer}')
   ambient='<div class="ambient-field" aria-hidden="true"></div>'

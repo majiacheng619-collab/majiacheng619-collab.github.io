@@ -1,9 +1,9 @@
 {
   "description": "我核对当前影片的输入与成片。",
-  "renderKey": "90b982f2608ebe1c4f035405a521f379a105a3293d0a69570e43a29a1e4d9269",
+  "renderKey": "20ae38bda59495032d9ddf7d7917f8c03ad39f1397e5f51cb4e1a3645d916aa0",
   "sources": {
     "render.py": "af4e2d628ad0bc6bc009dc5575cc959ad790c41dac3e4cec79b1819351e96136",
-    "scenes_v3.py": "b23a1f53fdfec4f95787c4a3ed4eb59982bf45e37d4fcb0c2358a52bf0f981d7",
+    "scenes_v3.py": "4f33cc49a7052107ed6ae5395e879a0186d281d534e67b173d59c5f2a79fd283",
     "mix_v3.py": "7c92e8497b9b3b0477ba0747b1d29265354cc27e1d22ffb00001ceb86e2be186",
     "inputs/game-demo.mp4": "5942a6ddd5d99344b4c4d312f16a7f08387ec3d790fb2814147806edafbbc5ab",
     "inputs/film-font.otf": "c913fd7406ff7fad43f1c4d435d6246f7a6e95fd02da7289a7df330c91e6e3fc",
@@ -16,8 +16,8 @@
     "assets/portrait-white-960.b8bfe698eef3.webp": "b8bfe698eef33b040671a1bf96159c0d4c48700156a0fd9542ba903464954620"
   },
   "outputs": {
-    "assets/media/intro.3ede6a45308a.mp4": "3ede6a45308affeab7b12cae2323a80f70c67adb2db314ecef56f74ee5d6dd8c",
+    "assets/media/intro.1fb9ec130734.mp4": "1fb9ec130734798e92e23915c8dcf98bdb19b13918498c78454d3c2631b66f41",
     "assets/media/intro-poster.7e66d21e8a04.jpg": "7e66d21e8a0493cad2800bd658e4174e321e835ae9f1e1a53ae1b98d792e0941",
-    "assets/media/intro.f430089a6891.vtt": "f430089a6891430877318d824e793c96e9d00ac9828324f73c9fcf3c2d782b4e"
+    "assets/media/intro.639c3d636caf.vtt": "639c3d636caff0b9f4985b9a601b5ac77508bd0094381d7348ea888975d391df"
   }
 }

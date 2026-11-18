@@ -1,9 +1,9 @@
 /* Portfolio controls use the same clear shell and moving lens as the dock.
    The dock and game own their existing material and are deliberately excluded. */
 body:is(.home-page,.inner-page) {
-  --control-shell:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.045) 55%,rgba(236,244,252,.1));
-  --control-edge:rgba(255,255,255,.68);
-  --control-depth:0 6px 24px rgba(25,40,58,.1),0 1px 3px rgba(25,40,58,.05),inset 0 1px 0 rgba(255,255,255,.75);
+  --control-shell:linear-gradient(151deg,#f8fcff70,#f0f7ff26 55%,#cce6ff45);
+  --control-edge:#ffffffc2;
+  --control-depth:0 12px 26px -14px #1a487067,0 1px 4px #1a48701a,inset 0 1px 1px #fffffff1,inset 0 -1px 1px #83b1d942;
   --control-ink:#344e68;
   --control-selected:#07548e;
   --control-return:cubic-bezier(.2,1.4,.35,1);
@@ -23,8 +23,8 @@ body.home-page .premium-home .studio-tabs {
   border-radius:999px;
   background:var(--control-shell);
   box-shadow:var(--control-depth);
-  -webkit-backdrop-filter:blur(7px) saturate(1.25);
-  backdrop-filter:blur(7px) saturate(1.25);
+  -webkit-backdrop-filter:blur(12px) saturate(1.42);
+  backdrop-filter:blur(12px) saturate(1.42);
   -webkit-tap-highlight-color:transparent;
   touch-action:pan-y pinch-zoom;
 }
@@ -104,8 +104,8 @@ body:is(.home-page,.inner-page) .control-lens {
   overflow:hidden;
   border:1px solid rgba(255,255,255,.95);
   border-radius:999px;
-  background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(244,250,255,.02) 42%,rgba(222,238,249,.065) 68%,rgba(255,255,255,.18));
-  box-shadow:0 2px 6px rgba(34,52,68,.1),inset 0 1px 1px rgba(255,255,255,.85),inset 0 -1px 1px rgba(255,255,255,.64);
+  background:linear-gradient(151deg,#fff9,#bee3ff48 49%,#f7fcff71);
+  box-shadow:0 5px 12px #20568f26,inset 0 1px 1px #ffffffeb,inset 0 -1px 1px #9fc1e581;
   transform:translate3d(var(--control-x,0px),var(--control-y,0px),0) scale(var(--control-stretch,1),var(--control-squash,1));
   transform-origin:center;
   pointer-events:none;
@@ -164,15 +164,23 @@ body:is(.home-page,.inner-page) .button.primary:hover {
   -webkit-backdrop-filter:blur(7px) saturate(1.25);
   backdrop-filter:blur(7px) saturate(1.25);
   border-color:rgba(191,223,255,.95);
-  background:linear-gradient(145deg,rgba(151,207,255,.14),rgba(185,221,255,.025) 48%,rgba(178,216,253,.09));
+  background:linear-gradient(145deg,#e8f6ff8c,#b3dcfc52 49%,#dbeeff62);
   color:#074c86;
   box-shadow:0 6px 24px rgba(26,84,135,.14),inset 0 1px 1px rgba(255,255,255,.9),inset 0 -1px 1px rgba(130,184,227,.3);
 }
 body.home-page .premium-home .studio-hero .button {
-  border-color:rgba(210,236,255,.62);
-  background:linear-gradient(145deg,rgba(166,213,255,.19),rgba(202,229,255,.035) 48%,rgba(153,198,247,.12));
-  box-shadow:0 6px 24px rgba(0,9,24,.2),inset 0 1px 1px rgba(235,247,255,.66),inset 0 -1px 1px rgba(151,200,255,.18);
-  color:#e5f3ff;
+  min-height:52px;
+  padding-inline:25px;
+  border-color:#d4f1ffb0;
+  background:linear-gradient(147deg,#a0deff55,#6daadd27 52%,#baa9ff4d);
+  box-shadow:0 12px 25px -10px #000a1bf0,inset 0 1px 1px #f1f9ffb3,inset 0 -1px 1px #95c6ff60;
+  color:#f1f9ff;
+}
+body.home-page .premium-home .studio-hero .button.secondary {
+  border-color:#c4e4ff74;
+  background:linear-gradient(147deg,#ccedff26,#8cb4d714 54%,#c2aaff26);
+  box-shadow:inset 0 1px 1px #eef7ff52;
+  color:#e1edff;
 }
 body:is(.home-page,.inner-page) main summary {
   width:fit-content;

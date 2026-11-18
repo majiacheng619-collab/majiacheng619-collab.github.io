@@ -94,7 +94,7 @@ const server = http.createServer((req,res) => {
     const page=await context.newPage();
     page.on('pageerror',e=>errors.push(e.message));
     page.on('response',r=>{if(r.url().startsWith(origin)&&r.status()>=400)errors.push(r.status()+' '+r.url());});
-    const routes=['','projects/','experience/','projects/ai-content/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
+    const routes=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
     for(const width of [320,390,768,1024,1440]) {
       await page.setViewportSize({width,height:900});
       for(const route of routes) {
@@ -126,10 +126,10 @@ const server = http.createServer((req,res) => {
     await page.goto(origin+'/');
     await page.waitForSelector('[data-studio-ready="true"]');
     const previewTabs=page.locator('.studio-tabs').getByRole('tab');
-    assert.equal(await previewTabs.count(),3,'Three real work previews');
+    assert.equal(await previewTabs.count(),2,'Two live work previews');
     for(const width of [320,390,768,1440]){
       await page.setViewportSize({width,height:900});
-      for(const key of ['product','film','field']){
+      for(const key of ['product','field']){
         await page.locator('[data-studio-tab="'+key+'"]').click();
         assert.equal(await page.locator('[data-studio-panel="'+key+'"]').isVisible(),true);
         assert.equal(await page.locator('[data-studio-panel]:visible').count(),1);
@@ -142,9 +142,9 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.locator('#intro-video').evaluate(v=>v.paused),true,'Switching previews never autoplays media');
     assert.equal(await page.locator('[data-play-intro]').count(),0,'The overview uses one native video control surface');
     assert.equal(await page.locator('#intro-video').evaluate(v=>v.controls),true,'The overview retains native playback controls');
-    await page.locator('[data-studio-panel="film"] a.button').first().click();
-    await page.waitForURL('**/projects/ai-content/index.html');
-    assert.equal(await page.locator('main h1').count(),1,'The film preview opens its real case study');
+    await page.locator('[data-studio-panel="field"] a.button').first().click();
+    await page.waitForURL('**/poster/index.html');
+    assert.equal(await page.locator('main h1').count(),1,'The event preview opens its real material');
     report.workPreviews=true;
     // The dock must match the actual surface at its position, across orientations.
     await page.goto(origin+'/');
@@ -152,10 +152,10 @@ const server = http.createServer((req,res) => {
     for(const viewport of [{width:1440,height:900},{width:390,height:740}]){
       await page.setViewportSize(viewport);
       await page.evaluate(()=>scrollTo(0,0));
-      await page.waitForFunction(()=>document.body.dataset.eraDark==='true');
+      await page.waitForSelector('.glass-dock[data-over-media]');
       assert.equal(await page.locator('.era-fold').first().evaluate(e=>getComputedStyle(e).animationName),'none','Silk respects reduced motion');
       await page.evaluate(()=>scrollTo(0,document.querySelector('[data-era-hero]').offsetHeight+100));
-      await page.waitForFunction(()=>document.body.dataset.eraDark==='false');
+      await page.waitForSelector('.glass-dock:not([data-over-media])');
     }
     report.surfaceNavigation=true;
 

@@ -53,16 +53,6 @@ CASES = [{'id': 'ecommerce',
               ('按人流调整', '调整经营位置与组织方式，包括流动经营。')],
   'result': '现场吸引了参与者和围观人群，网站保留实际活动海报。',
   'facts': [('A3 物料', '现场宣传与规则说明'), ('2–3 小时', '通常的当场安排'), ('19.9 元/次', '参与价格')]},
- {'id': 'ai-work',
-  'title': 'AI 叙事影像：从选题到成片',
-  'time': '2026.09 起',
-  'role': '独立策划 · AI 素材制作 · 后期剪辑',
-  'context': '以完整成片练习视听叙事。',
-  'actions': [('拆分镜头任务', '使用 ChatGPT 梳理选题与脚本，拆分分镜和素材生成提示词。'),
-              ('制作与剪辑', '使用 Seedream、Seedance 生成素材，在剪映完成配音、字幕和剪辑，调整叙事节奏。'),
-              ('发布与归档', '整理作品集并保留原作入口。')],
-  'result': '主题涵盖升学就业、风险代价和家庭陪伴。故事为虚构创作，非个人经历。',
-  'facts': [('3 支', '已发布叙事作品')]},
  {'id': 'digital-work',
   'title': '网页游戏策划与产品交付',
   'time': '2026.10 发布游戏并持续迭代',
@@ -81,7 +71,6 @@ def case_section(case, cta):
     links = ''
     if case['id'] == 'livestream': links = cta('honor/index.html', '查看荣誉凭证', True)
     if case['id'] == 'field': links = cta('poster/index.html', '查看现场宣传物料', True)
-    if case['id'] == 'ai-work': links = cta('projects/ai-content/index.html', '观看原作', True)
     if case['id'] == 'digital-work': links = cta('projects/sprout-patrol/index.html', '体验与产品案例', True)
     return f'''<section class="case-study detail-shell" id="{e(case['id'])}" aria-labelledby="case-{e(case['id'])}">
 <div class="case-overview"><div class="case-heading"><p class="case-meta">{e(case['time'])}<span>{e(case['role'])}</span></p><h2 id="case-{e(case['id'])}">{e(case['title'])}</h2></div>

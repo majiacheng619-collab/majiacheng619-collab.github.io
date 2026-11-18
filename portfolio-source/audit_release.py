@@ -65,6 +65,7 @@ def audit(root):
             errors.append(f'{label}: missing/unsafe dynamic asset {value}')
 
     retired = re.compile(r'^(?:visitors|privacy)/|(?:^|/)(?:visitor-(?:tracker|privacy|config)|visitors\.|analytics-config)')
+    retired_films = re.compile(r'projects/ai-content/|film-editorial\.|#ai-work|M8uV_tAxKlk|_yDmgMzvSqE|BIuX2Tb5rvM|升学与就业选择|从赢两千到欠八十万|陪家人抗癌|AI\s*叙事短片')
     for path in root.rglob('*'):
         if not path.is_file():
             continue
@@ -77,6 +78,11 @@ def audit(root):
                 errors.append('Game preview needs a valid content fingerprint: ' + relative)
         if retired.search(relative):
             errors.append('Retired visitor module remains: ' + relative)
+        if retired_films.search(relative):
+            errors.append('Retired short-film asset remains: ' + relative)
+        elif not relative.startswith('game/') and path.suffix in ('.html', '.js', '.xml', '.vtt', '.txt', '.json'):
+            if retired_films.search(path.read_text()):
+                errors.append('Retired short-film reference remains: ' + relative)
         if path.suffix in ('.html', '.js', '.json'):
             text = path.read_text()
             if not relative.startswith('game/') and re.search(r'data-search-open|id=[\"\']search-dialog|data-search-index|search-index\.[a-f0-9]+\.json', text):

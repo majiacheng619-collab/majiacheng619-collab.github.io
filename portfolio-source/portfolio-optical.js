@@ -1,94 +1,65 @@
-/* Portfolio-only live atmosphere. The generated 1,228,800 samples supply
- * height and normals to broad pearl planes and direct touch refraction. */
+/* One optical field lights the hero and the lighter reading surfaces. */
 (() => {
   'use strict';
-  if (/(?:^|\/)game(?:\/|$)/.test(location.pathname) || document.querySelector('[data-optical-scene]')) return;
-  document.body.dataset.atmosphereRenderer = 'fallback';
+  const ambient = document.querySelector('.ambient-field');
+  if (!ambient || ambient.querySelector('[data-optical-scene]')) return;
+  const root = document.documentElement;
+  const hero = document.querySelector('.era-hero');
   const profiles = {
-    home: [0, .72, .0, [.76,.86,.99]],
-    work: [-.45, .78, 1.8, [.69,.82,.99]],
-    experience: [.55, .66, 3.9, [.70,.89,.83]],
-    honor: [-.82, .58, 5.7, [.96,.83,.65]],
-    contact: [.9, .70, 7.4, [.82,.74,.96]],
+    home: [-.35, .63, .3, [.57,.74,.97]],
+    work: [-.48, .57, 1.8, [.55,.72,.96]],
+    experience: [.48, .62, 3.9, [.49,.80,.70]],
+    honor: [-.74, .55, 5.7, [.91,.68,.45]],
+    contact: [.78, .59, 7.4, [.72,.58,.92]],
   };
-  const scene = profiles[document.body.dataset.atmosphere] || profiles.work;
-  const water = document.createElement('div');
-  water.className = 'water-events';
-  water.setAttribute('aria-hidden', 'true');
-  // Each event has an actual falling lens followed by two expanding surface rings.
-  for (const [x, y, delay] of [[16,28,0],[77,52,-1.05],[34,78,-2.1],[87,18,-3.15]]) {
-    const event = document.createElement('span');
-    event.className = 'water-event';
-    event.style.cssText = `--water-x:${x}%;--water-y:${y}%;--water-delay:${delay}s`;
-    event.innerHTML = '<i class="water-drop"></i><i class="water-ring"></i><i class="water-ring water-ring-echo"></i>';
-    water.append(event);
-  }
-  (document.querySelector('.ambient-field') || document.body).append(water);
-  // Put the water in front of the hero's own tinted backdrop as well.
-  const heroScene=document.querySelector('.home-page .era-silk');
-  if(heroScene){
-    const heroWater=water.cloneNode(true);heroWater.className='hero-water';
-    [...heroWater.children].forEach((event,index)=>{
-      if(index>1){event.remove();return;}
-      event.style.setProperty('--water-x',index===0?'73%':'91%');
-      event.style.setProperty('--water-y',index===0?'62%':'30%');
-    });
-    heroScene.append(heroWater);
+  const profile = profiles[document.body.dataset.atmosphere] || profiles.work;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const reducedTransparency = matchMedia('(prefers-reduced-transparency: reduce)');
+  const moreContrast = matchMedia('(prefers-contrast: more)');
+  const forcedColors = matchMedia('(forced-colors: active)');
+  const coarsePointer = matchMedia('(pointer: coarse)');
+  const opaque = () => reducedTransparency.matches || moreContrast.matches || forcedColors.matches;
+
+  function drops(className, positions) {
+    const layer = document.createElement('div');
+    layer.className = className;
+    layer.setAttribute('aria-hidden', 'true');
+    for (const [x, y, delay] of positions) {
+      const drop = document.createElement('span');
+      drop.className = 'water-event';
+      drop.style.setProperty('--water-x', x + '%');
+      drop.style.setProperty('--water-y', y + '%');
+      drop.style.setProperty('--water-delay', delay + 's');
+      drop.innerHTML = '<i class="water-drop"></i><i class="water-ring"></i><i class="water-ring water-ring-echo"></i>';
+      layer.append(drop);
+    }
+    return layer;
   }
 
-  const source = new URL('OPTICAL_FLOW_ASSET', document.currentScript.src).href;
+  const water = drops('water-events', [[23,31,-.2],[81,67,-2.6]]);
+  const heroWater = hero && drops('hero-water', [[91,30,-.3],[73,62,-2.7]]);
+  ambient.append(water);
+  if (heroWater) hero.querySelector('.era-silk').append(heroWater);
+
   const canvas = document.createElement('canvas');
   canvas.className = 'optical-scene';
-  // An opaque WebGL buffer is black before its first draw. Keep the CSS field
-  // visible during texture decoding, initialization and context restoration.
   canvas.hidden = true;
   canvas.dataset.opticalScene = 'loading';
   canvas.setAttribute('aria-hidden', 'true');
-  (document.querySelector('.ambient-field') || document.body).prepend(canvas);
-  const gameplay = !!document.querySelector('#garden');
-  const arenaOverlay = gameplay ? document.querySelector('#overlay') : null;
-  let battleActive = !!arenaOverlay?.hidden;
-  const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  const contrast = matchMedia('(prefers-contrast: more)');
-  const transparency = matchMedia('(prefers-reduced-transparency: reduce)');
-  // One contact lens is shared by blank-space touches, including the CSS fallback.
-  // It never owns a gesture or delays navigation; controls have their own material.
-  const contact = document.createElement('span');
-  contact.className = 'surface-touch';contact.setAttribute('aria-hidden','true');
-  (document.querySelector('.ambient-field') || document.body).append(contact);
-  let contactPointer=null, contactOrigin=null, contactAnimation=null;
-  const clearContact = () => {
-    contactPointer=null;contactOrigin=null;contactAnimation?.cancel();
-    contact.removeAttribute('data-held');contact.style.opacity='';
-  };
-  document.addEventListener('pointerdown',event=>{
-    if(!event.isPrimary||event.button!==0||contrast.matches||transparency.matches||
-       event.target.closest?.('a,button,summary,input,select,textarea,[role=dialog]'))return;
-    contactAnimation?.cancel();contactPointer=event.pointerId;
-    contactOrigin={x:event.clientX,y:event.clientY};
-    contact.style.left=event.clientX+'px';contact.style.top=event.clientY+'px';
-    contact.setAttribute('data-held','');
-  },{passive:true});
-  document.addEventListener('pointermove',event=>{
-    if(event.pointerId===contactPointer&&contactOrigin&&Math.hypot(event.clientX-contactOrigin.x,event.clientY-contactOrigin.y)>12)clearContact();
-  },{passive:true});
-  addEventListener('pointerup',event=>{
-    if(event.pointerId!==contactPointer)return;
-    contactPointer=null;contactOrigin=null;contact.removeAttribute('data-held');
-    if(motion.matches)return;
-    contactAnimation=contact.animate([{opacity:.85,scale:1},{opacity:.38,scale:1.65,offset:.45},{opacity:0,scale:2.2}],{duration:850,easing:'cubic-bezier(.18,.62,.25,1)'});
-  },{passive:true});
-  for(const name of ['pointercancel','blur','pagehide','scroll'])addEventListener(name,clearContact,{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearContact();});
-  for(const preference of [motion,contrast,transparency])preference.addEventListener('change',clearContact);
-  const gl = canvas.getContext('webgl', {alpha: false, antialias: false,
-    depth: false, stencil: false, preserveDrawingBuffer: true, powerPreference: 'default'});
-  if (!gl) { canvas.remove(); return; } // The authored CSS field stays visible.
-  const rendererInfo = gl.getExtension('WEBGL_debug_renderer_info');
-  const software = !!rendererInfo && /SwiftShader|llvmpipe|software/i.test(gl.getParameter(rendererInfo.UNMASKED_RENDERER_WEBGL));
-  const vertex = 'attribute vec2 a; varying vec2 uv; void main(){uv=a*.5+.5;gl_Position=vec4(a,0.,1.);}';
-  // Broad pearl planes and finite refractive waves belong to the portfolio.
-  // The game continues loading its unchanged optical-runtime.js separately.
+  ambient.prepend(canvas);
+
+  const fallbackLens = document.createElement('span');
+  fallbackLens.className = 'surface-touch';
+  fallbackLens.setAttribute('aria-hidden', 'true');
+  document.body.append(fallbackLens);
+
+  const gl = canvas.getContext('webgl', {
+    alpha: false, antialias: false, depth: false, stencil: false,
+    preserveDrawingBuffer: true, powerPreference: 'low-power',
+  });
+  const renderer = gl?.getExtension('WEBGL_debug_renderer_info');
+  const software = renderer && /SwiftShader|llvmpipe|software/i.test(gl.getParameter(renderer.UNMASKED_RENDERER_WEBGL));
+  const vertex = 'attribute vec2 a; varying vec2 uv; void main(){uv=a*.5+.5; gl_Position=vec4(a,0.,1.);}';
   const fragment = `precision highp float;
     varying vec2 uv;
     uniform sampler2D field;
@@ -100,182 +71,239 @@
     uniform float contactRadius;
     uniform vec3 scene;
     uniform vec3 accent;
+    uniform float heroEdge;
 
-    // Visible silk-like currents: the broad moving folds supply the contrast
-    // that lets a refracted ripple read through an otherwise clear surface.
-    vec3 environment(vec2 q){
+    float bell(float x){ return exp(-x*x); }
+
+    vec3 environment(vec2 q, float night){
       float t=clock*scene.y+scene.z;
       float c=cos(scene.x),s=sin(scene.x);
       vec2 p=mat2(c,-s,s,c)*(q-.5)+.5;
-      vec3 pearl=vec3(.972,.984,.998);
-      vec3 color=mix(pearl,accent,smoothstep(-.10,1.30,p.y)*.42);
-      // A broad moving lens with a defined caustic edge gives clear glass
-      // something to refract. The palette stays light enough for reading.
-      float fold=p.y-(.36+.23*sin(p.x*3.4+t)+.11*cos(t*.68));
-      color=mix(color,accent,exp(-pow((fold-.07)/.16,2.))*.42);
-      color+=exp(-pow((fold+.035)/.026,2.))*.075;
-      color-=exp(-pow((fold-.105)/.055,2.))*.035;
-      float returnFold=p.y-(.88-.30*p.x+.19*sin(p.x*4.-t*.78));
-      color=mix(color,accent,exp(-pow((returnFold-.035)/.14,2.))*.30);
-      color+=exp(-pow((returnFold+.05)/.032,2.))*.065;
-      return clamp(color,vec3(.77),vec3(.997));
+      float fold=p.y-(.39+.24*sin(p.x*3.5+t)+.11*cos(t*.69));
+      float back=p.y-(.88-.38*p.x+.17*sin(p.x*3.9-t*.74));
+      float body=bell((fold-.045)/.16);
+      float returnFlow=bell((back-.032)/.12);
+      float brightEdge=bell((fold+.027)/.023)*.70+bell((back+.045)/.024)*.50;
+      float cut=bell((fold-.092)/.033);
+      vec3 lightTint=mix(vec3(.972,.986,1.),accent,.22+.34*body+.19*returnFlow);
+      lightTint+=vec3(.101,.078,.049)*brightEdge-cut*.021;
+      lightTint=clamp(lightTint,vec3(.72),vec3(.997));
+      vec3 beam=mix(vec3(.10,.41,.71),vec3(.29,.18,.58),smoothstep(.15,.97,p.x));
+      vec3 darkTint=vec3(.023,.044,.089)+beam*(.23*body+.15*returnFlow);
+      darkTint+=vec3(.17,.29,.42)*brightEdge*mix(.24,.78,smoothstep(.02,1.,q.x));
+      return mix(lightTint,darkTint,night);
     }
-    float surface(vec2 p){
-      return sin(p.y*4.2+p.x*1.4-clock*.85)*.36
-           +sin(p.x*3.4-p.y*1.7+clock*.61)*.19;
-    }
+
     vec3 packet(vec2 delta,float age){
-      float radius=length(delta),front=radius-age*.34;
-      float envelope=exp(-front*front*155.-age*.72)*smoothstep(0.,.10,age);
-      float ridge=sin(front*48.);
+      float radius=length(delta),front=radius-age*.33;
+      float envelope=bell(front*17.)*exp(-age*1.65)*smoothstep(0.,.075,age);
+      float ridge=sin(front*57.);
       vec2 normal=delta/max(radius,.002)*ridge*envelope;
-      return vec3(normal*2.5,cos(front*48.)*envelope);
+      return vec3(normal,cos(front*57.)*envelope);
     }
+
+    vec2 beadCenter(float index, float night){
+      vec2 lightCenter=vec2(.16+index*.65,.25+index*.38);
+      vec2 darkCenter=vec2(.94-index*.22,.34+index*.32);
+      return mix(lightCenter,darkCenter,night);
+    }
+
     void main(){
       vec2 q=vec2(uv.x,1.-uv.y),metric=vec2(aspect,1.);
-      vec2 p=q*metric+(pointer-.5)*.012;
-      float height=surface(p);
-      vec2 slope=vec2(surface(p+vec2(.006,0.))-height,
-                      surface(p+vec2(0.,.006))-height)/.006;
-      float sheen=0.;
+      float night=1.-smoothstep(heroEdge-.017,heroEdge+.010,q.y);
+      vec2 p=q*metric+(pointer-.5)*.026;
+      vec2 waveA=vec2(1.4,4.2),waveB=vec2(3.4,-1.7);
+      vec2 slope=.31*waveA*cos(dot(p,waveA)-clock*.69)
+                +.17*waveB*cos(dot(p,waveB)+clock*.56);
+      float sheen=0.,split=0.;
       for(int i=0;i<4;i++){
         if(pulses[i].z>=0.){
           vec3 ripple=packet((q-pulses[i].xy)*metric,max(0.,clock-pulses[i].z));
-          slope+=ripple.xy*5.2;
-          sheen+=ripple.z*.065;
+          slope+=ripple.xy*7.;
+          sheen+=ripple.z*.102;
+          split+=ripple.x*.060;
         }
       }
-      // A sparse falling bead and its wake share one clock and one impact point.
-      // The wake bends the same planes; it is never an independent bright ring.
-      for(int i=0;i<3;i++){
-        float id=float(i),age=mod(clock+id*1.8,5.4)-.9;
-        vec2 center=vec2(.18+id*.32,.30+mod(id*.35,.50));
-        if(age>=0.){
+
+      // The same height field bends around a bead on impact and around a finger.
+      vec2 localBead=vec2(9.);
+      float visibility=0.;
+      for(int i=0;i<2;i++){
+        float id=float(i),age=mod(clock+.52+id*2.5,5.)-.90;
+        vec2 center=beadCenter(id,step(q.y,heroEdge));
+        if(age>=0. && age<2.){
           vec3 ripple=packet((q-center)*metric,age);
-          slope+=ripple.xy*1.7;
-          sheen+=ripple.z*.027;
+          slope+=ripple.xy*3.1;
+          sheen+=ripple.z*mix(.043,.081,night);
+        }else if(age<0.){
+          float fall=clamp((age+.9)/.9,0.,1.);
+          center.y-=.23*(1.-fall*fall);
+          localBead=(q-center)*metric/vec2(.019,.028-.010*fall);
+          visibility=smoothstep(0.,.22,fall);
         }
       }
+
       vec2 finger=(q-pointer)*metric/max(.025,contactRadius);
       float dimple=exp(-dot(finger,finger)*2.1)*pressure;
-      slope+=finger*dimple*5.0;
+      slope+=finger*dimple*7.;
       vec2 drift=vec2(sin(clock*.09),cos(clock*.075))*.018;
       vec3 sampled=texture2D(field,clamp(q*.84+.08+drift,.001,.999)).rgb;
-      vec2 normal=-slope*.19+(sampled.gb-.5)*.020;
-      vec2 refracted=q+normal*.20/metric;
-      vec3 color=environment(refracted);
-      // A broad specular response reads as depth without hard neon-like ridges.
-      float softLight=pow(max(dot(normalize(vec3(normal,1.)),normalize(vec3(-.25,-.35,1.))),0.),12.);
-      color+=softLight*.018+sheen+sampled.r*.0015;
-      color-=dimple*.042;
-      color+=exp(-pow((length(finger)-.85)*7.,2.))*pressure*.060;
-      for(int i=0;i<3;i++){
-        float id=float(i),age=mod(clock+id*1.8,5.4)-.9;
-        if(age<0.){
-          float fall=clamp((age+.9)/.9,0.,1.);
-          vec2 center=vec2(.18+id*.32,.30+mod(id*.35,.50)-.22*(1.-fall*fall));
-          vec2 local=(q-center)*metric/vec2(.018,.028-.010*fall);
-          float distance=length(local),mask=1.-smoothstep(.90,1.06,distance);
-          float curve=sqrt(max(.001,1.-min(distance*distance,1.)));
-          vec3 bead=environment(q+local*.035/metric);
-          float reflection=pow(max(dot(normalize(vec3(local,curve)),normalize(vec3(-.45,-.7,1.))),0.),30.);
-          bead+=reflection*.26;
-          bead-=smoothstep(.60,1.,distance)*.035;
-          color=mix(color,bead,mask*smoothstep(0.,.22,fall));
-        }
+      vec2 normal=-slope*.14+(sampled.gb-.5)*.055;
+      vec3 color=environment(q+normal*.18/metric,night);
+      float shine=pow(max(dot(normalize(vec3(normal,1.)),normalize(vec3(-.25,-.35,1.))),0.),12.);
+      color+=shine*mix(.011,.017,night)+vec3(.74,.90,1.)*sheen+sampled.r*.003;
+      color+=vec3(split*.7,split*.28,-split*.5)-dimple*.063;
+      color+=bell((length(finger)-.84)*7.)*pressure*mix(.10,.19,night);
+
+      float distance=length(localBead);
+      if(distance<1.075){
+        float mask=1.-smoothstep(.92,1.075,distance);
+        float curve=sqrt(max(.001,1.-distance*distance));
+        vec3 bead=environment(q+localBead*.040/metric,night);
+        float reflection=pow(max(dot(vec3(localBead,curve),vec3(-.34,-.51,.79)),0.),24.);
+        float rim=smoothstep(.68,1.02,distance);
+        bead+=vec3(.74,.90,1.)*(reflection*.55+rim*.24);
+        bead-=smoothstep(.43,.78,distance)*.041;
+        color=mix(color,bead,mask*visibility);
       }
       gl_FragColor=vec4(clamp(color,0.,1.),1.);
     }`;
-  function shader(type, text) {
-    const result = gl.createShader(type);
-    if (type === gl.FRAGMENT_SHADER && !gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)?.precision) text = text.replace('precision highp float;', 'precision mediump float;');
-    gl.shaderSource(result, text); gl.compileShader(result);
-    if (!gl.getShaderParameter(result, gl.COMPILE_STATUS)) throw Error('Optical shader compilation failed');
-    return result;
+
+  let program, texture, buffer, locations;
+  let frame = 0, last = 0, elapsed = 0, ready = false, suspended = false;
+  let needsPaint = true, heroEdge = -1, edgeDirty = true;
+  let contactId = null, contactOrigin = null, fallbackAnimation = null, pressure = 0, lastTrail = 0;
+  const pointer = new Float32Array([.5,.5]);
+  const pulses = new Float32Array([0,0,-1,0,0,-1,0,0,-1,0,0,-1]);
+  let pulseIndex = 0;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const inactive = () => suspended || document.hidden || opaque();
+
+  function showField(visible) {
+    canvas.hidden = !visible;
+    water.hidden = visible;
+    if (heroWater) heroWater.hidden = visible;
+    document.body.dataset.atmosphereRenderer = visible ? 'webgl' : 'fallback';
   }
-  let program, texture, frame = 0, last = 0, elapsed = 0, ready = false, lost = false, needsPaint = true, suspended = false;
-  const pointer = [.5, .5], pulses = new Float32Array([.5,.5,-1,.5,.5,-1,.5,.5,-1,.5,.5,-1]);
-  let pulseIndex = 0, held = false, pressure = 0, lastTrail = 0, contactId = null;
-  let buffer = null, locations = null;
-  function clearPressure() { held = false; pressure = 0; contactId = null; }
-  function clearWaves() { for (let i = 2; i < pulses.length; i += 3) pulses[i] = -1; }
-  function position(event) {
-    pointer[0] = Math.max(0, Math.min(1, event.clientX / innerWidth));
-    pointer[1] = Math.max(0, Math.min(1, event.clientY / innerHeight));
+
+  function sizeField() {
+    const small = coarsePointer.matches || navigator.connection?.saveData;
+    const widthCap = software ? 660 : small ? 900 : 1600;
+    const heightCap = software ? 500 : small ? 1000 : 1200;
+    const scale = Math.min(devicePixelRatio || 1, small ? 1 : 1.25, widthCap / innerWidth, heightCap / innerHeight);
+    const width = Math.max(1, Math.round(innerWidth * scale));
+    const height = Math.max(1, Math.round(innerHeight * scale));
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    edgeDirty = needsPaint = true;
   }
-  function stopped() { return suspended || battleActive || document.hidden || contrast.matches || transparency.matches || lost; }
-  function resize() {
-    // Native GPUs keep the full-resolution field. CPU-only rasterizers get a
-    // smaller backing buffer so material never competes with direct manipulation.
-    const scale = gameplay
-      ? Math.min(.75, 640 / innerWidth, 480 / innerHeight)
-      : software ? Math.min(1, 640 / innerWidth, 480 / innerHeight)
-      : matchMedia('(pointer: coarse)').matches || navigator.connection?.saveData
-        ? Math.min(devicePixelRatio || 1, 1.25, 1152 / innerWidth, 1152 / innerHeight)
-        : Math.min(devicePixelRatio || 1, 1.5, 1920 / innerWidth, 1440 / innerHeight);
-    needsPaint = true;
-    canvas.width = Math.max(1, Math.round(innerWidth * scale));
-    canvas.height = Math.max(1, Math.round(innerHeight * scale));
+
+  function schedule() {
+    if (!frame && ready && !inactive() && (!reducedMotion.matches || needsPaint)) {
+      frame = requestAnimationFrame(draw);
+    }
   }
-  function draw(now = 0) {
+
+  function draw(now) {
     frame = 0;
-    if (!ready || stopped() || (motion.matches && !needsPaint)) { last = 0; return; }
-    if (last && now - last < (held ? 15 : 32) && !motion.matches && !needsPaint) { frame = requestAnimationFrame(draw); return; }
-    // Analytic waves follow wall time even on a busy or low-refresh device.
-    // resume() resets last, so hidden time never causes a catch-up jump.
-    const delta = last ? Math.max(0, (now-last)/1000) : 1/60;
-    if (last && !motion.matches) elapsed += delta;
+    if (!ready || inactive()) return;
+    const motion = reducedMotion.matches ? 'still' : 'live';
+    if (canvas.dataset.opticalMotion !== motion) {
+      needsPaint = true;
+      resume();
+      return;
+    }
+    if (reducedMotion.matches && !needsPaint) return;
+    const pulseActive = contactId !== null || pulses.some((t, i) => i % 3 === 2 && t >= 0 && elapsed - t < 1.2);
+    const interval = software ? 33 : pulseActive ? 16 : 30;
+    if (last && now - last < interval && !needsPaint) { schedule(); return; }
+    const delta = last ? (now - last) / 1000 : 1/60;
+    if (last && !reducedMotion.matches) elapsed += delta;
     last = now;
+    if (edgeDirty) {
+      heroEdge = hero ? clamp(hero.getBoundingClientRect().bottom / innerHeight, -1, 2) : -1;
+      edgeDirty = false;
+    }
+    for (let i = 2; i < pulses.length; i += 3) if (elapsed - pulses[i] > 2.8) pulses[i] = -1;
+    pressure += ((contactId !== null ? 1 : 0) - pressure) * (1 - Math.exp(-delta * 19));
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.useProgram(program);
     gl.uniform1f(locations.clock, elapsed);
     gl.uniform1f(locations.aspect, canvas.width / canvas.height);
-    gl.uniform3f(locations.scene, scene[0], scene[1], scene[2]);
-    gl.uniform3fv(locations.accent, scene[3]);
+    gl.uniform1f(locations.heroEdge, heroEdge);
     gl.uniform2fv(locations.pointer, pointer);
-    pressure += ((held ? 1 : 0) - pressure) * (1-Math.exp(-delta*18));
     gl.uniform1f(locations.pressure, pressure);
-    gl.uniform1f(locations.contactRadius, 72 / innerHeight);
+    gl.uniform1f(locations.contactRadius, 74 / innerHeight);
     gl.uniform3fv(locations.pulses, pulses);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    canvas.hidden = false;
-    document.body.dataset.atmosphereRenderer = 'webgl';
-    water.hidden = true;
+    if (canvas.hidden) showField(true);
     needsPaint = false;
     canvas.dataset.opticalSeconds = elapsed.toFixed(3);
     canvas.dataset.opticalFrames = String(Number(canvas.dataset.opticalFrames || 0) + 1);
-    if (!motion.matches) frame = requestAnimationFrame(draw);
+    schedule();
   }
+
+  function clearContact() {
+    contactId = contactOrigin = null;
+    fallbackAnimation?.cancel();
+    fallbackLens.removeAttribute('data-held');
+  }
+
   function resume() {
     if (frame) cancelAnimationFrame(frame);
-    frame = 0; last = 0;
-    if (stopped() || motion.matches) { clearPressure(); clearWaves(); }
-    document.documentElement.dataset.waterPaused = document.hidden || battleActive ? 'true' : 'false';
-    canvas.dataset.opticalMotion = motion.matches ? 'still' : 'live';
-    if (ready && !stopped() && (!motion.matches || needsPaint)) frame = requestAnimationFrame(draw);
+    frame = last = 0;
+    if (inactive() || reducedMotion.matches) {
+      clearContact();
+      pressure = 0;
+      for (let i = 2; i < pulses.length; i += 3) pulses[i] = -1;
+    }
+    if (opaque() && !canvas.hidden) showField(false);
+    root.dataset.waterPaused = String(suspended || document.hidden);
+    canvas.dataset.opticalMotion = reducedMotion.matches ? 'still' : 'live';
+    schedule();
   }
-  if (arenaOverlay) new MutationObserver(() => {
-    const next = arenaOverlay.hidden;
-    if (next === battleActive) return;
-    battleActive = next; resume();
-  }).observe(arenaOverlay, {attributes:true, attributeFilter:['hidden']});
-  const image = new Image();
+
+  function compile(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      gl.deleteShader(shader);
+      throw new Error('Optical shader compilation failed');
+    }
+    return shader;
+  }
+
+  const image = gl && new Image();
   function initialize() {
     try {
-      if (program && !lost) { gl.deleteProgram(program); gl.deleteTexture(texture); gl.deleteBuffer(buffer); }
       program = gl.createProgram();
-      const vs = shader(gl.VERTEX_SHADER, vertex), fs = shader(gl.FRAGMENT_SHADER, fragment);
-      gl.attachShader(program, vs); gl.attachShader(program, fs); gl.linkProgram(program);
-      gl.deleteShader(vs); gl.deleteShader(fs);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error('Optical shader linking failed');
+      const precision = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT)?.precision;
+      const vs = compile(gl.VERTEX_SHADER, vertex);
+      const fs = compile(gl.FRAGMENT_SHADER, precision ? fragment : fragment.replace('highp', 'mediump'));
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Optical shader linking failed');
+
       gl.useProgram(program);
-      locations = Object.fromEntries(['clock','aspect','pointer','pressure','contactRadius','scene','accent'].map(name => [name, gl.getUniformLocation(program, name)]));
-      locations.pulses = gl.getUniformLocation(program, 'pulses[0]');
-      buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
+      locations = Object.fromEntries(
+        ['clock','aspect','heroEdge','pointer','pressure','contactRadius','scene','accent','pulses[0]']
+          .map(name => [name, gl.getUniformLocation(program, name)]),
+      );
+      locations.pulses = locations['pulses[0]'];
+      gl.uniform3f(locations.scene, profile[0], profile[1], profile[2]);
+      gl.uniform3fv(locations.accent, profile[3]);
+      buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,-1,1,1,-1,1]), gl.STATIC_DRAW);
       const attribute = gl.getAttribLocation(program, 'a');
-      gl.enableVertexAttribArray(attribute); gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
-      texture = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.enableVertexAttribArray(attribute);
+      gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
+
+      texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -283,48 +311,126 @@
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
       gl.uniform1i(gl.getUniformLocation(program, 'field'), 0);
       canvas.dataset.opticalScene = 'webgl';
-      canvas.dataset.opticalMaterial = 'responsive-current-v29';
       canvas.dataset.opticalSamples = String(image.width * image.height);
-      ready = true; resize(); resume();
-    } catch { ready = false; canvas.hidden = true; water.hidden = false; document.body.dataset.atmosphereRenderer = 'fallback'; }
+      ready = true;
+      sizeField();
+      resume();
+    } catch {
+      gl.deleteProgram(program);
+      gl.deleteBuffer(buffer);
+      gl.deleteTexture(texture);
+      ready = false;
+      canvas.dataset.opticalScene = 'fallback';
+      showField(false);
+    }
   }
-  image.onload = initialize;
-  image.onerror = () => canvas.remove();
-  image.src = source;
-  addEventListener('resize', () => { resize(); resume(); }, {passive: true});
-  document.addEventListener('visibilitychange', resume);
-  addEventListener('pagehide', event => {
-    suspended = true; held = false; resume();
-    if (!event.persisted) gl.getExtension('WEBGL_lose_context')?.loseContext();
-  });
-  addEventListener('pageshow', () => { suspended = false; resume(); });
-  for (const preference of [motion, contrast, transparency]) preference.addEventListener('change', () => { needsPaint = true; resume(); });
-  document.addEventListener('pointermove', event => {
-    if (!event.isPrimary || motion.matches || stopped() || (contactId !== null && event.pointerId !== contactId)) return;
-    position(event);
-    if (held && event.timeStamp - lastTrail > 90) { lastTrail = event.timeStamp; ripple(pointer[0], pointer[1]); }
-  }, {passive: true});
-  function ripple(x, y) {
-    if (motion.matches || stopped()) return;
+
+  if (gl) {
+    image.onload = initialize;
+    image.onerror = () => { canvas.dataset.opticalScene = 'fallback'; };
+    image.src = new URL('OPTICAL_FLOW_ASSET', document.currentScript.src).href;
+    canvas.addEventListener('webglcontextlost', event => {
+      event.preventDefault();
+      ready = false;
+      clearContact();
+      canvas.dataset.opticalScene = 'fallback';
+      showField(false);
+      resume();
+    });
+    canvas.addEventListener('webglcontextrestored', initialize);
+  } else {
+    canvas.dataset.opticalScene = 'fallback';
+  }
+
+  function position(event) {
+    pointer[0] = clamp(event.clientX / innerWidth, 0, 1);
+    pointer[1] = clamp(event.clientY / innerHeight, 0, 1);
+  }
+
+  function ripple() {
     const offset = (pulseIndex++ % 4) * 3;
-    pulses[offset] = x; pulses[offset+1] = y; pulses[offset+2] = elapsed;
+    pulses.set([pointer[0], pointer[1], elapsed], offset);
     canvas.dataset.opticalInputs = String(Number(canvas.dataset.opticalInputs || 0) + 1);
+    needsPaint = true;
+    schedule();
   }
+
   document.addEventListener('pointerdown', event => {
-    if (!event.isPrimary || event.button !== 0 || motion.matches || stopped()) return;
-    if(event.target.closest?.('a,button,summary,input,select,textarea,[role=dialog]'))return;
-    position(event); contactId = event.pointerId;needsPaint=true;
-    held = true; ripple(pointer[0], pointer[1]);
+    if (!event.isPrimary || event.button !== 0 || inactive() || reducedMotion.matches) return;
+    if (event.target.closest?.('a,button,summary,input,select,textarea,video,dialog,[role=dialog],[data-material-surface]')) return;
+    position(event);
+    clearContact();
+    contactId = event.pointerId;
+    contactOrigin = [event.clientX, event.clientY];
+    lastTrail = event.timeStamp;
+    if (canvas.hidden) {
+      fallbackLens.style.left = event.clientX + 'px';
+      fallbackLens.style.top = event.clientY + 'px';
+      fallbackLens.setAttribute('data-held', '');
+    } else {
+      ripple();
+    }
+  }, {passive: true});
+  document.addEventListener('pointermove', event => {
+    if (!event.isPrimary || inactive() || reducedMotion.matches) return;
+    if (contactId === null) {
+      if (event.pointerType === 'mouse') position(event);
+      return;
+    }
+    if (event.pointerId !== contactId) return;
+    const distance = Math.hypot(event.clientX - contactOrigin[0], event.clientY - contactOrigin[1]);
+    if ((event.pointerType === 'touch' || canvas.hidden) && distance > 12) {
+      clearContact();
+      return;
+    }
+    position(event);
+    if (!canvas.hidden && event.timeStamp - lastTrail > 110 && distance > 12) {
+      lastTrail = event.timeStamp;
+      contactOrigin = [event.clientX, event.clientY];
+      ripple();
+    }
   }, {passive: true});
   addEventListener('pointerup', event => {
     if (event.pointerId !== contactId) return;
-    position(event); held = false; contactId = null;
-    ripple(pointer[0], pointer[1]);
+    const fallback = fallbackLens.hasAttribute('data-held');
+    position(event);
+    clearContact();
+    if (!canvas.hidden) {
+      ripple();
+    } else if (fallback) {
+      fallbackAnimation = fallbackLens.animate([
+        {opacity: .88, scale: .94},
+        {opacity: .46, scale: 1.55, offset: .45},
+        {opacity: 0, scale: 2.15},
+      ], {duration: 740, easing: 'cubic-bezier(.18,.62,.25,1)'});
+    }
   }, {passive: true});
-  addEventListener('pointercancel', event => { if (event.pointerId === contactId) clearPressure(); }, {passive: true});
-  for (const event of ['blur','pagehide']) addEventListener(event, clearPressure, {passive: true});
-  document.addEventListener('visibilitychange', () => { if (document.hidden) held = false; });
-  addEventListener('gardenoptics', event => ripple(event.detail?.x ?? .5, event.detail?.y ?? .5));
-  canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); lost = true; canvas.hidden = true; water.hidden = false; document.body.dataset.atmosphereRenderer = 'fallback'; resume(); });
-  canvas.addEventListener('webglcontextrestored', () => { lost = false; initialize(); });
+  addEventListener('pointercancel', event => { if (contactId === event.pointerId) clearContact(); }, {passive: true});
+  addEventListener('blur', clearContact);
+  addEventListener('scroll', () => {
+    clearContact();
+    if (!hero) return;
+    edgeDirty = true;
+    if (reducedMotion.matches) needsPaint = true;
+    schedule();
+  }, {passive: true});
+  addEventListener('resize', () => { sizeField(); schedule(); }, {passive: true});
+  if (hero && 'ResizeObserver' in window) {
+    new ResizeObserver(() => { edgeDirty = needsPaint = true; schedule(); }).observe(hero);
+  }
+  document.addEventListener('visibilitychange', resume);
+  addEventListener('pagehide', event => {
+    suspended = true;
+    resume();
+    if (!event.persisted) gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  });
+  addEventListener('pageshow', () => { suspended = false; resume(); });
+  function refreshPreference() {
+    needsPaint = true;
+    resume();
+  }
+  for (const preference of [reducedMotion,reducedTransparency,moreContrast,forcedColors]) {
+    preference.onchange = refreshPreference;
+  }
+  resume();
 })();

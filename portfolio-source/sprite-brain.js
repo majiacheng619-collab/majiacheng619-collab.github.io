@@ -8,18 +8,17 @@
   const topics = [
     {id:'education', title:'教育背景', section:'教育经历', test:/学历|学厉|教育|学校|院校|大学|本科|专科|专业|毕业|读书|上学|\b(?:degree|education|educational|university|college|school|graduat(?:e|ion)|stud(?:y|ied))\b/, path:/#education$/, followups:['什么时候毕业？','会用哪些工具？','适合什么岗位？']},
     {id:'career', title:'求职方向与已有实践', section:'求职方向', test:/求职|岗位|找工作|应聘|招聘|职业|什么工作|(?:适合|能做|可以做|能胜任|能应聘).*(?:工作|运营|商务|市场|产品|项目执行)|\b(?:career|job|hiring|position)\b/, path:/#roles$/, followups:['有哪些项目成果？','会用哪些工具？','联系方式与简历']},
-    {id:'tools', title:'工具与工作方法', section:'工具与工作方法', test:/工具|技能|软件|擅长|能力|会用|办公|\b(?:excel|word|powerpoint|ppt|canva|skills?|tools?|software)\b/, path:/#skills$/, followups:['AI 影像是怎么做的？','有哪些项目成果？','适合什么岗位？']},
+    {id:'tools', title:'工具与工作方法', section:'工具与工作方法', test:/工具|技能|软件|擅长|能力|会用|办公|\b(?:excel|word|powerpoint|ppt|canva|skills?|tools?|software)\b/, path:/#skills$/, followups:['有哪些项目成果？','适合什么岗位？']},
     {id:'ecommerce', title:'电商教学与用户增长', section:'电商教学', test:/电商|网店|开店|教学|课程|288|学员|学费|收费|盈利|利润|收入|推广伙伴|获客|分红|\b(?:commerce|tuition|profit)\b/, path:/#ecommerce$/, followups:['具体做了哪些行动？','有哪些实际成果？','适合什么岗位？']},
     {id:'printing', title:'宿舍打印店创业', section:'校园打印创业', test:/打印|彩印|宿舍|寝室|送货上门|一份起送|\bprinting\b/, path:/#printing$/, followups:[]},
     {id:'business', title:'多项目经营成果', section:'经营成果', test:/多项目|所有项目|全部项目|一共赚|总共赚|创业总/, path:/^index\.html#career-lens$/, followups:[]},
     {id:'contact', title:'联系与个人简历', section:'联系与合作', test:/联系|邮箱|电话|手机|微信|合作|简历|履历|\b(?:contact|email|resume|cv)\b|reach you|get in touch/, path:/^contact\//, followups:['适合什么岗位？','30秒了解嘉程','有哪些项目成果？']},
-    {id:'ai', title:'AI 影像与内容制作', section:'AI 影像', test:/ai\s*(?:影像|视频)|短视频|影片|剪辑|分镜|seedance|seedream|视频作品/, path:/projects\/ai-content\/|#ai-work$/, followups:['会用哪些工具？','有哪些项目成果？','联系方式与简历']},
-    {id:'game', title:'萌芽保卫队与数字产品', section:'萌芽保卫队', test:/萌芽|游戏|塔防|codex|\bgame\b/, path:/projects\/sprout-patrol\/|#digital-work$/, followups:['项目是如何交付的？','会用哪些工具？','AI 影像']},
+    {id:'game', title:'萌芽保卫队与数字产品', section:'萌芽保卫队', test:/萌芽|游戏|塔防|codex|\bgame\b/, path:/projects\/sprout-patrol\/|#digital-work$/, followups:['项目是如何交付的？','会用哪些工具？']},
     {id:'livestream', title:'直播运营实践', section:'直播运营', test:/直播|主播|直播间|抖音/, path:/#livestream$/, followups:['有哪些实际成果？','电商教学','适合什么岗位？']},
     {id:'store', title:'门店经营实践', section:'门店经营', test:/门店|餐饮|餐厅|炸鸡|加盟|采购|实体店/, path:/#store$/, followups:['具体做了哪些行动？','活动策划','适合什么岗位？']},
     {id:'events', title:'活动策划与执行', section:'活动实践', test:/活动|面包|挑战|线下|地推/, path:/#field$/, followups:['有哪些实际成果？','门店经营','联系方式与简历']},
     {id:'honors', title:'荣誉与证书', section:'荣誉与证书', test:/荣誉|获奖|奖项|证书|普通话|学生干部|\b(?:awards?|certificates?)\b/, path:/^honor\//, followups:['教育经历','适合什么岗位？','联系方式与简历']},
-    {id:'projects', title:'作品与项目成果', section:'作品与项目', test:/作品|项目|做过什么|成果|\b(?:portfolio|projects?)\b/, path:/^projects\/|#ecommerce$|#printing$|#livestream$|#store$|#field$/, followups:['电商教学有哪些成果？','萌芽保卫队','AI 影像']}
+    {id:'projects', title:'作品与项目成果', section:'作品与项目', test:/作品|项目|做过什么|成果|\b(?:portfolio|projects?)\b/, path:/^projects\/|#ecommerce$|#printing$|#livestream$|#store$|#field$/, followups:['电商教学有哪些成果？','萌芽保卫队']}
   ];
   // A small vocabulary resolves visitors' own wording to published sections.
   // It never supplies facts: every answer and every hit still comes from records.
@@ -31,7 +30,6 @@
     printing:['打印店','宿舍打印','寝室打印','校园打印','校园创业','校园服务','送货上门','一份起送','黑白打印','彩色打印','彩印','printing'],
     business:['多项目经营','创业总成果','所有项目利润','总共赚了多少'],
     contact:['联络','联糸','邮相','邮件','邮件地址','电话号码','手机号码','手机号','微信号','联系方试','联系方法','个人资料','投递简历','下载简历','resume','contact','email','wechat'],
-    ai:['人工智能影像','人工智能视频','叙事短片','影像制作','内容创作','视频制作','成片','剪映','seedance','seedream'],
     game:['网页开发','网站开发','平台开发','软件开发','数字产品','产品开发','做网站','写网站','开发游戏','萌牙保卫队','萌芽保卫对','萌芽保卫','sprout','codex','game'],
     livestream:['直播策划','直播互动','开播','家乡荣耀季','短视频直播','livestream'],
     store:['开店经营','店铺经营','线下经营','实体经营','门店运营','选址','加盟店','炸鸡店','餐馆'],
@@ -170,7 +168,7 @@
     // erase the previous game/commerce subject in a follow-up.
     const concrete = selected.filter(topic => topic.id !== 'projects');
     const genericDetail = /行动|成果|结果|成效|收获|流程|职责|分工|交付|怎么做|如何/.test(key);
-    const keepProject = previous && ['ecommerce','printing','business','ai','game','livestream','store','events'].includes(previous.id)
+    const keepProject = previous && ['ecommerce','printing','business','game','livestream','store','events'].includes(previous.id)
       && !concrete.length && genericDetail && !/全部|所有|其他|各个|整体/.test(key);
     const contextual = Boolean(previous && (contextualTest.test(key) || keepProject));
     if (contextual && !overview && !concrete.length && (!selected.length || keepProject)) selected = [previous];
@@ -178,7 +176,7 @@
     if (overview) selected = ['education','career','ecommerce','game'].map(id=>topics.find(topic=>topic.id===id));
     if (!selected.length) return null;
     // Generic "project results" should not drown a specifically named project.
-    if (selected.length > 1 && selected.some(topic => ['ecommerce','printing','business','ai','game','livestream','store','events'].includes(topic.id))) {
+    if (selected.length > 1 && selected.some(topic => ['ecommerce','printing','business','game','livestream','store','events'].includes(topic.id))) {
       selected = selected.filter(topic => topic.id !== 'projects');
     }
     selected = selected.slice(0,4);

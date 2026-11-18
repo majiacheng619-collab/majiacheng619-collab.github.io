@@ -42,7 +42,7 @@ const server=http.createServer((req,res)=>{
   await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  }
  await swipe(-160,0);
- await page.waitForFunction(()=>document.querySelector('[data-studio-tab="film"]').getAttribute('aria-selected')==='true');
+ await page.waitForFunction(()=>document.querySelector('[data-studio-tab="field"]').getAttribute('aria-selected')==='true');
  assert.equal(await page.locator('#intro-video').evaluate(e=>e.paused),true,'Swiping over the work never starts playback');
  assert.equal(new URL(page.url()).pathname,'/','A swipe never follows a preview link');
  await swipe(160,0);

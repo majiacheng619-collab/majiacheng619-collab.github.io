@@ -19,7 +19,7 @@ from urllib.parse import unquote, urlsplit
 import zipfile
 
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
-         'updates/index.html', 'projects/ai-content/index.html',
+         'updates/index.html',
          'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html')
 APPROVED_PDF = 'beb4a3432690f81b952fd8108eddd7b8bc26fa6905c2a62e573a83e7098031cd'
 ORIGIN = 'majiacheng619-collab.github.io'

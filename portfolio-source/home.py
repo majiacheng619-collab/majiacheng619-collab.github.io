@@ -30,46 +30,46 @@ def practice():
     return '<section class="practice-section premium-shell" id="career-lens" aria-labelledby="practice-title"><div class="practice-heading"><h2 id="practice-title">我做过的业务</h2><p class="practice-outcome"><strong>50 万+</strong><span>多项目累计净利润（元）</span></p></div><div class="practice-layout">'+''.join(cards)+'</div></section>'
 
 
-def build_home(img, cta, media, transcript, film_cover):
+def build_home(img, cta, media, transcript):
     return f'''
 <div class="premium-home studio-home">
-<section class="premium-hero studio-hero era-hero" aria-labelledby="identity-title" data-era-hero>
+<section class="premium-hero studio-hero era-hero" aria-labelledby="identity-title" data-era-hero data-dock-tone="dark">
  {silk_art()}
  <div class="era-hero-shade" aria-hidden="true"></div>
  <div class="era-masthead premium-shell"><span class="era-wordmark">{img('assets/portrait-white-960.b8bfe698eef3.webp','马嘉程个人照片',eager=True)}<span>马嘉程</span></span></div>
  <div class="premium-shell era-hero-layout">
   <div class="era-hero-content">
-   <div class="premium-hero-copy"><p class="hero-intro"><span class="hero-signal" aria-hidden="true"></span> 2027 届本科</p><h1 id="identity-title">从获客到交付，<br/><span>我都亲自做过。</span></h1></div>
+   <div class="premium-hero-copy"><p class="hero-intro">2027 届本科</p><h1 id="identity-title">从获客到交付，<br/><span>我都亲自做过。</span></h1></div>
    <div class="hero-career"><span>电商与用户运营</span><span>内容策划</span><span>产品执行</span></div>
-   <div class="actions hero-actions">{cta('#selected-work','查看作品')}</div>
+   <div class="actions hero-actions">{cta('#selected-work','查看作品')}{cta('resume.pdf','下载简历',True)}</div>
   </div>
 
  </div>
- <div class="era-hero-foot premium-shell"><span>南昌理工学院 · 智能制造工程</span><a href="resume.pdf" download="马嘉程_个人简历.pdf">下载简历</a></div>
+ <div class="era-hero-foot premium-shell">南昌理工学院 · 智能制造工程</div>
 </section>
 {practice()}
 <section class="studio-preview premium-shell" id="selected-work" aria-labelledby="preview-title">
- <div class="studio-preview-heading"><div><h2 id="preview-title">精选作品</h2></div></div>
+ <div class="studio-preview-heading"><h2 id="preview-title">精选作品</h2></div>
  <div class="studio-workbench" data-studio-preview>
-  <div class="studio-workbench-top"><div class="studio-tabs" role="tablist" aria-label="选择作品预览" hidden><button type="button" role="tab" id="preview-tab-product" aria-controls="preview-panel-product" aria-selected="true" tabindex="0" data-studio-tab="product">萌芽保卫队</button><button type="button" role="tab" id="preview-tab-film" aria-controls="preview-panel-film" aria-selected="false" tabindex="-1" data-studio-tab="film">三支短片</button><button type="button" role="tab" id="preview-tab-field" aria-controls="preview-panel-field" aria-selected="false" tabindex="-1" data-studio-tab="field">面包挑战</button></div></div>
+  <div class="studio-workbench-top"><div class="studio-tabs" role="tablist" aria-label="选择作品预览" hidden><button type="button" role="tab" id="preview-tab-product" aria-controls="preview-panel-product" aria-selected="true" tabindex="0" data-studio-tab="product">萌芽保卫队</button><button type="button" role="tab" id="preview-tab-field" aria-controls="preview-panel-field" aria-selected="false" tabindex="-1" data-studio-tab="field">面包挑战</button></div></div>
   <article class="studio-panel studio-panel-product" id="preview-panel-product" role="tabpanel" aria-labelledby="preview-tab-product" data-studio-panel="product">
    <div class="studio-panel-copy premium-game-heading"><p class="project-kicker">独立策划 · AI 辅助实现</p><h2>让植物成长，<br/>成为守住花园的策略。</h2><p>我把玩法拆成植物、敌人、关卡与成长规则，推进实现，再逐项验收引导、操作和存档。</p><div class="studio-product-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div><div class="actions">{cta('game/index.html','开始游戏')}{cta('projects/sprout-patrol/index.html','我的产品分工',True)}</div></div>
    <div class="premium-game-display device-preview studio-panel-media">{device_frame(img('assets/garden-current-home.webp','萌芽保卫队当前版本真实游戏截图',eager=True), 'ipad')}</div>
   </article>
-  <article class="studio-panel studio-panel-film" id="preview-panel-film" role="tabpanel" aria-labelledby="preview-tab-film" data-studio-panel="film">
-   <div class="studio-panel-copy"><p class="project-kicker">独立创作 · AI 素材与后期剪辑</p><h2>选择、风险、陪伴。</h2><p>三个主题，三支已发布的叙事短片。我负责选题、脚本、分镜与剪辑，保留完整原作供观看。</p><div class="actions">{cta('projects/ai-content/index.html','观看三支原作')}</div></div>
-   <div class="studio-film-cover studio-panel-media">{img(film_cover,'影像栏目概念封面，非作品截图')}</div>
-  </article>
   <article class="studio-panel studio-panel-field" id="preview-panel-field" role="tabpanel" aria-labelledby="preview-tab-field" data-studio-panel="field">
    <div class="studio-panel-copy"><p class="project-kicker">与朋友共同开展 · 策划与现场执行</p><h2>面包挑战</h2><p>共同设计收费、奖励和参与规则，准备 A3 宣传物料，再根据实际人流调整场地与组织方式。</p><div class="actions">{cta('poster/index.html','活动方案与实际物料')}</div></div>
-   <div class="studio-poster-cover studio-panel-media event-preview"><h3>现场参与规则</h3><strong>19.9 元 / 次</strong><p>收费、挑战要求与奖励，向参与者清楚说明。</p></div>
+   {event_preview('studio-panel-media')}
   </article>
  </div>
 </section>
 
 <section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
- <div class="premium-section-head"><div><h2 id="film-title">24 秒作品速览</h2></div></div>
+ <div class="premium-section-head"><h2 id="film-title">24 秒作品速览</h2></div>
  <div class="premium-film-player"><video id="intro-video" controls playsinline preload="none" poster="{media['poster']}" aria-label="马嘉程24秒作品介绍，无旁白，含授权器乐配乐和画面文字"><source src="{media['video']}" type="video/mp4"><track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。</video></div>
  <details class="premium-transcript"><summary>阅读文字稿</summary><p>{transcript}</p></details>
 </section>
 </div>'''
+
+
+def event_preview(extra_class=''):
+    return f'<div class="event-preview {extra_class}"><span>现场参与价格</span><strong>19.9<small> 元／次</small></strong></div>'

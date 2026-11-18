@@ -48,10 +48,8 @@ for old in (ROOT/'assets').glob('poster-preview.*.webp'):
 
 
 
-editorial=json.loads((Path(__file__).parent/'editorial-assets.json').read_text())
-film_cover=editorial['filmCover']
-from home import build_home
-home=build_home(img, cta, media, transcript, film_cover)
+from home import build_home, event_preview
+home=build_home(img, cta, media, transcript)
 render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
 
 # A shared, quiet layout for every portfolio destination.
@@ -63,13 +61,12 @@ def detail_split(anchor,title,text,visual='',theme=''):
  return f'<section class="detail-split {theme}{" detail-copy-only" if not visual else ""}" id="{anchor}"><div class="detail-shell"><div class="detail-split-copy"><h2>{title}</h2>{text}</div>'+ (f'<div class="detail-split-media">{visual}</div>' if visual else '')+'</div></section>'
 def detail_rows(anchor,title,entries):
  return f'<section class="detail-rows" id="{anchor}"><div class="detail-shell"><h2>{title}</h2><div class="detail-row-list">'+''.join(f'<article class="detail-row"><h3>{t}</h3><p>{d}</p></article>' for t,d in entries)+'</div></div></section>'
-projects=detail_open('projects')+detail_hero('作品','网页产品、叙事影像与现场活动。')
+projects=detail_open('projects')+detail_hero('作品','在线体验网页游戏，查看线下活动方案与实际物料。')
 projects+='<section class="work-gallery detail-shell" aria-label="作品与项目">'
-projects+='<article class="work-card work-feature" id="selected-work" data-dock-tone="dark"><div class="work-copy"><p class="work-meta">交互产品 · 独立策划 · AI 辅助实现</p><h2>萌芽保卫队</h2><p>把植物成长与资源分配做成可玩的网页产品。我负责玩法设计、需求拆解与迭代验收。</p><dl class="work-metrics"><div><dt>世界</dt><dd>4</dd></div><div><dt>关卡</dt><dd>20</dd></div></dl><div class="actions">'+cta('game/index.html','开始游戏')+cta('projects/sprout-patrol/index.html','产品分工',True)+'</div></div><figure class="work-art" data-gallery-reveal>'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队实际游戏画面',eager=True),'ipad')+'</figure></article>'
-projects+='<article class="work-card work-film" id="content-work"><div class="work-copy"><p class="work-meta">影像创作 · 独立完成</p><h2>AI 叙事影像</h2><p>升学就业、风险与陪伴。三支短片，覆盖选题、脚本、分镜、素材与剪辑。</p><div class="actions">'+cta('projects/ai-content/index.html','观看三支作品')+'</div></div><figure class="work-art" data-gallery-reveal>'+img(film_cover,'电影胶片与镜头的栏目概念封面，非作品截图')+'</figure></article>'
-projects+='<article class="work-card work-event" id="field-work"><div class="work-copy"><p class="work-meta">线下活动 · 与朋友共同开展</p><h2>面包挑战</h2><p>查看活动方案和现场实际使用的 A3 宣传物料。</p><div class="actions">'+cta('poster/index.html','活动方案与原件')+'</div></div></article>'
+projects+='<article class="work-card work-feature" id="selected-work"><div class="work-copy"><p class="work-meta">交互产品 · 独立策划 · AI 辅助实现</p><h2>萌芽保卫队</h2><p>把植物成长与资源分配做成可玩的网页产品。我负责玩法设计、需求拆解与迭代验收。</p><dl class="work-metrics"><div><dt>世界</dt><dd>4</dd></div><div><dt>关卡</dt><dd>20</dd></div></dl><div class="actions">'+cta('game/index.html','开始游戏')+cta('projects/sprout-patrol/index.html','产品分工',True)+'</div></div><figure class="work-art" data-gallery-reveal>'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队实际游戏画面',eager=True),'ipad')+'</figure></article>'
+projects+='<article class="work-card work-event" id="field-work"><div class="work-copy"><p class="work-meta">线下活动 · 与朋友共同开展</p><h2>面包挑战</h2><p>参与规则设计与组织，在现场用 A3 海报说明挑战要求、价格和奖励。</p><div class="actions">'+cta('poster/index.html','活动方案与原件')+'</div></div>'+event_preview()+'</article>'
 projects+='</section>'+detail_close()
-render('projects/index.html','作品','马嘉程的网页产品、叙事影像与线下活动作品。',projects)
+render('projects/index.html','作品','马嘉程的网页游戏与线下活动作品。',projects)
 
 from case_studies import build_experience
 experience=build_experience(cta,detail_rows)
@@ -91,18 +88,6 @@ game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导�
 
 game+=detail_close()
 render('projects/sprout-patrol/index.html','萌芽保卫队','网页塔防游戏：体验植物成长与资源分配，了解马嘉程的项目分工。',game)
-
-ai=detail_open('ai')+detail_hero('AI 影像','独立完成的三支叙事短片。')
-ai+='<figure class="film-collection-cover" data-gallery-reveal>'+img(film_cover,'透明胶片与钛金属镜头的栏目概念视觉',eager=True)+'</figure>'
-ai+='<div id="originals" class="film-program detail-shell">'
-for index,(kind,full,url,desc) in enumerate([
- ('choice','升学与就业选择','https://v.douyin.com/M8uV_tAxKlk/','围绕升学与就业方向，呈现人物的犹豫与决定。'),
- ('risk','从赢两千到欠八十万','https://v.douyin.com/_yDmgMzvSqE/','通过转折与节奏，呈现风险逐步累积的代价。'),
- ('care','陪家人抗癌','https://v.douyin.com/BIuX2Tb5rvM/','以人物关系、画面与声音表达家庭陪伴。')],1):
- ai+=f'<section class="film-entry" id="film-{kind}"><span class="film-sequence" aria-hidden="true">{index:02d}</span><div class="film-copy"><h2>{full}</h2><p>{desc}</p></div><a class="button primary film-watch" href="{url}" target="_blank" rel="noopener noreferrer">观看原作<span class="sr-only">（新标签页）</span></a></section>'
-ai+='</div><div class="detail-shell detail-note"><p>故事为创作，非个人经历。封面为栏目概念视觉。</p></div>'
-ai+=detail_rows('process','创作流程',[('脚本与分镜','使用 ChatGPT 梳理脚本，将故事拆成分镜、镜头要求与素材提示词。'),('素材与剪辑','使用 Seedream、Seedance 生成素材，在剪映完成配音、字幕与剪辑，调整叙事节奏。')])+detail_close()
-render('projects/ai-content/index.html','AI叙事视频','马嘉程独立完成的三支AI叙事作品与原作入口。',ai)
 
 poster=detail_open('poster')+detail_hero('面包挑战','2025.07—2025.08、2026.10 起，与朋友共同开展。')
 poster+=detail_split('visual','现场参与方式','<p>收费、挑战要求与分档奖励均在现场宣传海报中说明。</p><dl class="event-facts"><div><dt>参与价格</dt><dd>19.9 元 / 次</dd></div></dl>')
@@ -138,7 +123,7 @@ text = page.read_text()
 text = re.sub(r'(href|src|poster)="(?!https?:|mailto:|tel:|#|data:|/)([^"]+)"', r'\1="/\2"', text)
 page.write_text(text.replace('</head>', '<meta name="robots" content="noindex"/></head>'))
 origin='https://majiacheng619-collab.github.io/'
-urls=['','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','poster/','honor/','updates/','contact/','game/','game/guide.html','game/codex.html','game/about.html']
+urls=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/','game/','game/guide.html','game/codex.html','game/about.html']
 (ROOT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join('<url><loc>'+origin+u+'</loc></url>' for u in urls)+'</urlset>\n')
 (ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+origin+'sitemap.xml\n')
 # Metadata does not require JavaScript or remote fonts to be useful.

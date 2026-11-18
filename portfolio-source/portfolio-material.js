@@ -4,11 +4,11 @@
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const coarse=matchMedia('(hover: none)');
   const root=document.documentElement;
-  const surfaces=[...document.querySelectorAll('.practice-glass,.work-card,.contact-identity,.event-preview')];
+  const surfaces=[...document.querySelectorAll('.practice-glass,.work-card,.case-study,.contact-identity,.contact-methods,.studio-workbench')];
   for(const surface of surfaces)surface.dataset.materialSurface='';
   const timers=new Map();
   let held=null,surfaceHeld=null,frame=0,pending=null;
-  const selector='.button,.practice-link,summary,.contact-copy,.dialog-close,.sprite-close,.sprite-form button,.sprite-answer-source,.sprite-resume,.era-hero-foot a,[data-control-glass] a,[data-control-glass] button';
+  const selector='.button,.practice-link,summary,.contact-copy,.dialog-close,.sprite-close,.sprite-form button,.sprite-answer-source,.sprite-resume,[data-control-glass] a,[data-control-glass] button';
   const targetFor=target=>target?.closest?.(selector);
   function illuminate(node,x,y){
     const b=node.getBoundingClientRect();
@@ -46,7 +46,7 @@
     const node=targetFor(event.target);
     if(!node){
       const surface=event.target.closest?.('[data-material-surface]');
-      if(surface&&!event.target.closest('input,select,textarea,video,a,button')){
+      if(surface&&!event.target.closest('input,select,textarea,video,a,button,summary')){
         releaseSurface();const box=surface.getBoundingClientRect();
         surface.style.setProperty('--surface-x',((event.clientX-box.left)/box.width*100)+'%');
         surface.style.setProperty('--surface-y',((event.clientY-box.top)/box.height*100)+'%');
@@ -71,7 +71,8 @@
       const {surface,x,y}=pending,b=surface.getBoundingClientRect();pending=null;
       const nx=Math.max(0,Math.min(1,(x-b.left)/b.width)),ny=Math.max(0,Math.min(1,(y-b.top)/b.height));
       surface.style.setProperty('--surface-x',(nx*100).toFixed(1)+'%');surface.style.setProperty('--surface-y',(ny*100).toFixed(1)+'%');
-      surface.style.setProperty('--surface-rx',((.5-ny)*1.2).toFixed(2)+'deg');surface.style.setProperty('--surface-ry',((nx-.5)*1.6).toFixed(2)+'deg');
+      surface.style.setProperty('--surface-rx',((.5-ny)*1.7).toFixed(2)+'deg');surface.style.setProperty('--surface-ry',((nx-.5)*2.2).toFixed(2)+'deg');
+      surface.setAttribute('data-surface-hover','');
     });
   },{passive:true});
   document.addEventListener('pointerup',event=>{if(held?.id===event.pointerId)finish(true);if(surfaceHeld?.id===event.pointerId)releaseSurface(true);},{passive:true});
@@ -84,12 +85,20 @@
   document.addEventListener('keyup',event=>{if(held?.id==='keyboard'&&['Enter',' '].includes(event.key))finish(true);});
   document.addEventListener('focusout',()=>{if(held?.id==='keyboard')finish();});
   for(const surface of surfaces){
-    surface.addEventListener('pointerleave',()=>{surface.style.setProperty('--surface-rx','0deg');surface.style.setProperty('--surface-ry','0deg');});
+    surface.addEventListener('pointerleave',()=>{
+      if(pending?.surface===surface)pending=null;
+      resetSurface(surface);
+    });
+  }
+  function resetSurface(surface){
+    surface.style.removeProperty('--surface-rx');
+    surface.style.removeProperty('--surface-ry');
+    surface.removeAttribute('data-surface-hover');
   }
   function clear(){
     finish();releaseSurface();cancelAnimationFrame(frame);frame=0;pending=null;
     for(const [node,timer]of timers){clearTimeout(timer);node.removeAttribute('data-glass-released');node.removeAttribute('data-surface-released');}timers.clear();
-    for(const surface of surfaces){surface.style.setProperty('--surface-rx','0deg');surface.style.setProperty('--surface-ry','0deg');}
+    for(const surface of surfaces)resetSurface(surface);
   }
   function lifecycle(){root.dataset.scenePaused=String(document.hidden);if(document.hidden)clear();}
   document.addEventListener('visibilitychange',lifecycle);

@@ -54,7 +54,7 @@ module.exports=async function auditDrag(page,origin,output){
  assert.ok(await page.evaluate(()=>scrollY)>scroll+25,'Vertical scrolling stays native');
  assert.equal(await items.nth(2).getAttribute('aria-pressed'),'true');
  await page.goto(origin+'/');const studio=await prepare('.studio-tabs');
- await trace(studio,0,2);
+ await trace(studio,0,1);
  await page.waitForFunction(()=>document.querySelector('[data-studio-tab="field"]').getAttribute('aria-selected')==='true');
  assert.equal(await page.locator('[data-studio-panel="field"]').isVisible(),true,'Drag changes the actual work preview');
  if(output)await page.screenshot({path:path.join(output,'drag-work-selected.png')});
@@ -74,8 +74,8 @@ module.exports=async function auditDrag(page,origin,output){
  // Reduced motion keeps direct manipulation functional, including on a narrow phone.
  await page.emulateMedia({reducedMotion:'reduce'});await page.setViewportSize({width:320,height:844});
  await page.goto(origin+'/');const narrow=await prepare('.studio-tabs');await trace(narrow,0,1);
- await page.waitForFunction(()=>document.querySelector('[data-studio-tab="film"]').getAttribute('aria-selected')==='true');
- assert.equal(await page.locator('[data-studio-panel="film"]').isVisible(),true);
+ await page.waitForFunction(()=>document.querySelector('[data-studio-tab="field"]').getAttribute('aria-selected')==='true');
+ assert.equal(await page.locator('[data-studio-panel="field"]').isVisible(),true);
  await touch.detach();
  console.log(JSON.stringify({directTouchDrag:true,releaseCommitsOnce:true,cancelRestores:true,nativeVerticalScroll:true,workPreview:true,wrappedCaseNavigation:true,dockNavigation:true,reducedMotionDrag:true}));
 };

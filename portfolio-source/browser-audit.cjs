@@ -315,7 +315,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  await page.setViewportSize({width:390,height:844});
  if(process.env.AUDIT_ACCESSIBILITY==='1') {
    await page.emulateMedia({reducedMotion:'reduce'});
-   const routes=['','contact/','projects/','experience/','projects/sprout-patrol/','projects/ai-content/','honor/','updates/','game/guide.html','game/codex.html','game/cloud.html'];
+   const routes=['','contact/','projects/','experience/','projects/sprout-patrol/','honor/','updates/','game/guide.html','game/codex.html','game/cloud.html'];
    for(const route of routes){
      await page.goto(origin+'/'+route);
      await auditAccessibility(route);
@@ -324,7 +324,7 @@ const server = http.createServer((req,res)=>{let f=path.resolve(root,'.'+decodeU
  const output=process.env.AUDIT_OUTPUT;
  if(output){
    fs.mkdirSync(output,{recursive:true});
-   const screenshots=[['','home'],['contact/','contact'],['projects/','projects'],['experience/','experience'],['projects/sprout-patrol/','gamecase'],['projects/ai-content/','ai'],['honor/','honor'],['game/guide.html','guide'],['game/','game']];
+   const screenshots=[['','home'],['contact/','contact'],['projects/','projects'],['experience/','experience'],['projects/sprout-patrol/','gamecase'],['honor/','honor'],['game/guide.html','guide'],['game/','game']];
    for(const [route,name] of screenshots)for(const width of [320,390,768,1024,1440]){
      await page.setViewportSize({width,height:900});await page.goto(origin+'/'+route);
      await page.evaluate(async()=>{await document.fonts.ready;for(let y=0;y<document.documentElement.scrollHeight;y+=innerHeight){scrollTo(0,y);await new Promise(r=>setTimeout(r,40));}await Promise.race([Promise.all([...document.images].map(image=>{image.loading='eager';return image.decode().catch(()=>{});})),new Promise(resolve=>setTimeout(resolve,2000))]);scrollTo(0,0);});
