@@ -117,19 +117,6 @@ jobs:
           python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Restore the verified Cathedral of Ice archive
-        run: |
-          if [[ "$(git hash-object deploy.zip)" == "8b64d0262a7f2efe2cdf25e60af5e8ef71f62632" ]]; then
-            set -o pipefail
-            archive_commit="d19d3f5899858df228ba009d7946800f8f9f4f9f"
-            archive="$RUNNER_TEMP/cathedral-deploy.zip"
-            git fetch --no-tags --depth=1 origin "$archive_commit"
-            git ls-tree --name-only "$archive_commit" | while IFS= read -r part; do
-              git show "$archive_commit:$part" || exit 1
-            done > "$archive"
-            printf '%s  %s\n' 'fc9f3df3fc2a6d5bf3fe29de049da6fa389e7da288551fd568c816190c82e2e9' "$archive" | sha256sum --check --status
-            mv "$archive" deploy.zip
-          fi
       - name: Install static build dependencies
         run: python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
       - name: Build and validate the complete release
