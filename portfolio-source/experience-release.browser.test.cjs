@@ -107,7 +107,9 @@ const server=http.createServer((req,res)=>{
       assert.equal(await page.locator('.sprite-search-symbol,.sprite-search-label').count(),0,'The character is not replaced by a search icon');
       assert.equal(await page.locator('.sprite').evaluate(node=>getComputedStyle(node).position),'fixed');
       await page.locator('.sprite-launcher').click();
-      const panel=await page.locator('#sprite-panel').boundingBox();
+      const openedPanel=page.locator('.sprite[data-open] #sprite-panel');
+      await openedPanel.waitFor({state:'visible'});
+      const panel=await openedPanel.boundingBox();
       assert.ok(panel.x>=7&&panel.x+panel.width<=width-7,'Search stays in the viewport');
       assert.ok(panel.width>width*.6||panel.width>=600,'Floating window stays independent of the navigation');
       await page.keyboard.press('Escape');
