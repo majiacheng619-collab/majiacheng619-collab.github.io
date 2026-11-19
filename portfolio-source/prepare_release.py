@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-11-19-cathedral-of-ice-breach'
+REVISION='2026-11-19-capabilities-and-cathedral'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)

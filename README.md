@@ -4,6 +4,6 @@
 
 - [个人网站](https://majiacheng619-collab.github.io/)：我整理了项目、经历与联系方式。
 - [个人简历](https://majiacheng619-collab.github.io/resume.pdf)：我的教育与实践经历。
-- [冰之圣殿 · 25 秒作品影片](https://majiacheng619-collab.github.io/#introduction)：我用真实作品和业务数据介绍自己。
+- [我的能力与作品 · 25 秒影片](https://majiacheng619-collab.github.io/#introduction)：前半段展示我的电商增长与产品交付，后半段呈现《冰之圣殿》的鲸跃和冰拱。
 - [冰之圣殿 · 实时 3D 场景](https://majiacheng619-collab.github.io/ice/)：我用 Three.js 与 GLSL 构建的极地航行场景。
 - [萌芽保卫队](https://majiacheng619-collab.github.io/game/)：我独立策划、通过 AI 辅助开发的网页塔防游戏，包含四个世界、二十关。

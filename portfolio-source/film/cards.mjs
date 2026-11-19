@@ -1,11 +1,23 @@
+const productStart = 6.25;
+const filmStart = 12.5;
+
+export const chapters = [
+  { start: 0, label: '电商增长' },
+  { start: productStart, label: '产品交付' },
+  { start: filmStart, label: '峡谷鲸跃' },
+  { start: 17, label: '驶向冰拱' },
+];
+
 export const cards = [
-  { start: .30, end: 3.8, heading: '冰之圣殿', lines: ['CATHEDRAL OF ICE'], kind: 'title' },
-  { start: 4.15, end: 7.72, heading: '萌芽保卫队', lines: ['独立策划 · 4 个世界 · 20 关'], kind: 'game' },
-  { start: 7.8, end: 10.85, heading: '面包挑战', lines: ['规则设计 · 活动物料 · 现场执行', '19.9 元／次'] },
-  { start: 10.92, end: 12.53, heading: '电商教学与用户增长', lines: ['40 万+ 项目净利润', '近 1,000 名去重学员'] },
-  { start: 17.10, end: 20.08, heading: '宿舍打印店', lines: ['黑白打印 0.2 元 · 1 份起送'] },
-  { start: 20.18, end: 22.76, heading: '直播内容与用户运营', lines: ['1 万+ 抖音粉丝 · 单场最高曝光 30 万+'] },
-  { start: 22.82, end: 25, heading: '马嘉程', lines: ['产品与运营'], kind: 'end' },
+  {
+    start: 0, end: productStart, byline: '马嘉程', heading: '电商与用户增长',
+    lines: ['设计教学服务，搭建推广渠道', '服务近 1,000 名去重学员', '电商项目净利润超 40 万元'],
+  },
+  {
+    start: productStart, end: filmStart, heading: '产品策划与交付', kind: 'game',
+    lines: ['用 Codex 开发并上线网站', '独立策划《萌芽保卫队》', '4 个世界 · 20 个关卡'],
+  },
+  { start: 19.2, end: 23.4, heading: '冰之圣殿', lines: ['CATHEDRAL OF ICE'], kind: 'title' },
 ];
 
 const smooth = (t) => {
@@ -38,16 +50,14 @@ function drawTitle(ctx, card) {
 }
 
 function drawPlaque(ctx, card, gameFrame) {
-  const ending = card.kind === 'end';
   const game = card.kind === 'game';
-  const x = ending ? 1290 : 92;
-  const y = ending ? 820 : 84;
-  const width = ending ? 536 : game ? 827 : 724;
-  const height = card.lines.length === 2 ? 240 : 195;
+  const x = 90, y = 85;
+  const width = game ? 1220 : 1070;
+  const height = 410;
   const glass = ctx.createLinearGradient(x, y, x + width * .69, y + height);
-  glass.addColorStop(0, 'rgba(13,24,37,.80)');
-  glass.addColorStop(.55, 'rgba(11,29,43,.61)');
-  glass.addColorStop(1, 'rgba(8,30,44,.40)');
+  glass.addColorStop(0, 'rgba(13,24,37,.86)');
+  glass.addColorStop(.55, 'rgba(11,29,43,.72)');
+  glass.addColorStop(1, 'rgba(8,30,44,.57)');
   ctx.beginPath();
   ctx.roundRect(x, y, width, height, 33);
   ctx.fillStyle = glass;
@@ -61,15 +71,23 @@ function drawPlaque(ctx, card, gameFrame) {
   ctx.stroke();
 
   ctx.textBaseline = 'alphabetic';
+  const textX = x + 44;
+  let headingY = y + 122;
+  if (card.byline) {
+    ctx.fillStyle = '#c2e9ef';
+    ctx.font = '44px Film Noto, sans-serif';
+    ctx.fillText(card.byline, textX, y + 78);
+    headingY = y + 166;
+  }
   ctx.fillStyle = '#f5fbff';
-  const xText = x + 33;
-  fitText(ctx, card.heading, ending ? 68 : 61, width - 65, xText, y + 80);
+  fitText(ctx, card.heading, 88, width - 88, textX, headingY);
   ctx.fillStyle = '#d9f5f7';
   card.lines.forEach((line, index) => {
-    fitText(ctx, line, ending ? 43 : 47, game ? width - 321 : width - 65, xText, y + 146 + index * 55);
+    fitText(ctx, line, 64, width - (game ? 419 : 88), textX, headingY + 75 + index * 66);
   });
   if (game && gameFrame) {
-    const gx = x + width - 249, gy = y + 27, gw = 222, gh = 141;
+    const gw = 330, gh = gameFrame.height * gw / gameFrame.width;
+    const gx = x + width - gw - 44, gy = y + height - gh - 44;
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(gx, gy, gw, gh, 14);
@@ -87,9 +105,14 @@ function drawPlaque(ctx, card, gameFrame) {
 export function drawCards(ctx, time, gameFrame) {
   const card = cards.find(({ start, end }) => time >= start && time < end);
   if (!card) return;
-  const appearance = smooth((time - card.start) / .42);
-  const departure = card.kind === 'end' ? 1 : smooth((card.end - time) / .37);
+  const appearance = smooth((time - card.start) / .34);
+  const departure = smooth((card.end - time) / .34);
   ctx.save();
+  if (time < filmStart) {
+    const shade = .17 * smooth((filmStart - time) / .7);
+    ctx.fillStyle = `rgba(4,12,24,${shade})`;
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
   ctx.globalAlpha = appearance * departure;
   ctx.translate(0, (1 - appearance + 1 - departure) * 18);
   if (card.kind === 'title') drawTitle(ctx, card);

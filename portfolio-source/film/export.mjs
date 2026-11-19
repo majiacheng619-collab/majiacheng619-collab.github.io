@@ -7,8 +7,8 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { duration, width, height, fps, chapters } from './ice/scene.mjs';
-import { cards } from './cards.mjs';
+import { duration, width, height, fps } from './ice/scene.mjs';
+import { cards, chapters } from './cards.mjs';
 import { writeScore } from './score.mjs';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -156,7 +156,7 @@ try {
   if (!values.clean) {
     await writeFile(path.join(output,'timeline.json'), JSON.stringify({
       title: 'Cathedral of Ice', title_zh: '冰之圣殿', duration, width, height, fps,
-      frames: total, chapters, cards: cards.map(({ start, end, heading, lines }) => ({ start, end, heading, lines })),
+      frames: total, chapters, cards: cards.map(({ kind, ...card }) => card),
     }, null, 2) + '\n');
   }
   await Promise.all([...parts, audio, concat].map(file => rm(file)));

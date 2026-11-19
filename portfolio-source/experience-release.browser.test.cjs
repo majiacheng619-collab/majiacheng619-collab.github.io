@@ -131,7 +131,13 @@ const server=http.createServer((req,res)=>{
      return {width,height};
     }));
     assert.ok(filmTargets.every(control=>control.width>=44&&control.height>=44),'Film controls remain usable at '+width);
-    assert.deepEqual(await film.locator('[data-film-start]').evaluateAll(nodes=>nodes.map(n=>Number(n.dataset.filmStart))),[0,4,10,17]);
+    assert.deepEqual(await film.locator('.film-chapter-group').evaluateAll(groups=>groups.map(group=>({
+     label:group.getAttribute('aria-label'),
+     chapters:[...group.querySelectorAll('[data-film-start]')].map(button=>[Number(button.dataset.filmStart),button.textContent]),
+    }))),[
+     {label:'个人能力 · 12.5 秒',chapters:[[0,'电商增长'],[6.25,'产品交付']]},
+     {label:'影片场景 · 12.5 秒',chapters:[[12.5,'峡谷鲸跃'],[17,'驶向冰拱']]},
+    ]);
     if(screenshot&&(width===390||width===1440)){
      await page.evaluate(async()=>{scrollTo(0,0);await document.fonts.ready;await Promise.all([...document.images].filter(image=>image.loading!=='lazy').map(image=>image.decode().catch(()=>{})));});
      await page.screenshot({path:path.join(screenshot,'home-'+width+'.png')});
@@ -159,11 +165,11 @@ const server=http.createServer((req,res)=>{
  }
  if(scope==='all'||scope==='film'){
   const variants=[
-   {width:390,network:'4g',asset:filmMedia.mobileVideo,videoWidth:1280},
-   {width:1440,network:'4g',asset:filmMedia.video,videoWidth:1920},
-   {width:1440,network:'3g',asset:filmMedia.mobileVideo,videoWidth:1280},
+   {width:390,network:'4g',asset:filmMedia.mobileVideo,videoWidth:1280,start:6.25,end:12.5},
+   {width:1440,network:'4g',asset:filmMedia.video,videoWidth:1920,start:12.5,end:17},
+   {width:1440,network:'3g',asset:filmMedia.mobileVideo,videoWidth:1280,start:12.5,end:17},
   ];
-  for(const {width,network,asset,videoWidth} of variants){
+  for(const {width,network,asset,videoWidth,start,end} of variants){
    await page.setViewportSize({width,height:844});
    const mediaRequests=[];
    const recordMedia=request=>{if(request.url().endsWith('.mp4'))mediaRequests.push(request.url());};
@@ -174,11 +180,11 @@ const server=http.createServer((req,res)=>{
      Object.defineProperty(navigator,'connection',{value:{effectiveType,saveData:false},configurable:true});
     },network);
     assert.deepEqual(mediaRequests,[],'The poster view defers the video download');
-    await page.locator('[data-film-start="10"]').click();
-    await page.waitForFunction(()=>{
+    await page.locator(`[data-film-start="${start}"]`).click();
+    await page.waitForFunction(({start,end})=>{
      const video=document.querySelector('#intro-video');
-     return !video.paused&&video.currentTime>10&&video.currentTime<17;
-    });
+     return !video.paused&&video.currentTime>start&&video.currentTime<end;
+    },{start,end});
     assert.equal(await page.locator('#intro-video').evaluate(video=>video.videoWidth),videoWidth);
     assert.ok(mediaRequests.length>0&&mediaRequests.every(url=>url===origin+'/'+asset),'The browser requests a single rendition');
    } finally {

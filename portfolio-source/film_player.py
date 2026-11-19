@@ -22,15 +22,24 @@ def icon(name):
 def build_film(media, transcript):
     duration = media['duration']
     clock = f'{duration // 60}:{duration % 60:02}'
-    chapters = ''.join(
-        f'<button type="button" data-film-start="{chapter["start"]}" '
-        f'aria-label="播放{escape(chapter["label"])}">{escape(chapter["label"])}</button>'
-        for chapter in media['chapters']
-    )
+    midpoint = duration / 2
+    chapter_groups = []
+    for label, start, end in (('个人能力', 0, midpoint), ('影片场景', midpoint, duration)):
+        buttons = ''.join(
+            f'<button type="button" data-film-start="{chapter["start"]}" '
+            f'aria-label="播放{escape(chapter["label"])}">{escape(chapter["label"])}</button>'
+            for chapter in media['chapters'] if start <= chapter['start'] < end
+        )
+        name = f'{label} · {end - start:g} 秒'
+        chapter_groups.append(
+            f'<div class="film-chapter-group" role="group" aria-label="{name}">'
+            f'<p aria-hidden="true">{name}</p>{buttons}</div>'
+        )
+    chapters = ''.join(chapter_groups)
     return f'''
 <section class="premium-film premium-shell" id="introduction" aria-labelledby="film-title">
  <div class="film-heading">
-  <div><p class="film-kicker">{duration} 秒作品影片</p><h2 id="film-title">冰之圣殿 <span lang="en">Cathedral of Ice</span></h2></div>
+  <div><p class="film-kicker">{duration} 秒作品影片</p><h2 id="film-title">我的能力与作品 <span>冰之圣殿 · <bdi lang="en">Cathedral of Ice</bdi></span></h2></div>
   <a class="film-live-link" href="ice/index.html">实时 3D 场景</a>
  </div>
  <div class="premium-film-player" data-intro-player data-dock-tone="dark">

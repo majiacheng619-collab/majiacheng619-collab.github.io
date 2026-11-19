@@ -113,9 +113,10 @@ def timestamp(seconds):
 
 
 def card_text(card):
-    if card['heading'] == '马嘉程':
-        return '我是马嘉程，关注产品与运营。'
-    return card['heading'] + '　' + '　'.join(card['lines'])
+    heading = card['heading']
+    if card.get('byline'):
+        heading = f'{card["byline"]} · {heading}'
+    return '　'.join((heading, *card['lines']))
 
 
 def register_asset(site, key, data):
@@ -148,14 +149,13 @@ def register_export(site, output):
     with Image.open(output / 'poster.jpg') as poster:
         assert poster.size == (timeline['width'], timeline['height']), 'Poster dimensions differ from the film'
         poster.verify()
-    cue_lines = ['WEBVTT', '', '00:00:00.000 --> 00:00:00.300', '［器乐与海浪声］', '']
-    for card in timeline['cards']:
-        cue_lines.extend((
-            f'{timestamp(card["start"])} --> {timestamp(card["end"])}',
-            card_text(card), '',
-        ))
-        if card['end'] == 12.53:
-            cue_lines.extend(('00:00:14.530 --> 00:00:16.500', '［鲸鱼落水与海浪声］', ''))
+    cues = [(card['start'], card['end'], card_text(card)) for card in timeline['cards']]
+    start, end, text = cues[0]
+    cues[0] = start, end, f'［器乐与海浪声］\n{text}'
+    cues.append((14.53, 16.50, '［鲸鱼落水与海浪声］'))
+    cue_lines = ['WEBVTT', '']
+    for start, end, text in sorted(cues):
+        cue_lines.extend((f'{timestamp(start)} --> {timestamp(end)}', text, ''))
     assets = {
         'video': (output / 'film.mp4').read_bytes(),
         'poster': (output / 'poster.jpg').read_bytes(),

@@ -247,7 +247,14 @@ body[data-atmosphere-renderer="webgl"] .era-hero { background:transparent; }
 .film-scrub::-moz-range-thumb { width:14px;height:14px;border:1px solid #d5fcff;border-radius:50%;background:#edfbff;box-shadow:0 0 12px #76e4e9a3; }
 .film-scrub:active::-webkit-slider-thumb { box-shadow:0 0 0 5px #91e9ff59; }
 .film-scrub:active::-moz-range-thumb { box-shadow:0 0 0 5px #91e9ff59; }
-.film-chapters { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-block-start:8px; }
+.film-chapters { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-block-start:8px; }
+.film-chapter-group {
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:3px;
+ border:1px solid #b8dcee30;border-radius:15px;background:#8bd5e80b;
+}
+.film-chapter-group>p {
+ grid-column:1/-1;margin:2px 0 0;color:#c5dce9;text-align:center;font-size:12px;font-weight:600;
+}
 .film-chapters button,.film-error button {
  min-height:44px;padding:0 4px;border:1px solid transparent;border-radius:13px;
  background:transparent;color:#d0e4f1;font-weight:620;font-size:13px;line-height:1.22;
