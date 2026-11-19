@@ -252,6 +252,46 @@ function mountainRidge(ice, cx, cz, width, depth, height, seed) {
   return new THREE.Mesh(indexedSurface(positions, indices), ice);
 }
 
+function floeSurface(seed) {
+  const random = randomSeed(seed);
+  const corners = 13;
+  const edge = Array.from({ length: corners }, (_, i) => {
+    const angle = (i + .38 * (random() - .5)) * Math.PI * 2 / corners;
+    const radius = .72 + .40 * random();
+    return [Math.cos(angle) * radius, Math.sin(angle) * radius, random() - .5];
+  });
+  const rings = [
+    [.22, .65, 0xc4dce5], [.64, .63, 0xcde6eb], [.87, .58, 0xb5d4df],
+    [1, .23, 0x76b4c6], [.88, -.35, 0x508da7], [.58, -.73, 0x356982],
+  ];
+  const positions = [], colors = [], indices = [];
+  const color = new THREE.Color();
+  for (const [ring, [radius, height, tint]] of rings.entries()) {
+    for (const [i, [x, z, roughness]] of edge.entries()) {
+      positions.push(x * radius, height + roughness * (.14 + .28 * radius), z * radius);
+      color.setHex(tint).multiplyScalar(.87 + .23 * random());
+      colors.push(color.r, color.g, color.b);
+      if (ring === rings.length - 1) continue;
+      const a = ring * corners + i, b = ring * corners + (i + 1) % corners;
+      indices.push(a, b, a + corners, b, b + corners, a + corners);
+    }
+  }
+  const top = positions.length / 3, bottom = top + 1;
+  positions.push(0, .67, 0, 0, -.76, 0);
+  color.setHex(0xc4dce5);
+  colors.push(color.r, color.g, color.b);
+  color.setHex(0x356982);
+  colors.push(color.r, color.g, color.b);
+  const last = (rings.length - 1) * corners;
+  for (let i = 0; i < corners; i++) {
+    const next = (i + 1) % corners;
+    indices.push(top, next, i, last + i, last + next, bottom);
+  }
+  const surface = indexedSurface(positions, indices);
+  surface.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  return surface;
+}
+
 export function makeIce(scene, time) {
   const ice = iceMaterial(time);
   scene.add(mountainRidge(ice, 20, -1490, 2270, 590, 341, 5.2));
@@ -274,11 +314,13 @@ export function makeIce(scene, time) {
   scene.add(iceArch(ice));
 
   const random = randomSeed(79231);
-  const floe = new THREE.IcosahedronGeometry(1, 1);
-  const pack = new THREE.InstancedMesh(floe, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .48 }), 128);
+  const floeIce = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .67, flatShading: true });
+  const packs = [31, 80, 141].map((seed, i) => new THREE.InstancedMesh(floeSurface(seed), floeIce, i === 2 ? 42 : 43));
   const piece = new THREE.Object3D();
-  const shades = [0x94c8d9, 0xcde6ef, 0x64a7ba, 0xa5bbc8, 0x80afc8].map((value) => new THREE.Color(value));
-  for (let i = 0; i < pack.count; i++) {
+  const shades = [0xc6dce5, 0xe0ebef, 0xbedcdd, 0xf1f0ef, 0xc1d9e4].map(value => new THREE.Color(value));
+  for (let i = 0; i < 128; i++) {
+    const pack = packs[i % packs.length];
+    const index = Math.floor(i / packs.length);
     const side = i % 2 === 0 ? -1 : 1;
     const x = side * (45 + Math.pow(random(), 1.75) * 154);
     const z = 225 - random() * 760;
@@ -287,10 +329,10 @@ export function makeIce(scene, time) {
     piece.scale.set(scale * (1.0 + random()), .14 + scale * .21, scale * (.62 + random() * .7));
     piece.rotation.set(random() * .20, random() * Math.PI, random() * .14);
     piece.updateMatrix();
-    pack.setMatrixAt(i, piece.matrix);
-    pack.setColorAt(i, shades[i % shades.length]);
+    pack.setMatrixAt(index, piece.matrix);
+    pack.setColorAt(index, shades[i % shades.length]);
   }
-  scene.add(pack);
+  scene.add(...packs);
 }
 
 const swell = /* glsl */`
@@ -303,12 +345,14 @@ vec3 waves(vec2 p, float t) {
                 + .0746 * cos(c) * vec2(.21,-.98);
   return vec3(h, gradient);
 }
-float ring(vec2 p, vec3 hit, float time) {
-  float age = time - hit.z;
-  if (age < 0.0 || age > 6.0) return 0.0;
-  float d = length(p - hit.xy) - age * 8.6;
-  return smoothstep(0.0, .18, age) * exp(-abs(d) * .38 - age * .38)
-        * sin(d * 2.0 - age * 1.3);
+vec2 disturbance(float radius, float age) {
+  if (age <= 0.0 || age >= 5.8) return vec2(0.0);
+  float front = radius - (1.9 + age * 8.2);
+  float width = sqrt(front * front + .42);
+  float angle = front * 1.74 + 1.57;
+  float pulse = smoothstep(0.0, .21, age) * (1.0 - smoothstep(4.3, 5.8, age));
+  float amplitude = pulse * exp(-width * .30 - age * .46);
+  return amplitude * vec2(sin(angle), 1.74 * cos(angle) - .30 * front / width * sin(angle));
 }
 `;
 
@@ -352,8 +396,9 @@ export function makeSea(time, reflection) {
       ${swell}
       void main() {
         vSea = position;
-        vSea.y = waves(position.xz, uTime).x + .18 * ring(position.xz, uBreach, uTime)
-                 + .46 * ring(position.xz, uLanding, uTime);
+        vSea.y = waves(position.xz, uTime).x
+          + .22 * disturbance(length(position.xz - uBreach.xy), uTime - uBreach.z).x
+          + .64 * disturbance(length(position.xz - uLanding.xy), uTime - uLanding.z).x;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(vSea, 1.0);
       }`,
     fragmentShader: /* glsl */`
@@ -364,16 +409,18 @@ export function makeSea(time, reflection) {
       varying vec3 vSea;
       ${noise}
       ${swell}
-      float aftermath(vec2 p, vec3 hit, float strength) {
-        float age = uTime - hit.z;
-        if (age <= 0.0 || age > 6.0) return 0.0;
-        float radius = length(p - hit.xy);
-        float spread = age * 7.7;
-        float edge = exp(-abs(radius - spread) * .53);
-        float broken = noise3(vec3(p * .75, uTime * .56));
-        float pool = exp(-radius / (3.1 + age * 2.3)) * .37;
-        return smoothstep(0.0,.16,age) * exp(-age * .40) * strength
-               * smoothstep(.28,.72,broken) * (.69 * edge + pool);
+      float aftermath(vec2 delta, float radius, float age) {
+        if (age <= 0.0 || age >= 5.8) return 0.0;
+        vec2 drift = delta - vec2(.39, -.54) * age;
+        float broken = noise3(vec3(drift * .65, age * .55));
+        float filaments = 1.0 - smoothstep(.037, .20, abs(broken - .53));
+        float front = radius - (1.9 + 8.2 * age) + 2.4 * (broken - .5);
+        float edge = exp(-abs(front) * (.88 - .065 * age));
+        float trailing = exp(-abs(front + 3.3 + age) * .93) * .25;
+        float pool = exp(-length(drift * vec2(1.0, .74)) / (3.4 + age * 1.7));
+        return smoothstep(0.0, .21, age) * (1.0 - smoothstep(4.3, 5.8, age))
+          * (exp(-age * .55) * (.76 * edge + trailing) * (.24 + .76 * filaments)
+          + exp(-age * .71) * pool * (.24 + .76 * smoothstep(.28, .73, broken)));
       }
       void main() {
         vec2 p = vSea.xz;
@@ -385,9 +432,12 @@ export function makeSea(time, reflection) {
         vec2 fine = cos(vec2(dot(p,vec2(.96,-2.33)) - t*3.3, dot(p,vec2(2.80,.83)) + t*4.2) + splay*2.7);
         fine += .34 * cos(p * vec2(4.52,7.1) - p.yx * 2.17 + vec2(t*6.1,-t*7.3) + splay.yx*4.2);
         float detail = 1.0 - smoothstep(70.0,425.0,dist);
-        vec2 impact = vec2(ring(p + vec2(.32,0),uLanding,t)-ring(p - vec2(.32,0),uLanding,t),
-                           ring(p + vec2(0,.32),uLanding,t)-ring(p - vec2(0,.32),uLanding,t));
-        vec2 slope = surface.yz * (.36 + .64 * detail) + fine * .060 * detail + impact * .32;
+        vec2 fromBreach = p - uBreach.xy, fromLanding = p - uLanding.xy;
+        float breachRadius = length(fromBreach), landingRadius = length(fromLanding);
+        float breachAge = t - uBreach.z, landingAge = t - uLanding.z;
+        vec2 impact = .22 * disturbance(breachRadius, breachAge).y * fromBreach / max(.15, breachRadius)
+                    + .64 * disturbance(landingRadius, landingAge).y * fromLanding / max(.15, landingRadius);
+        vec2 slope = surface.yz * (.36 + .64 * detail) + fine * .060 * detail + impact;
         vec3 n = normalize(vec3(-slope.x, 1.0, -slope.y));
         float angle = max(dot(view,n),0.0);
         float fresnel = .052 + .948 * pow(1.0-angle, 4.4);
@@ -415,13 +465,15 @@ export function makeSea(time, reflection) {
         float turbulent = behind * (exp(-wakeV*.80) * .70 + exp(-abs(across)*(.23 + .002*aft))*.46);
         float bowSurf = exp(-side * .60) * .38;
         float foam = (turbulent + bowSurf) * filaments;
-        foam += aftermath(p,uBreach,.75) + aftermath(p,uLanding,1.6);
+        float turbulence = .58 * aftermath(fromBreach, breachRadius, breachAge)
+                         + 1.12 * aftermath(fromLanding, landingRadius, landingAge);
         float breaking = smoothstep(.60,.76,surface.x) * smoothstep(.63,.88,foamNoise) * .055;
         foam = clamp(foam + breaking, 0.0, .9);
         vec3 color = mix(sea, reflectColor * vec3(.80,.91,1.04), fresnel * .89);
         float gloss = pow(max(dot(reflect(-uMoon, n), view),0.0), 96.0);
         color += vec3(.21,.36,.56) * gloss * (.16 + .84 * fresnel);
         color = mix(color, vec3(.35,.58,.69), foam) * (.94 + .06 * n.y);
+        color = mix(color, vec3(.59,.78,.89), clamp(turbulence, 0.0, .84));
         gl_FragColor = vec4(mist(cameraPosition,vSea,color),1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

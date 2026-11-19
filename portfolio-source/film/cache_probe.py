@@ -79,13 +79,13 @@ def provenance_valid(read, paths):
     return expected == json.loads((ROOT / 'provenance.json').read_text())
 
 
-def cached():
+def cached(*, master_only=False):
     try:
         with zipfile.ZipFile(REPO / 'deploy.zip') as archive:
             info = json.loads(archive.read(CACHE))
             return (info['renderKey'] == signature()
                     and artifacts_valid(archive.read, info['manifest'], RENDERED_OUTPUTS)
-                    and mobile_current(archive.read, info))
+                    and (master_only or mobile_current(archive.read, info)))
     except (OSError, ValueError, KeyError, zipfile.BadZipFile):
         return False
 
@@ -155,7 +155,7 @@ def register_export(site, output):
             card_text(card), '',
         ))
         if card['end'] == 12.53:
-            cue_lines.extend(('00:00:14.800 --> 00:00:16.500', '［鲸鱼落水与海浪声］', ''))
+            cue_lines.extend(('00:00:14.530 --> 00:00:16.500', '［鲸鱼落水与海浪声］', ''))
     assets = {
         'video': (output / 'film.mp4').read_bytes(),
         'poster': (output / 'poster.jpg').read_bytes(),
@@ -208,4 +208,8 @@ def install_film(site, output=None):
 
 
 if __name__ == '__main__':
-    print('true' if cached() else 'false')
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--master-only', action='store_true', help='Check whether the 3D scene needs a new render')
+    args = parser.parse_args()
+    print('true' if cached(master_only=args.master_only) else 'false')

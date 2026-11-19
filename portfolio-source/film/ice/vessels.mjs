@@ -257,33 +257,52 @@ export function animateShip(ship, time, position) {
   ship.radar.rotation.y = time * 1.60;
 }
 
-export const breach = { x: 29, z: -31, time: 12.28 };
-export const landing = { x: 43, z: -64, time: 15.03 };
+export const breach = { x: 29, z: -31, time: 11.78 };
+export const landing = { x: 44, z: -66, time: 14.53 };
+
+const flightStart = 12.38, flightEnd = 15.08;
+const flightTime = flightEnd - flightStart;
+const flightX = 14 / flightTime, flightZ = -33 / flightTime;
+const whaleScale = 1.24;
+const tailWag = 3.4;
 
 const whaleProfile = [
-  [-11.4, .02, .03, .53], [-10.9, 1.03, .74, .53], [-9.0, 1.99, 1.29, .22],
-  [-6.25, 2.91, 1.95, .01], [-3.0, 3.21, 2.49, .12], [.2, 2.74, 2.32, .03],
-  [3.0, 1.88, 1.70, .07], [6.0, .86, .83, -.03], [8.8, .51, .37, .04], [10.5, .30, .15, .12],
+  [-11.45, .02, .05], [-11.0, 1.30, .64], [-9.0, 2.09, 1.38],
+  [-6.25, 2.91, 2.03], [-3.0, 3.28, 2.54], [.2, 2.74, 2.28],
+  [3.0, 1.88, 1.65], [6.0, .92, .82], [8.8, .52, .36], [10.5, .30, .15],
 ];
+const whaleSpine = new THREE.CatmullRomCurve3(whaleProfile.map(point => new THREE.Vector3(...point)));
+
+function whalePose(root, time) {
+  const age = time - flightStart;
+  const ratio = age / flightTime;
+  const turn = Math.sin(Math.PI * clamp(ratio, 0, 1));
+  root.position.set(29 + age * flightX, 4.9 * age * (flightTime - age) - .32, -31 + age * flightZ);
+  root.rotation.set(.92 - 1.82 * THREE.MathUtils.smoothstep(ratio, .10, .92),
+    Math.atan2(-flightX, -flightZ) - .16 * turn, .13 + .52 * turn, 'YXZ');
+}
 
 function whaleBody(material) {
-  const curve = new THREE.CatmullRomCurve3(whaleProfile.map(([z, x, y]) => new THREE.Vector3(z, x, y)));
   const positions = [], colors = [], indices = [];
-  const pale = new THREE.Color(0xb0cbd4), dark = new THREE.Color(0x293e4b), side = new THREE.Color(0x486678);
+  const pale = new THREE.Color(0xbad0d5), dark = new THREE.Color(0x263646), side = new THREE.Color(0x5b7480);
   const shade = new THREE.Color();
+  const smooth = THREE.MathUtils.smoothstep;
   const longitudinal = 84, around = 60;
   for (let i = 0; i <= longitudinal; i++) {
-    const { x: z, y: width, z: height } = curve.getPoint(i / longitudinal);
-    const hump = .49 * Math.exp(-Math.pow((z + 10.2) * .55, 2)) + .12 * Math.sin(z * .43);
+    const { x: z, y: width, z: height } = whaleSpine.getPoint(i / longitudinal);
+    const crown = .44 * Math.exp(-Math.pow((z + 10.2) * .46, 2)) + .11 * Math.sin(z * .43);
+    const throat = smooth(z, -11.2, -9.8) * (1 - smooth(z, -5, .9));
+    const dorsal = .94 * Math.exp(-Math.pow((z - 2.25) * .65, 2));
     for (let j = 0; j < around; j++) {
       const a = j / around * tau;
       const g = Math.sin(a), k = Math.cos(a);
-      const ripple = Math.sin(a * 13 + z * .75) * .04 * Math.exp(-Math.pow((z + 6) * .24, 2)) * clamp(-g, 0, 1);
-      const pepper = Math.sin(z * 6.3 + a * 13) * Math.sin(z * 16.03 + a * 19) * .12;
-      positions.push(width * k, hump + (height + ripple) * g, z);
-      const ivory = THREE.MathUtils.smoothstep(-g + .09 * Math.sin(z * 1.4), .31, .81);
-      shade.copy(dark).lerp(side, clamp((1 - g) * .27, 0, 1))
-        .lerp(pale, ivory * .80).multiplyScalar(1 + pepper);
+      const grooves = throat * smooth(-g, .07, .44) * Math.cos(a * 13 + z * .21);
+      const mottling = Math.sin(z * 1.73 + a * 13) * Math.sin(z * 2.93 - a * 8);
+      positions.push(width * k, crown + (height + .10 * grooves) * g + dorsal * Math.pow(Math.max(0, g), 91), z);
+      const ivory = smooth(-g + .099 * mottling, .25, .78) * (.78 + .16 * throat);
+      const mouth = (1 - smooth(Math.abs(g + .22 + (z + 9) * .037), .040, .128)) * (1 - smooth(z, -6.0, -4.6));
+      shade.copy(dark).lerp(side, clamp((1 - g) * .43, 0, 1)).lerp(pale, ivory)
+        .multiplyScalar((1 + .11 * mottling + .15 * grooves) * (1 - .61 * mouth));
       colors.push(shade.r, shade.g, shade.b);
       if (i < longitudinal) {
         const n = i * around + j, m = i * around + (j + 1) % around;
@@ -302,14 +321,15 @@ function fin(material, fluke) {
     const t = row / rows;
     for (let side = 0; side < around; side++) {
       const a = side / around * tau;
-      const width = Math.pow(1 - t, .72) * (.80 + .42 * Math.sin(t * 3.42));
-      const x = t * (fluke ? 5.6 : 6.15);
-      const y = fluke ? .29 * Math.sin(t * 2.27) : -.61 * t - 1.19 * t * t;
-      const z = fluke ? -.53 + t * t * 1.61 : -1.1 * t + 3.72 * t * t;
+      const width = Math.pow(1 - t, .69) * (fluke ? .65 + .92 * Math.sin(t * 2.95) : .84 + .48 * Math.sin(t * 2.82));
+      const x = t * (fluke ? 5.4 : 7.55);
+      const y = fluke ? .37 * Math.sin(t * 2.27) : -.81 * t - 1.27 * t * t;
+      const z = fluke ? -.34 + t * t * 1.36 : -.92 * t + 3.75 * t * t;
       const lump = (fluke ? .03 : .095) * Math.sin(t * 26) * (Math.cos(a) < 0 ? 1 : .32);
       positions.push(x, y + Math.sin(a) * width * (fluke ? .27 : .37),
         z + Math.cos(a) * width * (fluke ? 1.86 : 1.36) + lump);
-      shade.copy(dark).lerp(white, clamp(-Math.sin(a) * (fluke ? .56 : 1.37) + .10, 0, 1));
+      const pale = fluke ? -.66 * Math.sin(a) : -.94 * Math.sin(a) + .39 * t;
+      shade.copy(dark).lerp(white, clamp(pale + .08 * Math.sin(39 * t + a * 4), 0, 1));
       colors.push(shade.r, shade.g, shade.b);
       if (row < rows) {
         const j = row * around + side, k = row * around + (side + 1) % around;
@@ -322,10 +342,10 @@ function fin(material, fluke) {
 
 function makeWhale(scene, time) {
   const root = new THREE.Group();
-  root.scale.setScalar(1.24);
+  root.scale.setScalar(whaleScale);
   const skin = new THREE.MeshPhysicalMaterial({
-    vertexColors: true, roughness: .32, metalness: .15, clearcoat: .50,
-    clearcoatRoughness: .27, side: THREE.DoubleSide,
+    vertexColors: true, roughness: .37, clearcoat: .56,
+    clearcoatRoughness: .24, side: THREE.DoubleSide,
   });
   const animated = skin.clone();
   animated.onBeforeCompile = shader => {
@@ -333,7 +353,7 @@ function makeWhale(scene, time) {
     shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader.replace('#include <begin_vertex>', `
       #include <begin_vertex>
       float flex = smoothstep(-2.0, 10.5, position.z);
-      transformed.y += .81 * flex * flex * sin(uTime * 5.5 + position.z * .065);
+      transformed.y += .72 * flex * flex * sin((uTime - ${flightStart}) * ${tailWag} + position.z * .065);
     `);
   };
   root.add(whaleBody(animated));
@@ -353,7 +373,6 @@ function makeWhale(scene, time) {
       fittings.bead(standardBarnacle, x, .93 - i * .042, -10.55 + .30 * i, .18, .14, .19);
     }
   }
-  fittings.bead(standardBarnacle, 0, 2.37, 1.54, .32, .74, 1.28, 0);
   fittings.finish();
   scene.add(root);
   return { root, attachments };
@@ -362,22 +381,45 @@ function makeWhale(scene, time) {
 const standardBarnacle = standard(0x3a5061, .58);
 
 function spray(scene, time, pixelHeight) {
-  const count = 2960;
   const random = randomSeed(19646);
   const positions = [], speeds = [], events = [];
-  for (let i = 0; i < count; i++) {
-    const hit = i % 5 < 2 ? breach : landing;
-    const mist = i % 3 === 0;
-    const a = random() * tau;
-    const spread = .5 + 5.3 * Math.pow(random(), 3);
-    const launch = hit.time - .18 + random() * (mist ? .87 : .48);
-    const pressure = hit === landing ? 1.0 : .78;
-    const jet = .8 + Math.pow(random(), 1.48) * 14.7;
-    const directional = .83 + .17 * Math.sin(a);
-    positions.push(hit.x + Math.cos(a) * spread, -.11 + random() * .42, hit.z + Math.sin(a) * spread * 1.32);
-    speeds.push(Math.cos(a) * jet * .85 * directional + 1.65, pressure * (jet * .72 + random() * 6.2),
-      Math.sin(a) * jet - 1.6);
-    events.push(launch, .8 + random() * (mist ? 2.2 : 1.28), mist ? .50 + random() * 1.76 : .11 + random() * .19, mist ? 1 : 0);
+  for (const hit of [breach, landing]) {
+    const falls = hit === landing;
+    const count = falls ? 2140 : 1340;
+    const startDelay = falls ? .34 : .23;
+    for (let i = 0; i < count; i++) {
+      const mist = i % 4 === 0;
+      const crest = (.5 + .5 * Math.cos(i * .021)) ** 2;
+      const angle = random() * tau;
+      const spread = .65 + (falls ? 6.1 : 3.6) * random() ** 2.2;
+      const delay = startDelay * crest + random() * (mist ? .75 : .41);
+      const jet = (2.0 + (falls ? 14.6 : 9.4) * random() ** 1.42) * (.65 + .35 * crest);
+      const x = hit.x + Math.cos(angle) * spread + delay * (falls ? -.8 : 1.6);
+      const z = hit.z + Math.sin(angle) * spread * 1.34 - delay * (falls ? 1.3 : 3.6);
+      positions.push(x, oceanHeight(x, z, hit.time + delay) + .04, z);
+      speeds.push(Math.cos(angle) * jet + 1.45, (jet * .89 + random() * 3.4) * (mist ? .63 : 1.0),
+        Math.sin(angle) * jet * .84 - 1.8);
+      events.push(hit.time + delay, 1.05 + random() * (mist ? 2.0 : 1.06),
+        mist ? 1.32 + random() * 2.14 : .14 + random() * .26, mist ? 1 : 0);
+    }
+  }
+
+  // Sample the animated skin at emission time so seeking produces the same falling droplets.
+  const emitter = new THREE.Object3D();
+  emitter.scale.setScalar(whaleScale);
+  const point = new THREE.Vector3();
+  for (let i = 0; i < 1010; i++) {
+    const launch = breach.time + .22 + (landing.time - breach.time - .22) * random() ** 1.32;
+    const { x: z, y: radius, z: height } = whaleSpine.getPoint(.05 + .79 * random());
+    const angle = Math.PI * (1.04 + .92 * random());
+    whalePose(emitter, launch);
+    emitter.updateMatrix();
+    point.set(radius * Math.cos(angle), height * Math.sin(angle), z).applyMatrix4(emitter.matrix);
+    if (point.y < oceanHeight(point.x, point.z, launch)) continue;
+    positions.push(point.x, point.y, point.z);
+    const rise = 4.9 * (flightTime - 2 * (launch - flightStart));
+    speeds.push(flightX * .68 + 2.5 * Math.cos(angle), rise * .42 - .75 - 3.1 * random(), flightZ * .69 + 2.0 * random());
+    events.push(launch, .39 + 1.36 * random(), .10 + .17 * random(), 0);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -391,29 +433,36 @@ function spray(scene, time, pixelHeight) {
       attribute vec3 velocity;
       attribute vec4 event;
       varying float vAlpha, vMist;
+      varying vec2 vFall;
       void main() {
         float t = uTime - event.x;
         float drag = (1.0 - exp(-t * .53)) / .53;
         vec3 p = position + velocity * drag + vec3(t * .72, -4.9 * t * t, t * .74);
-        vAlpha = smoothstep(0.0,.06,t) * (1.0 - smoothstep(.23,event.y,t)) * smoothstep(-.16,.14,p.y);
+        vAlpha = smoothstep(0.0,.055,t) * (1.0 - smoothstep(.17,event.y,t)) * smoothstep(-.45,.12,p.y);
         vMist = event.w;
+        vFall = vec2(0.0, 1.0);
         if (t < 0.0 || t > event.y || p.y < -.45) {
           gl_Position = vec4(0.0,0.0,2.0,1.0);
           gl_PointSize = 1.0;
         } else {
           vec4 view = modelViewMatrix * vec4(p,1.0);
           gl_Position = projectionMatrix * view;
-          gl_PointSize = clamp(event.z * (1.0 + .69*t*vMist) * uHeight * projectionMatrix[1][1] / (-2.0 * view.z), 1.0, 55.0);
+          vec3 motion = velocity * exp(-t * .53) + vec3(.72, -9.8*t, .74);
+          vec3 viewMotion = mat3(modelViewMatrix) * motion;
+          vFall = normalize(vec2(viewMotion.x, -viewMotion.y) + vec2(.001, .001));
+          gl_PointSize = clamp(event.z * (1.0 + .69*t*vMist) * uHeight * projectionMatrix[1][1] / (-2.0 * view.z), 1.0, 58.0);
         }
       }`,
     fragmentShader: `
       varying float vAlpha, vMist;
+      varying vec2 vFall;
       void main() {
-        vec2 p = (gl_PointCoord - .5) * vec2(2.8 - .8 * vMist, 2.0);
+        vec2 q = gl_PointCoord - .5;
+        vec2 p = mix(vec2(dot(q, vec2(-vFall.y, vFall.x)) * 4.1, dot(q, vFall) * 2.0), q * 2.0, vMist);
         float radius = dot(p,p);
         float halo = max(0.0, 1.0 - radius);
-        vec3 color = vec3(.42,.65,.84) + vec3(.45,.38,.26) * exp(-distance(p,vec2(-.21,-.30))*3.5);
-        gl_FragColor = vec4(color, vAlpha * pow(halo, 1.75 + 1.3 * vMist) * mix(.91,.105,vMist));
+        vec3 color = vec3(.54,.75,.92) + vec3(.43,.35,.25) * exp(-distance(p,vec2(-.17,-.26))*3.5);
+        gl_FragColor = vec4(color, vAlpha * pow(halo, 1.46 + 1.5 * vMist) * mix(.96,.17,vMist));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -431,19 +480,15 @@ export function makeWildlife(scene, time, pixelHeight) {
 
 export function animateWildlife({ whale, spray }, time) {
   const age = time - breach.time;
-  const flight = landing.time - breach.time;
-  const ratio = age / flight;
-  whale.root.visible = time > 11.70 && time < 15.60;
-  spray.visible = time > 12.05 && time < 17.65;
+  whale.root.visible = time > flightStart - .88 && time < flightEnd + .88;
+  spray.visible = time >= breach.time && time < landing.time + 4.2;
   if (!whale.root.visible) return;
-  const y = 4.65 * age * (flight - age) - .29;
-  whale.root.position.set(lerp(breach.x, landing.x, ratio), y, lerp(breach.z, landing.z, ratio));
-  whale.root.rotation.set(.98 - 1.83 * THREE.MathUtils.smoothstep(ratio, .11, .96),
-    -.54 - .22 * Math.sin(Math.PI * ratio), .22 + .62 * Math.sin(Math.PI * ratio));
+  whalePose(whale.root, time);
+  const tailPhase = (time - flightStart) * tailWag + .66;
   for (const { sign, flipper, tail } of whale.attachments) {
-    flipper.rotation.z = sign * (.15 + .25 * Math.sin(age * 2.7 - .6));
-    flipper.rotation.y = sign * (.29 + .16 * Math.cos(age * 2.7));
-    tail.position.set(0, .12 + .81 * Math.sin(time * 5.50 + .66), 10.18);
-    tail.rotation.x = -.12 * Math.cos(time * 5.50 + .66);
+    flipper.rotation.z = sign * (.12 + .29 * Math.sin(age * 2.44 - .6 + sign * .39));
+    flipper.rotation.y = sign * (.22 + .20 * Math.cos(age * 2.44 + sign * .29));
+    tail.position.set(0, .72 * Math.sin(tailPhase), 10.18);
+    tail.rotation.x = -.16 * Math.cos(tailPhase);
   }
 }

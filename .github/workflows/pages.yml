@@ -46,11 +46,7 @@ jobs:
             sudo apt-get install -y ffmpeg
           fi
           python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
-      - name: Build and validate the complete release
-        run: python3 portfolio-source/prepare_release.py --preserve-game
-      - name: Verify my repository cleanup and current-file integrity
-        run: python3 portfolio-source/audit_repository.py
-      - name: Prepare browser verification
+      - name: Prepare the render and verification browser
         timeout-minutes: 10
         run: |
           printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
@@ -64,6 +60,17 @@ jobs:
           echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
           echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
           echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Build and validate the complete release
+        run: |
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once
         timeout-minutes: 8
         run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
@@ -129,11 +136,7 @@ jobs:
             sudo apt-get install -y ffmpeg
           fi
           python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
-      - name: Build and validate the complete release
-        run: python3 portfolio-source/prepare_release.py --preserve-game
-      - name: Verify my repository cleanup and current-file integrity
-        run: python3 portfolio-source/audit_repository.py
-      - name: Prepare browser verification
+      - name: Prepare the render and verification browser
         timeout-minutes: 10
         run: |
           printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
@@ -147,6 +150,17 @@ jobs:
           echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
           echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
           echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Build and validate the complete release
+        run: |
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once
         timeout-minutes: 8
         run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
