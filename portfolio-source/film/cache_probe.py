@@ -115,7 +115,7 @@ def timestamp(seconds):
 def card_text(card):
     heading = card['heading']
     if card.get('byline'):
-        heading = f'{card["byline"]} · {heading}'
+        heading = f'我是{card["byline"]}。{heading}'
     return '　'.join((heading, *card['lines']))
 
 
