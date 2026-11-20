@@ -4,25 +4,36 @@
   const pathKey = path => path.replace(/(?:index\.html)?$/, '').replace(/\/$/, '');
   const disabled = () => root.dataset.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches;
   const native = 'onpageswap' in window && 'onpagereveal' in window;
-  let active;
+  const heading = document.querySelector('[data-shared-target], .detail-hero, .ice-theater .film-heading, .story-page h1');
+  let active, lastCard, outgoing = false;
 
-  document.addEventListener('click', event => {
-    const card = event.target.closest('a[data-shared-card]');
-    if (!card || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || disabled()) return;
-    const url = new URL(card.href, location.href);
-    if (url.origin !== location.origin || pathKey(url.pathname) === pathKey(location.pathname)) return;
-    const bounds = card.getBoundingClientRect();
-    const record = { path: pathKey(url.pathname), x: bounds.left, y: bounds.top, width: bounds.width,
-      height: bounds.height, start: Date.now() };
+  function remember(element, path, card, from, returning) {
+    const { left, top, width, height } = element.getBoundingClientRect();
+    const record = { path, x: left, y: top, width, height, start: Date.now(), card, from, returning };
     try { sessionStorage.setItem(key, JSON.stringify(record)); } catch {}
     if (native) {
-      if (active && active !== card) active.style.removeProperty('view-transition-name');
-      active = card;
-      card.style.viewTransitionName = 'portfolio-card';
+      if (active && active !== element) active.style.removeProperty('view-transition-name');
+      active = element;
+      element.style.viewTransitionName = 'portfolio-card';
+    }
+  }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href]');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.ctrlKey ||
+        event.metaKey || event.altKey || event.shiftKey || disabled()) return;
+    const url = new URL(link.href, location.href);
+    const path = pathKey(url.pathname);
+    if (url.origin !== location.origin || path === pathKey(location.pathname)) return;
+    if (link.dataset.sharedCard) {
+      remember(link, path, link.dataset.sharedCard, pathKey(location.pathname), false);
+      outgoing = true;
+    } else if (lastCard && heading && path === lastCard.from) {
+      remember(heading, path, lastCard.card, pathKey(location.pathname), true);
+      outgoing = true;
     }
   }, { passive: true });
 
-  const destination = document.querySelector('[data-shared-target], .detail-hero, .ice-theater .film-heading');
   function take() {
     try {
       const previous = JSON.parse(sessionStorage.getItem(key));
@@ -34,23 +45,29 @@
     return null;
   }
 
-  const record = take();
-  if (record && destination && !disabled()) {
-    if (native) {
-      destination.style.viewTransitionName = 'portfolio-card';
-      addEventListener('pagereveal', event => {
-        if (event.viewTransition) event.viewTransition.finished.catch(() => {}).finally(() => destination.style.removeProperty('view-transition-name'));
-        else { destination.style.removeProperty('view-transition-name'); flip(); }
-      }, { once: true });
-    } else flip();
+  function arrive(useNative) {
+    const record = take();
+    if (!record || disabled()) return;
+    const target = record.returning && typeof record.card === 'string'
+      ? [...document.querySelectorAll('a[data-shared-card]')].find(link => link.dataset.sharedCard === record.card)
+      : heading;
+    if (!target) return;
+    if (!record.returning) lastCard = record;
+    if (!useNative) { flip(target, record); return; }
+    target.style.viewTransitionName = 'portfolio-card';
+    addEventListener('pagereveal', event => {
+      const clear = () => target.style.removeProperty('view-transition-name');
+      if (event.viewTransition) event.viewTransition.finished.catch(() => {}).finally(clear);
+      else { clear(); flip(target, record); }
+    }, { once: true });
   }
 
-  function flip() {
-    if (!destination.animate || !record) return;
+  function flip(destination, record) {
+    if (!destination.animate) return;
     const current = destination.getBoundingClientRect();
     if (current.width < 1 || current.height < 1) return;
-    const scaleX = Math.max(.35, Math.min(1, record.width / current.width));
-    const scaleY = Math.max(.35, Math.min(1, record.height / current.height));
+    const scaleX = Math.max(.35, Math.min(1.3, record.width / current.width));
+    const scaleY = Math.max(.35, Math.min(1.3, record.height / current.height));
     const x = Math.max(-180, Math.min(180, record.x - current.x));
     const y = Math.max(-180, Math.min(180, record.y - current.y));
     const animation = destination.animate([
@@ -59,5 +76,15 @@
     ], { duration: 360, easing: 'cubic-bezier(.19,1,.22,1)' });
     for (const name of ['pointerdown', 'keydown', 'portfolio:settings']) addEventListener(name, () => animation.cancel(), { once: true });
   }
-  addEventListener('pageshow', () => active?.style.removeProperty('view-transition-name'));
+  arrive(native);
+  addEventListener('pagehide', () => {
+    if (!outgoing && !disabled() && heading && lastCard) {
+      remember(heading, lastCard.from, lastCard.card, pathKey(location.pathname), true);
+    }
+  });
+  addEventListener('pageshow', event => {
+    outgoing = false;
+    active?.style.removeProperty('view-transition-name');
+    if (event.persisted) arrive(false);
+  });
 })();

@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -15,6 +16,10 @@ def fingerprint(root, directory, stem, extension, data):
     output = root / name
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(data)
+    pattern = re.compile(rf'{re.escape(stem)}\.[a-f0-9]{{12}}\.{re.escape(extension)}')
+    for previous in output.parent.glob(f'{stem}.*.{extension}'):
+        if previous != output and pattern.fullmatch(previous.name):
+            previous.unlink()
     return name
 
 
@@ -30,7 +35,7 @@ def webp(root, source, stem, width, quality):
 def compact_images(root, ribbon, poster):
     return {
         'ribbon': [webp(root, ribbon, f'ribbon-{width}', width, quality)
-                   for width, quality in ((480, 78), (800, 79))],
+                   for width, quality in ((480, 76), (800, 74))],
         'avatar': webp(root, 'assets/portrait-white-960.b8bfe698eef3.webp', 'avatar', 144, 83),
         'filmPoster': webp(root, poster, 'ice-cover', 800, 78),
         'gamePreview': webp(root, 'assets/garden-current-home.webp', 'game-preview', 680, 77),

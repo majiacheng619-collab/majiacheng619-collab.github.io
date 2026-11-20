@@ -80,7 +80,8 @@ const server=http.createServer((req,res)=>{
    for(const href of await page.locator('main a[href$=".pdf"]').evaluateAll(nodes=>nodes.map(node=>node.href)))assert.ok(href.endsWith('/'+resume.file),'Every visible resume entry uses the current version');
    if(!route){
     assert.equal(await page.locator('.lens-tabs,.lens-evidence,.hero-command,.studio-contact-band,.orbital-field,.orbital-reticle').count(),0);
-    assert.equal(await page.locator('a[href$=".pdf"]').count(),1);
+    const resumeTargets = await page.locator('a[href$=".pdf"]').evaluateAll(links => [...new Set(links.map(link => new URL(link.href).pathname))]);
+    assert.deepEqual(resumeTargets,['/'+resume.file],'Every resume and Quick Look action points at one PDF');
     if(width<=768){
      assert.equal(await page.evaluate(()=>{
       const search=document.querySelector('.sprite-launcher').getBoundingClientRect(),dock=document.querySelector('.glass-dock').getBoundingClientRect();

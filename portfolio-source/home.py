@@ -2,7 +2,7 @@
 from device_frames import device_frame
 from film_player import build_film
 from silk_art import silk_art
-from os_components import launchpad, lenses
+from os_components import icon, launchpad, lenses
 from profile_data import PROFILE
 
 
@@ -25,7 +25,7 @@ def build_home(img, cta, media, transcript, artwork):
 <section class="premium-hero studio-hero era-hero os-hero" aria-labelledby="identity-title" data-era-hero data-dock-tone="dark">
  {silk_art(artwork['ribbon'])}
  <div class="era-hero-shade" aria-hidden="true"></div>
- <div class="era-masthead premium-shell"><span class="era-wordmark os-pull-region" data-pull-search>{img(artwork['avatar']['src'],'马嘉程个人照片',eager=True)}<span>马嘉程 OS</span></span></div>
+ <div class="era-masthead premium-shell"><span class="era-wordmark os-pull-region" data-pull-search><button type="button" data-avatar-seed aria-label="马嘉程头像">{img(artwork['avatar']['src'],'',eager=True)}<span class="avatar-sprout" data-avatar-sprout hidden>{icon('seed')}</span></button><span class="os-pull-indicator" aria-hidden="true"></span></span></div>
  <div class="premium-shell era-hero-layout">
   <div class="era-hero-content">
    <div class="premium-hero-copy"><p class="hero-intro">{PROFILE["cohort"]}</p><h1 id="identity-title">马嘉程 <span>OS</span></h1><p class="os-hero-intro">{PROFILE["headline"]}</p></div>

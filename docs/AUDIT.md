@@ -2,6 +2,8 @@
 
 2026-11-20 · 基线 `main@c52c0c96ad11f538632c226388370aa8f91c4f5e`
 
+阶段 0 作为现状基线。后续阶段及当前验收见 [PROGRESS.md](PROGRESS.md)。
+
 我以当前提交、`deploy.zip` 和隔离目录重建出的 `_site` 为基线。源码、发布归档、原始简历和游戏文件均按基线使用。静态构建将 Python 模板、CSS 和 JavaScript 编成带指纹的资源，GitHub Actions 用 `_site` 发布至 Pages。
 
 ## 页面与入口

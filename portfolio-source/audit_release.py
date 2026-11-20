@@ -134,6 +134,29 @@ def audit(root):
             for value in json.loads(match.group(1)):
                 counts['precache_assets'] += 1
                 exists(worker, value, 'game/sw.js')
+    site_worker = root / 'sw.js'
+    if site_worker.is_file():
+        data = site_worker.read_text()
+        files = re.search(r'const files = (\[[^;]+\]);', data)
+        if not files:
+            errors.append('Main service worker has no auditable shell list')
+        else:
+            for value in json.loads(files.group(1)):
+                counts['precache_assets'] += 1
+                exists(site_worker, value, 'sw.js')
+                if value.startswith(('/game/', '/assets/ice.')) or value.endswith(('.mp4', '.pdf', '.aac')):
+                    errors.append('Large or game resource in the main offline shell: ' + value)
+        if not re.search(r"cacheName = prefix \+ '[a-f0-9]{16}'", data):
+            errors.append('Main service worker cache must have a content version')
+        manifest = root / 'manifest.webmanifest'
+        if not manifest.is_file():
+            errors.append('Main PWA manifest missing')
+        else:
+            icons = json.loads(manifest.read_text()).get('icons', [])
+            if {item.get('sizes') for item in icons} != {'192x192', '512x512'}:
+                errors.append('Main PWA requires 192 and 512 pixel local icons')
+            for item in icons:
+                exists(manifest, item['src'], 'manifest.webmanifest')
     manifest = game / 'manifest.webmanifest'
     if manifest.is_file():
         data = json.loads(manifest.read_text())
@@ -151,7 +174,7 @@ def audit(root):
         counts['portfolio_pages'] += 1
         relative = path.relative_to(root).as_posix()
         pdfs = [anchor for anchor in doc.anchors if '.pdf' in anchor.get('href', '').lower()]
-        expected = 1 if relative in ('index.html', 'contact/index.html') else 0
+        expected = 1 if relative in ('index.html', 'contact/index.html', 'en/index.html', 'plain/index.html') else 0
         if bool(pdfs) != bool(expected):
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for capture, device in doc.capture_devices:

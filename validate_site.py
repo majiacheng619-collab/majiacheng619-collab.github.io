@@ -21,7 +21,7 @@ import zipfile
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
          'updates/index.html',
          'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html',
-         'ice/index.html', 'story/index.html', '404.html')
+         'ice/index.html', 'story/index.html', 'standby/index.html', '404.html')
 APPROVED_PDF = 'beb4a3432690f81b952fd8108eddd7b8bc26fa6905c2a62e573a83e7098031cd'
 ORIGIN = 'majiacheng619-collab.github.io'
 
@@ -179,7 +179,9 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             if name != expected: err(f'{relative}: PDF link is not the single resume source: {anchor["href"]}')
             if 'download' not in anchor: err(f'{relative}: PDF link lacks download attribute')
     for page, doc in docs.items():
-        main_page = str(page.relative_to(root)) in PAGES
+        main_page = not page.is_relative_to(root / 'game')
+        if main_page and 'noindex' not in doc.meta.get('robots', '').split(','):
+            err(f'{page.relative_to(root)}: noindex required')
         for tag, attr, value in doc.refs:
             result = local(page, value)
             if not result: continue

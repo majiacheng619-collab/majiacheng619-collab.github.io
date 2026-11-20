@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-11-20-ios27-apps'
+REVISION='2026-11-20-ios27-complete'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)

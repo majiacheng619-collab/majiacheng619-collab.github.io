@@ -37,22 +37,25 @@ def sheet(id_, title, body, class_=''):
             f'<div class="os-sheet-content">{body}</div></dialog>')
 
 
-def chrome(title, is_home=False):
+def chrome(title, is_home=False, english=False):
     splash = ('<div class="os-lockscreen" data-lockscreen hidden><div class="os-lock-time" aria-hidden="true"></div>'
               '<button type="button" data-lock-skip>跳过</button></div>') if is_home else ''
+    name = 'Control Center' if english else '控制中心'
+    update = 'Update available' if english else '有新版本'
     return (
         '<div class="os-rail" data-os-rail>'
         f'<span class="os-rail-title" aria-hidden="true">{escape(title)}</span>'
         '<div class="os-island" data-os-island hidden><span role="status" data-os-notice></span>'
         '<progress value="0" max="1" aria-label="播放进度" hidden></progress></div>'
+        f'<button type="button" class="os-action pwa-update" data-pwa-update hidden>{update}</button>'
         '<div class="os-rail-actions">'
         f'<button type="button" class="os-icon-button" aria-label="Spotlight 搜索" aria-keyshortcuts="Meta+K Control+K" data-open-companion hidden>{icon("search")}</button>'
-        f'<button type="button" class="os-icon-button" aria-label="控制中心" data-dialog-open="control-center" data-os-enhancement hidden>{icon("settings")}</button>'
+        f'<button type="button" class="os-icon-button" aria-label="{name}" data-dialog-open="control-center" data-os-enhancement hidden>{icon("settings")}</button>'
         '</div></div>' + splash
     )
 
 
-def shared_dialogs(media, is_home, resume):
+def shared_dialogs(media, is_home, resume, english=False):
     control_content = f'''
         <div class="os-options">
           <label><span data-lang-en="Appearance">外观</span><select data-appearance><option value="auto">自动</option><option value="light">浅色</option><option value="dark">深色</option></select></label>
@@ -63,8 +66,12 @@ def shared_dialogs(media, is_home, resume):
           <label class="os-switch"><span data-lang-en="Haptics">触感</span><input type="checkbox" data-os-setting="haptics"></label>
         </div>
         <button type="button" class="os-action" data-os-music="{media.get("siteMusic", "")}" aria-pressed="false">播放音乐</button>
+        <div class="os-utility-links"><a class="os-action" href="standby/index.html">展台</a>
+          <a class="os-action" href="plain/index.html">纯文字版</a>
+          <a class="os-action" href="{"/" if english else "/en/"}">{"中文" if english else "English"}</a>
+          <button type="button" class="os-action" data-print-page hidden>打印</button></div>
     '''
-    controls = sheet('control-center', '控制中心', control_content)
+    controls = sheet('control-center', 'Control Center' if english else '控制中心', control_content)
     actions = sheet('dock-actions', '快捷操作', '<div class="os-shortcuts" data-dock-shortcuts></div>')
     if not is_home or 'quickLook' not in media:
         return controls + actions

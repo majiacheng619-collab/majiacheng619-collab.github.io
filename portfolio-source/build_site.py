@@ -2,8 +2,10 @@ from pathlib import Path
 import hashlib, html, json, re
 ROOT=Path(__file__).resolve().parent/'site'
 from identity import build as build_identity
-from delivery_assets import compact_images, viewing_video, quick_look, site_music, contact_qr
+from pwa import pwa_manifest, service_worker
+from delivery_assets import fingerprint, compact_images, viewing_video, quick_look, site_music, contact_qr
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
+pwa_manifest(ROOT, TOUCH_ICON)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
 ribbon = json.loads(Path(__file__).with_name('hero-art.json').read_text())['src']
@@ -14,16 +16,14 @@ media['siteMusic'] = site_music(ROOT, media['video'])
 media.update(poster=artwork['filmPoster']['src'], streamVideo=streams['standard'], streamMobile=streams['compact'])
 (ROOT/ribbon).unlink(missing_ok=True)
 (ROOT/'assets/ipad-pro-m5.d67558d91a2d.jpg').unlink(missing_ok=True)
-STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css')
-SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','control-glass.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js')
+STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css','secondary.css')
+SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','control-glass.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js','pwa-client.js','extras.js')
 css='\n'.join((Path(__file__).parent/name).read_text() for name in STYLE_SOURCES)
 resume_sha=hashlib.sha256((Path(__file__).resolve().parent.parent/'resume.pdf').read_bytes()).hexdigest()
 resume_asset='resume-'+resume_sha[:12]+'.pdf'
 js='\n'.join((Path(__file__).parent/name).read_text() for name in SCRIPT_SOURCES).replace('RESUME_PDF_ASSET',resume_asset)
 def asset(text,stem,ext):
- name=f'assets/{stem}.{hashlib.sha256(text.encode()).hexdigest()[:12]}.{ext}'
- (ROOT/name).write_text(text)
- return name
+ return fingerprint(ROOT, 'assets', stem, ext, text.encode())
 # Retire the model worker from inherited release archives as well as this build.
 for old in (ROOT/'assets').glob('companion-worker.*.js'):
  old.unlink()
@@ -81,6 +81,7 @@ from home import build_home, event_preview
 from film_player import build_live
 from pages_v3 import honor_wall, sprout_screens, game_version, story
 from os_components import icon
+from public_views import english, offline, plain, standby
 home=build_home(img, cta, media, transcript, artwork).replace('href="resume.pdf"', f'href="{resume_asset}"')
 render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
 render('ice/index.html', '冰之圣殿', '25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。', build_live(media, media['preview']))
@@ -144,6 +145,12 @@ render('updates/index.html','近况','马嘉程的近期作品与实践。',upda
 
 from contact import build_contact
 render('contact/index.html','联系','联系马嘉程：邮箱、电话与个人简历。',build_contact(img,cta,contact_qr(ROOT)))
+render('en/index.html','Jiacheng Ma','Projects, experience and contact information.',english(cta),lang='en')
+render('standby/index.html','展台','马嘉程的作品与实践。',standby())
+(ROOT/'plain').mkdir(exist_ok=True)
+(ROOT/'plain/index.html').write_text(plain(resume_asset))
+(ROOT/'offline.html').write_text(offline())
+
 
 # Keep only the current generated portfolio CSS and JS.
 for item in (ROOT/'assets').glob('portfolio.*'):
@@ -185,4 +192,6 @@ for page in ROOT.rglob('*.html'):
   source = page.read_text().replace(Path(JS).name, Path(companion_asset).name)
   source = source.replace('href="resume.pdf"', f'href="{resume_asset}"')
   page.write_text(source)
-(ROOT/JS).unlink()
+(ROOT/JS).unlink(missing_ok=True)
+
+service_worker(ROOT)

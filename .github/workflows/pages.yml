@@ -60,6 +60,10 @@ jobs:
           echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
           echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
           echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Build and validate the complete release
         run: |
           film_args=()
@@ -69,6 +73,8 @@ jobs:
             film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
           fi
           python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+          npm ci --ignore-scripts
+          npm run check -- --built
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once
@@ -151,6 +157,10 @@ jobs:
           echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
           echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
           echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Build and validate the complete release
         run: |
           film_args=()
@@ -160,6 +170,8 @@ jobs:
             film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
           fi
           python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+          npm ci --ignore-scripts
+          npm run check -- --built
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once

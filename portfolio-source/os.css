@@ -80,6 +80,8 @@ body { font-size: 1rem; }
   display: flex; align-items: center; gap: .6rem; min-height: 77px; padding: 12px; text-decoration: none;
   font-size: .98rem; line-height: 1.25; font-weight: 650;
 }
+.os-app:active, a.os-widget:active { scale: .97; }
+.os-app, a.os-widget { transition: scale .25s var(--os-spring); }
 .os-app-icon {
   display: grid; place-items: center; width: 41px; height: 41px; border-radius: 14px;
   flex: none; color: #f8fcff; background: linear-gradient(145deg, #528bcc, #1d527f);
@@ -119,7 +121,7 @@ a.os-widget, .os-widget summary { display: flex; gap: 8px; align-items: center; 
   padding: 0 21px calc(22px + var(--os-safe-bottom)); margin: 0 auto;
   overflow: auto; overscroll-behavior: contain; translate: 0 var(--sheet-offset,0px);
 }
-.os-sheet[data-full] { max-height: 91vh; max-height: 91dvh; }
+.os-sheet[data-full] { min-height: min(84vh, 780px); min-height: min(84dvh, 780px); max-height: 91vh; max-height: 91dvh; }
 .os-sheet[open] { animation: os-sheet-in .32s var(--os-spring) both; }
 .os-sheet::backdrop { background: #04112380; }
 @supports ((backdrop-filter: blur(7px)) or (-webkit-backdrop-filter: blur(7px))) {
@@ -151,9 +153,14 @@ a.os-widget, .os-widget summary { display: flex; gap: 8px; align-items: center; 
   .os-app:hover, a.os-widget:hover { box-shadow: var(--os-shadow), inset 0 0 0 1px var(--accent); }
 }
 @media (max-width: 720px) {
+  .glass-dock[data-compact] { width: min(396px, calc(100% - 36px)); }
   .os-hero .era-hero-layout { min-height: 253px; }
   .os-hero .era-hero-content { padding: 25px 0; }
-  .os-hero .spatial-art { left: 31%; width: 78%; top: 4%; height: 82%; opacity: .61; }
+  .os-hero .spatial-art {
+    left: auto; right: -15%; width: 78%; top: 6%; height: 82%; opacity: .74;
+    transform: translate3d(0,calc(var(--art-read,0) * -19px),0) rotateY(var(--art-rotate-y,0deg));
+  }
+  .os-hero .era-hero-shade { background: linear-gradient(90deg,#070d19b0 3%,#070d194d 54%,transparent 90%),linear-gradient(0deg,#070d1980,transparent 32%); }
   .os-hero .hero-career { max-width: 330px; }
   .os-launch-grid { grid-template-columns: 1fr; }
   .os-app { flex-flow: column; justify-content: center; text-align: center; font-size: .86rem; }

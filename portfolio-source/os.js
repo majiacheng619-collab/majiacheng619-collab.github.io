@@ -15,6 +15,8 @@
     }
   }
 
+  if (root.lang === 'en') preferences.language = 'en';
+
   const reduced = () => motion.matches || preferences.reduce;
   const saveData = () => navigator.connection?.saveData === true;
   function applySettings() {
@@ -38,6 +40,10 @@
       preferences[key] = field.type === 'checkbox' ? field.checked : field.value;
       savePreferences();
       applySettings();
+      if (key === 'language') {
+        if (preferences.language === 'en' && root.lang !== 'en') location.assign('/en/');
+        if (preferences.language === 'zh' && root.lang === 'en') location.assign('/');
+      }
     });
   }
   applySettings();

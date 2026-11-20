@@ -27,7 +27,7 @@
 
   vcard.addEventListener('click', () => {
     const value = kind => atob(card.querySelector('[data-contact-row="' + kind + '"] button[data-contact-reveal]').dataset.contactReveal);
-    const body = ['BEGIN:VCARD','VERSION:3.0','FN:' + name,'TEL;TYPE=CELL:' + value('phone'),
+    const body = ['BEGIN:VCARD','VERSION:3.0','N:' + name.slice(0, 1) + ';' + name.slice(1) + ';;;','FN:' + name,'TEL;TYPE=CELL:' + value('phone'),
       'EMAIL;TYPE=INTERNET:' + value('email'),'END:VCARD',''].join('\r\n');
     const url = URL.createObjectURL(new Blob([body], { type:'text/vcard;charset=utf-8' }));
     const link = document.createElement('a');
