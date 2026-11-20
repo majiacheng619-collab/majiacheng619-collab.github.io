@@ -168,7 +168,7 @@ summary::-webkit-details-marker { display: none; }
 }
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) and (min-width: 800px) {
-    .ribbon { animation: ribbon-scroll linear both; animation-timeline: scroll(root); }
+    .ribbon { animation: ribbon-scroll auto linear both; animation-timeline: scroll(root); }
     @keyframes ribbon-scroll { from { transform: translateY(0); } to { transform: translateY(24px); } }
   }
 }
@@ -277,6 +277,8 @@ figcaption { margin-top: 8px; color: var(--muted); }
   .chapter-number { text-align: left; }
   .resume-section { grid-template-columns: 1fr; }
   .site-footer { margin-top: 48px; }
+  [data-text-size="large"] .hero-inner { padding-block: 16px 24px; gap: 16px; }
+  [data-text-size="large"] .portrait-frame { height: clamp(192px, 57vw, 296px); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .page-intro { animation: arrive 220ms ease-out both; }
