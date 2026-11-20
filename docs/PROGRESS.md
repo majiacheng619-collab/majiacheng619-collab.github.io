@@ -11,10 +11,12 @@
 
 - 阶段 3 · 通讯录名片、Wallet 凭证、经历时间线和全屏案例、游戏展示、冰之圣殿实时环视、一分钟故事。
 - 阶段 4 · PWA、展台、英文与纯文字入口、打印和头像彩蛋。
+- 上线 · `pre-ios27` 已保留旧版。经校验的 `deploy.zip` 已随 `feat/ios27` 合入 `main`，由 GitHub Actions 发布 `_site`。线上文件与归档一致。[发布记录](https://github.com/majiacheng619-collab/majiacheng619-collab.github.io/actions/runs/44686672065)
 
 ## 下一步
-- 用 `pre-ios27` 标记当前 Pages 发布树，提交经校验的 `deploy.zip`，合并和发布。
-- 对已发布页面、站内链接、PDF、Service Worker 和首屏传输量执行线上冒烟。
+
+- 在 Safari 16、Android Chrome、微信、飞书和钉钉上进行实机验证。
+- 在硬件加速环境复测 Lighthouse 性能 90 的目标。缺失素材见 [DECISIONS.md](DECISIONS.md)。
 
 ## 验收记录
 
@@ -36,7 +38,10 @@
 
 ### 上线验收
 
-- 三次中位数与分项见 [DECISIONS.md](DECISIONS.md)。移动性能 62，桌面 61，CLS 均为 0。两种配置的无障碍与最佳实践均为 100。
+- 三次中位数与分项见 [DECISIONS.md](DECISIONS.md)。发布前复核移动、桌面性能均为 61，CLS 均为 0。两种配置的无障碍与最佳实践均为 100。
 - 404 和旧作品跳转纳入静态链接与 HTML 校验。发布回滚步骤见 [ROLLBACK.md](ROLLBACK.md)。
 - Chromium 和 WebKit 分别通过六项降级测试，14 个入口在关闭脚本、320 px 和 130% 字号下保持可读。Chromium 验证旧版恢复、主站 Worker 注销与游戏缓存保留。
 - WebKit 截图像素采样覆盖 104 个玻璃、图片与弹层场景。对 1,988 段可见文字的有效字形位置取最坏背景，最低 4.59:1。
+- 发布归档通过 `npm run check`、137 项 Node 测试和浏览器回归。搜索的 36 项测试对构建后的归档运行。简历、影片母版与 135 个游戏发布文件的指纹保持一致。
+- 线上 42 个发布页面和 43 个站内链接目标均返回 HTTP 200。核验了简历哈希、主站 `noindex`、自定义 404、旧作品跳转及 Service Worker `c8dd64699b397dcf` 的激活和缓存版本。
+- WebKit 模拟 iPhone 冷启动记录 11 个请求，传输 197,811 B，含估算响应头开销。压缩响应体共 194,811 B。首屏未触发影片或实时 3D 请求。
