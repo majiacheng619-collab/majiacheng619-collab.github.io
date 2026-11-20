@@ -7,6 +7,20 @@
   const heading = document.querySelector('[data-shared-target], .detail-hero, .ice-theater .film-heading, .story-page h1');
   let active, lastCard, outgoing = false;
 
+  if (native) {
+    function handleAbort(event) {
+      const transition = event.viewTransition;
+      if (!transition) return;
+      // The browser can cancel a native transition when a page opts out or
+      // the motion preference changes during navigation.
+      transition.ready.catch(() => {});
+      transition.finished.catch(() => {});
+      transition.updateCallbackDone.catch(() => {});
+    }
+    addEventListener('pageswap', handleAbort);
+    addEventListener('pagereveal', handleAbort);
+  }
+
   function remember(element, path, card, from, returning) {
     const { left, top, width, height } = element.getBoundingClientRect();
     const record = { path, x: left, y: top, width, height, start: Date.now(), card, from, returning };
@@ -57,8 +71,11 @@
     target.style.viewTransitionName = 'portfolio-card';
     addEventListener('pagereveal', event => {
       const clear = () => target.style.removeProperty('view-transition-name');
-      if (event.viewTransition) event.viewTransition.finished.catch(() => {}).finally(clear);
-      else { clear(); flip(target, record); }
+      const fallback = () => { clear(); if (!disabled()) flip(target, record); };
+      if (event.viewTransition) {
+        event.viewTransition.ready.catch(fallback);
+        event.viewTransition.finished.then(clear, clear);
+      } else fallback();
     }, { once: true });
   }
 
