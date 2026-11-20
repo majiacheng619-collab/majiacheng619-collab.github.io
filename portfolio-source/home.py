@@ -31,13 +31,13 @@ def practice():
     return '<section class="practice-section premium-shell" id="career-lens" aria-labelledby="practice-title"><div class="practice-heading"><h2 id="practice-title">我做过的业务</h2><p class="practice-outcome"><strong>50 万+</strong><span>多项目累计净利润（元）</span></p></div><div class="practice-layout">'+''.join(cards)+'</div></section>'
 
 
-def build_home(img, cta, media, transcript):
+def build_home(img, cta, media, transcript, artwork):
     return f'''
 <div class="premium-home studio-home">
 <section class="premium-hero studio-hero era-hero" aria-labelledby="identity-title" data-era-hero data-dock-tone="dark">
- {silk_art()}
+ {silk_art(artwork['ribbon'])}
  <div class="era-hero-shade" aria-hidden="true"></div>
- <div class="era-masthead premium-shell"><span class="era-wordmark">{img('assets/portrait-white-960.b8bfe698eef3.webp','马嘉程个人照片',eager=True)}<span>马嘉程</span></span></div>
+ <div class="era-masthead premium-shell"><span class="era-wordmark">{img(artwork['avatar']['src'],'马嘉程个人照片',eager=True)}<span>马嘉程</span></span></div>
  <div class="premium-shell era-hero-layout">
   <div class="era-hero-content">
    <div class="premium-hero-copy"><p class="hero-intro">2027 届本科</p><h1 id="identity-title">从获客到交付，<br/><span>我都亲自做过。</span></h1></div>
@@ -53,14 +53,14 @@ def build_home(img, cta, media, transcript):
  <div class="studio-preview-heading"><h2 id="preview-title">精选作品</h2></div>
  <div class="studio-workbench" data-studio-preview>
   <div class="studio-workbench-top"><div class="studio-tabs" role="tablist" aria-label="选择作品预览" hidden><button type="button" role="tab" id="preview-tab-product" aria-controls="preview-panel-product" aria-selected="true" tabindex="0" data-studio-tab="product">萌芽保卫队</button><button type="button" role="tab" id="preview-tab-field" aria-controls="preview-panel-field" aria-selected="false" tabindex="-1" data-studio-tab="field">面包挑战</button></div></div>
-  <article class="studio-panel studio-panel-product" id="preview-panel-product" role="tabpanel" aria-labelledby="preview-tab-product" data-studio-panel="product">
+  <div class="studio-panel studio-panel-product" id="preview-panel-product" role="tabpanel" aria-labelledby="preview-tab-product" data-studio-panel="product">
    <div class="studio-panel-copy premium-game-heading"><p class="project-kicker">独立策划 · AI 辅助实现</p><h2>让植物成长，<br/>成为守住花园的策略。</h2><p>我把玩法拆成植物、敌人、关卡与成长规则，推进实现，再逐项验收引导、操作和存档。</p><div class="studio-product-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div><div class="actions">{cta('game/index.html','开始游戏')}{cta('projects/sprout-patrol/index.html','我的产品分工',True)}</div></div>
-   <div class="premium-game-display device-preview studio-panel-media">{device_frame(img('assets/garden-current-home.webp','萌芽保卫队当前版本真实游戏截图',eager=True), 'ipad')}</div>
-  </article>
-  <article class="studio-panel studio-panel-field" id="preview-panel-field" role="tabpanel" aria-labelledby="preview-tab-field" data-studio-panel="field">
+   <div class="premium-game-display device-preview studio-panel-media">{device_frame(img(artwork['gamePreview']['src'],'萌芽保卫队当前版本真实游戏截图'))}</div>
+  </div>
+  <div class="studio-panel studio-panel-field" id="preview-panel-field" role="tabpanel" aria-labelledby="preview-tab-field" data-studio-panel="field">
    <div class="studio-panel-copy"><p class="project-kicker">与朋友共同开展 · 策划与现场执行</p><h2>面包挑战</h2><p>共同设计收费、奖励和参与规则，准备 A3 宣传物料，再根据实际人流调整场地与组织方式。</p><div class="actions">{cta('poster/index.html','活动方案与实际物料')}</div></div>
    {event_preview('studio-panel-media')}
-  </article>
+  </div>
  </div>
 </section>
 

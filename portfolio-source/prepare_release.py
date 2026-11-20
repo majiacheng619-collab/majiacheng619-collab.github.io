@@ -12,7 +12,7 @@ import zipfile
 REPO=Path(__file__).resolve().parent.parent
 SOURCE=REPO/'portfolio-source'
 SITE=SOURCE/'site'
-REVISION='2026-11-19-capabilities-and-cathedral'
+REVISION='2026-11-20-ios27-unified'
 
 def run(*args):
     subprocess.run(args,cwd=REPO,check=True)
@@ -43,7 +43,7 @@ def fingerprint_portfolio_artwork(root):
         if old.name not in current:
             old.unlink()
 
-def prepare(preserve_game=False, film_output=None):
+def prepare(preserve_game=False, film_output=None, keep_archive=False):
     # Every release starts from the sole current archive, never a stale build folder.
     if SITE.exists(): shutil.rmtree(SITE)
     SITE.mkdir(parents=True)
@@ -86,26 +86,12 @@ def prepare(preserve_game=False, film_output=None):
     release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','mobileVideo','poster','captions','duration','width','height','fps','frames','title','title_zh','chapters')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
     (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))
     if (SOURCE/'audit_release.py').exists(): run('python3','portfolio-source/audit_release.py',str(SITE))
-    temporary=REPO/'deploy.next.zip'
-    with zipfile.ZipFile(temporary,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
-        for path in sorted(SITE.rglob('*')):
-            if path.is_file():
-                item=zipfile.ZipInfo(path.relative_to(SITE).as_posix(),date_time=(2026,1,1,0,0,0))
-                item.compress_type=zipfile.ZIP_DEFLATED
-                item.external_attr=0o100644 << 16
-                archive.writestr(item,path.read_bytes())
-    temporary.replace(REPO/'deploy.zip')
     published=REPO/'_site'
     if published.exists(): shutil.rmtree(published)
     shutil.copytree(SITE,published)
     pdf=REPO/'resume.pdf'
     name='resume-'+hashlib.sha256(pdf.read_bytes()).hexdigest()[:12]+'.pdf'
-    shutil.copy2(pdf,published/'resume.pdf')
     shutil.copy2(pdf,published/name)
-    pattern=r'''(href=["'])([^"']*?)resume\.pdf(?:\?[^"']*)?(["'])'''
-    for page in published.rglob('*.html'):
-        text=page.read_text(encoding='utf-8')
-        page.write_text(re.sub(pattern,lambda m:m[1]+m[2]+name+m[3],text),encoding='utf-8')
     if frozen_game is not None:
         # Assert the final upload tree too; no incidental aliases may reach Pages.
         for path in (published/'game').rglob('*'):
@@ -118,6 +104,16 @@ def prepare(preserve_game=False, film_output=None):
         if current != frozen_game:
             raise RuntimeError('Published game changed during a portfolio-only release')
     run('python3','validate_site.py',str(published),'--published','--pdf','resume.pdf')
+    if not keep_archive:
+        temporary=REPO/'deploy.next.zip'
+        with zipfile.ZipFile(temporary,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
+            for path in sorted(SITE.rglob('*')):
+                if path.is_file():
+                    item=zipfile.ZipInfo(path.relative_to(SITE).as_posix(),date_time=(2026,1,1,0,0,0))
+                    item.compress_type=zipfile.ZIP_DEFLATED
+                    item.external_attr=0o100644 << 16
+                    archive.writestr(item,path.read_bytes())
+        temporary.replace(REPO/'deploy.zip')
 
 if __name__=='__main__':
     import argparse
@@ -125,5 +121,6 @@ if __name__=='__main__':
     parser.add_argument('--preserve-game', action='store_true',
                         help='Publish portfolio changes while retaining every current game file byte-for-byte')
     parser.add_argument('--film-output', type=Path, help='Use a freshly rendered film export')
+    parser.add_argument('--keep-archive', action='store_true', help='Build and check without replacing the tracked input archive')
     args = parser.parse_args()
-    prepare(preserve_game=args.preserve_game, film_output=args.film_output)
+    prepare(preserve_game=args.preserve_game, film_output=args.film_output, keep_archive=args.keep_archive)

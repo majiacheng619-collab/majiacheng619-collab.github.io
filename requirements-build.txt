@@ -1,0 +1,3 @@
+Pillow
+numpy
+opencc-python-reimplemented

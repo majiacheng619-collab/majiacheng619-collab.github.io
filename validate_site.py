@@ -20,7 +20,8 @@ import zipfile
 
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
          'updates/index.html',
-         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html')
+         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html',
+         'ice/index.html', '404.html')
 APPROVED_PDF = 'beb4a3432690f81b952fd8108eddd7b8bc26fa6905c2a62e573a83e7098031cd'
 ORIGIN = 'majiacheng619-collab.github.io'
 
@@ -130,6 +131,8 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
         titles.add(doc.title)
         for key in ('description', 'viewport'):
             if not doc.meta.get(key, '').strip(): err(f'{relative}: {key} missing')
+        if 'noindex' not in doc.meta.get('robots', '').split(','):
+            err(f'{relative}: robots noindex missing')
         if not doc.meta.get('og:title') or not doc.meta.get('og:description'):
             warn(f'{relative}: social sharing title/description incomplete')
         if doc.nav_count != 1 or len(doc.docks) != 1:
@@ -172,8 +175,8 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             counts['pdf_links'] += 1
             parsed = urlsplit(anchor['href'])
             name = PurePosixPath(parsed.path).name
-            expected = r'resume-[a-f0-9]{12}\.pdf' if published else r'resume\.pdf'
-            if not re.fullmatch(expected, name): err(f'{relative}: PDF link is not the single resume source: {anchor["href"]}')
+            expected = 'resume-' + APPROVED_PDF[:12] + '.pdf'
+            if name != expected: err(f'{relative}: PDF link is not the single resume source: {anchor["href"]}')
             if 'download' not in anchor: err(f'{relative}: PDF link lacks download attribute')
     for page, doc in docs.items():
         main_page = str(page.relative_to(root)) in PAGES
@@ -221,14 +224,14 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
     site_pdfs = list(root.rglob('*.pdf'))
     if not published and site_pdfs: err('Source site must not contain PDFs: ' + ', '.join(str(p.relative_to(root)) for p in site_pdfs))
     if published:
-        allowed_pdf_names = {'resume.pdf', 'resume-' + APPROVED_PDF[:12] + '.pdf'}
+        allowed_pdf_names = {'resume-' + APPROVED_PDF[:12] + '.pdf'}
         for item in site_pdfs:
             if item.parent != root or item.name not in allowed_pdf_names:
                 err(f'Unexpected published PDF: {item.relative_to(root)}')
             elif hashlib.sha256(item.read_bytes()).hexdigest() != APPROVED_PDF:
                 err(f'Published PDF differs from approved source: {item.name}')
         if {p.name for p in site_pdfs} != allowed_pdf_names:
-            err('Published tree requires canonical and fingerprinted copies of the same approved PDF')
+            err('Published tree requires the single approved fingerprinted resume')
     if pdf:
         if not pdf.is_file(): err(f'Approved repository PDF missing: {pdf}')
         elif hashlib.sha256(pdf.read_bytes()).hexdigest() != APPROVED_PDF: err('Approved PDF SHA-256 changed')

@@ -83,7 +83,7 @@ def case_section(case, cta):
 def build_experience(cta, detail_rows):
     index=[('ecommerce','电商业务'),('printing','校园打印'),('livestream','直播'),('store','门店'),('field','活动'),('digital-work','数字产品')]
     links = ''.join(f'<a href="#{anchor}">{label}</a>' for anchor,label in index)
-    result = '<div class="detail-page detail-experience"><section class="detail-hero"><div class="detail-shell"><h1>实践经历</h1><p class="detail-intro">做过的业务、承担的职责与实际结果。</p></div></section><div class="case-index detail-shell"><div class="case-jump" aria-label="经历目录">'+links+'</div></div>'
+    result = '<div class="detail-page detail-experience"><section class="detail-hero"><div class="detail-shell"><h1>实践经历</h1><p class="detail-intro">做过的业务、承担的职责与实际结果。</p></div></section><div class="case-index detail-shell"><div class="case-jump" role="group" aria-label="经历目录">'+links+'</div></div>'
     result += '<section class="career-section detail-shell" id="roles"><h2>求职方向</h2><p class="career-intro">2027 届本科校招，意向一线及新一线城市。求职方向包括产品、用户与内容运营、电商、新媒体、活动策划、市场、销售商务与管培生。</p></section>'
     result += ''.join(case_section(case,cta) for case in CASES)
     result += detail_rows('skills','工具与工作方法',[

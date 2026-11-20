@@ -46,7 +46,7 @@ def build_film(media, transcript):
   <div class="film-stage">
    <video id="intro-video" controls playsinline preload="none" width="{media['width']}" height="{media['height']}"
     poster="{media['poster']}" aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
-    <source src="{media['video']}" data-film-mobile-src="{media['mobileVideo']}" type="video/mp4">
+    <source src="{media['streamVideo']}" data-film-mobile-src="{media['streamMobile']}" type="video/mp4">
     <track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">
     你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。
    </video>

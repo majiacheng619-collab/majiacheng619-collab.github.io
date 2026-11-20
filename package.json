@@ -1,0 +1,11 @@
+{
+  "name": "jiacheng-portfolio",
+  "private": true,
+  "scripts": {
+    "build": "python3 portfolio-source/prepare_release.py --preserve-game --keep-archive",
+    "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "vnu-jar": "26.11.19"
+  }
+}

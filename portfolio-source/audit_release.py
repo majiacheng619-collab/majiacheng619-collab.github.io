@@ -155,8 +155,8 @@ def audit(root):
         if len(pdfs) != expected:
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for capture, device in doc.capture_devices:
-            if device.get('data-device-frame') != 'ipad' or device.get('data-device-model') != 'ipad-pro-2025':
-                errors.append(f'{relative}: screenshot must use the iPad Pro 2025 component: {capture}')
+            if device.get('data-device-frame') != 'capture':
+                errors.append(f'{relative}: screenshot must use the unbranded capture component: {capture}')
         for image in doc.images:
             if not all(image.get(key, '').isdigit() and int(image[key]) > 0 for key in ('width', 'height')):
                 errors.append(f'{path.relative_to(root)}: image lacks positive intrinsic dimensions: {image.get("src")}')

@@ -7,7 +7,7 @@ module.exports=async function auditGallery(page,origin,output){
  for(const width of [320,390,768,1440]){
   await page.setViewportSize({width,height:900});
   await page.goto(origin+'/projects/');
-  assert.equal(await page.locator('.work-card').count(),2);
+  assert.equal(await page.locator('.work-card').count(),3);
   assert.equal(await page.locator('.theme-art,.detail-number,.project-collection').count(),0);
   assert.equal(await page.locator('main img[src*="poster-preview"]').count(),0,'The original poster stays in the evidence disclosure');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Gallery fits '+width);

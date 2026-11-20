@@ -35,7 +35,8 @@ const server=http.createServer((req,res)=>{
  const {resume,film:filmMedia}=JSON.parse(fs.readFileSync(path.join(root,'release.json'),'utf8'));
  const digest=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
  assert.equal(digest(resume.file),resume.sha256,'Fingerprint download is the current resume');
- assert.equal(digest('resume.pdf'),resume.sha256,'Stable download alias is the same current resume');
+ assert.equal(fs.existsSync(path.join(root,'resume.pdf')),false,'The publish tree has one resume');
+ const stream=JSON.parse(fs.readFileSync(path.join(root,'assets/media/viewing-video.json'),'utf8'));
  if(scope==='all'||scope==='companion'){
   for(const width of [320,390,768,1024,1440]){
    await page.setViewportSize({width,height:844});await page.goto(origin);
@@ -150,8 +151,10 @@ const server=http.createServer((req,res)=>{
     assert.deepEqual(audit.violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],'Accessibility: '+route);
    }
    if(route==='contact/'){
-    const email=page.locator('.contact-methods a[href^="mailto:"]');
-    assert.ok(await email.evaluate(node=>node.getBoundingClientRect().height<=parseFloat(getComputedStyle(node).lineHeight)+1),'Email address never leaves an orphaned character');
+    const email=page.locator('[data-contact-row="email"]');
+    assert.equal(await email.locator('[data-contact-value]').isHidden(),true);
+    await email.locator('[data-contact-reveal]').click();
+    assert.ok(await email.locator('[data-contact-value]').isVisible(),'The email is available after a deliberate reveal');
    }
    if(route==='experience/'){
     assert.equal(await page.locator('.case-study').count(),6);
@@ -165,9 +168,9 @@ const server=http.createServer((req,res)=>{
  }
  if(scope==='all'||scope==='film'){
   const variants=[
-   {width:390,network:'4g',asset:filmMedia.mobileVideo,videoWidth:1280,start:6.25,end:12.5},
-   {width:1440,network:'4g',asset:filmMedia.video,videoWidth:1920,start:12.5,end:17},
-   {width:1440,network:'3g',asset:filmMedia.mobileVideo,videoWidth:1280,start:12.5,end:17},
+   {width:390,network:'4g',asset:stream.compact,videoWidth:960,start:6.25,end:12.5},
+   {width:1440,network:'4g',asset:stream.standard,videoWidth:1440,start:12.5,end:17},
+   {width:1440,network:'3g',asset:stream.compact,videoWidth:960,start:12.5,end:17},
   ];
   for(const {width,network,asset,videoWidth,start,end} of variants){
    await page.setViewportSize({width,height:844});
@@ -207,10 +210,15 @@ const server=http.createServer((req,res)=>{
   }
   await page.goto(origin+'/contact/');
   await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
-  for(const value of ['19870043434@163.com','19870043434']){
-   const copy=page.locator('[data-copy-value="'+value+'"]');await copy.click();
+  for (const kind of ['email', 'phone']) {
+   const row = page.locator('[data-contact-row="'+kind+'"]');
+   assert.equal(await row.locator('[data-contact-value]').textContent(),'');
+   await row.locator('[data-contact-reveal]').click();
+   const value = await row.locator('[data-contact-value]').textContent();
+   assert.ok(value);
+   await row.locator('[data-contact-copy]').click();
    await page.waitForFunction(value=>navigator.clipboard.readText().then(text=>text===value),value);
-   assert.equal(await copy.textContent(),'已复制');
+   assert.equal(await row.locator('[data-copy-status]').textContent(),'已复制');
   }
   await context.clearPermissions();
  }
