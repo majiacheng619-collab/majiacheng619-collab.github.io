@@ -13,4 +13,4 @@
 
 对照左边为改版前，右边为改版后。原尺寸首屏与整页截图在完整验收 ZIP 的 `docs/review/before/` 和 `docs/review/after/`。
 
-[验收记录](../REVIEW.md) · [改版前线上抓取](before-live.json) · [坐标与无障碍检查](after-checks.json) · [移动 Lighthouse](lighthouse-mobile.json)
+[验收记录](../REVIEW.md) · [改版前线上抓取](before-live.json) · [部署后线上抓取](after-live.json) · [坐标与无障碍检查](after-checks.json) · [移动 Lighthouse](lighthouse-mobile.json)

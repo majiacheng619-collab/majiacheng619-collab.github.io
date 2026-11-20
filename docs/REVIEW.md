@@ -40,7 +40,7 @@
 
 新版移除首屏开场、持续装饰、玻璃计算、浮层与影片脚本。作品图保留尺寸和延迟加载，并生成手机使用的小图。共享 CSS 约 12 KB，脚本 3,560 字节，冰之圣殿只在作品页按需播放。
 
-Lighthouse 采用 Chromium 153 多进程、移动模拟节流。12 个个人站页面的性能均 ≥96，无障碍均为 100。首页测了三次，性能中位数 96，FCP 0.75 秒，LCP 1.14 秒，SI 0.97 秒，TBT 220 毫秒，CLS 0，benchmarkIndex 2254。原始分项见 [Lighthouse 采样](review/lighthouse-mobile.json)。早期单进程探测缺少 Speed Index 所需帧，未用于评分。
+Lighthouse 采用 Chromium 153 多进程、移动模拟节流。12 个个人站页面的性能均 ≥96，无障碍均为 100。首页测了三次，性能中位数 96，FCP 0.75 秒，LCP 1.13 秒，SI 1.10 秒，TBT 213 毫秒，CLS 0，benchmarkIndex 2132.5。原始分项见 [Lighthouse 采样](review/lighthouse-mobile.json)。早期单进程探测缺少 Speed Index 所需帧，未用于评分。
 
 ### 响应式与保留功能
 
@@ -49,3 +49,11 @@ Lighthouse 采用 Chromium 153 多进程、移动模拟节流。12 个个人站�
 - 纯文字、英文、自动深浅模式与加大字号可用。禁用 JS 和人为延迟样式、图片时分别做了首屏检查。测试通过离线回退、等候中的版本更新和新页面加载。
 - Nu HTML Checker 校验 42 个 HTML 页面，零错误。发布树的内部引用和全部媒体指纹校验通过。当前简历与仓库原件逐字节一致。66 项独立游戏及存档测试通过。
 
+### 部署后复核
+
+- GitHub Pages 发布版本为 `2026-11-20-portfolio-redo`。从线上逐页抓取 42 个 HTML 地址并与本地发布树逐字节比较。16 个个人站地址均为新版，包含 4 个旧地址的兼容跳转。其余 26 页为原游戏应用。无尾斜杠的四个旧地址继续可达。
+- 线上复查 149 个唯一目标，0 个死链。不存在的地址返回 HTTP 404，正文使用新壳。线上简历、服务工作线程与通过校验的发布文件逐字节一致。
+- 新版深浅主题均通过 axe 对比度检查，实底组件上的正文、次要文字与强调色的对应最低对比度为 6.38∶1。360×800 深色大字号下，两个首屏按钮在 767 CSS 像素内。核验了简历预览、下载、作品锚点，以及《冰之圣殿》25 秒原生播放和字幕轨道。
+- `pre-redo` 指向原上线版本的保存点 `7d894c5`。改版在 `redo` 分支完成，通过 [GitHub Pages 发布记录](https://github.com/majiacheng619-collab/majiacheng619-collab.github.io/actions/runs/44692279532) 部署。
+
+[部署后页面抓取](review/after-live.json) · [线上链接检查](review/after-live-links.json)

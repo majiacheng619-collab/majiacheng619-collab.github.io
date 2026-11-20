@@ -1,0 +1,443 @@
+[
+  {
+    "route": "/404.html",
+    "status": 200,
+    "path": "/404.html",
+    "sha256": "129e2a170b36fdb48eed148f31a81e6f14608e6a4476af8c51f082ff9cd4053f",
+    "same": true,
+    "title": "找不到页面 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/contact/",
+    "status": 200,
+    "path": "/contact/",
+    "sha256": "ff6541f23a0a8d3a2631107245f80c4d6385240173605ef2bf5d942edb77bb7f",
+    "same": true,
+    "title": "联系 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/en/",
+    "status": 200,
+    "path": "/en/",
+    "sha256": "7736c45e76080a3c2636e0a53934436da45345b1243d0a0c03a85abe0993cfd2",
+    "same": true,
+    "title": "Jiacheng Ma",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/experience/",
+    "status": 200,
+    "path": "/experience/",
+    "sha256": "b2c5ad6ebcf450772fe4a0e7b39ac8b6ea4a664f5797014c8d038e3a4842139f",
+    "same": true,
+    "title": "经历 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/game/about.en.html",
+    "status": 200,
+    "path": "/game/about.en.html",
+    "sha256": "62306b18b5ee902f2be0fdda966179ecab3343cdb427804f66a7a2e787392648",
+    "same": true,
+    "title": "Jiacheng Ma — Author of Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/about.html",
+    "status": 200,
+    "path": "/game/about.html",
+    "sha256": "0b86c892b3cb490987972e1de2f56f4738d9498ea29085737ea6f6917ff2802b",
+    "same": true,
+    "title": "马嘉程 / Jiacheng Ma — 萌芽保卫队作者",
+    "revision": null
+  },
+  {
+    "route": "/game/challenges.en.html",
+    "status": 200,
+    "path": "/game/challenges.en.html",
+    "sha256": "1ef528d1ff01a1ea5252ac49854093ed0e0eb4cebfe6b1b75bcfcdbe6e12076f",
+    "same": true,
+    "title": "Endless waves and a daily garden — Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/challenges.html",
+    "status": 200,
+    "path": "/game/challenges.html",
+    "sha256": "086212a7f37c78feb2a3499970a537b1d064c6d27b102f6212d3553e7c81521e",
+    "same": true,
+    "title": "无尽波次与今日院子 — 萌芽保卫队挑战",
+    "revision": null
+  },
+  {
+    "route": "/game/cloud.en.html",
+    "status": 200,
+    "path": "/game/cloud.en.html",
+    "sha256": "73b8253e1898ffb26daae16e3e6439b73bd84488426d3b0a83763160aea1ec66",
+    "same": true,
+    "title": "带走你的院子 / Take your garden with you｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/cloud.html",
+    "status": 200,
+    "path": "/game/cloud.html",
+    "sha256": "333ce9ee2959bab8eac7a35e4ee10093584de77c95a256d91a1c48d5d4a22c82",
+    "same": true,
+    "title": "带走你的院子 / Take your garden with you｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/codex.en.html",
+    "status": 200,
+    "path": "/game/codex.en.html",
+    "sha256": "f6088b3d8f560bfd16a1315c66f30acab84cbb00b1fe1d6d33680dcafd018e65",
+    "same": true,
+    "title": "Plants, visitors and their weaknesses — Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/codex.html",
+    "status": 200,
+    "path": "/game/codex.html",
+    "sha256": "399efdfad6d40e92eb2c295b1bc507c3f3c58ff95482edb5b7e856d1ac58c8cb",
+    "same": true,
+    "title": "植物、来客与弱点 — 萌芽保卫队图鉴",
+    "revision": null
+  },
+  {
+    "route": "/game/guide.en.html",
+    "status": 200,
+    "path": "/game/guide.en.html",
+    "sha256": "3623603fce422bc7b9b08b05e7a7c052ca08bddbdc41de0b1c00625475ef0f10",
+    "same": true,
+    "title": "How to play — Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/guide.html",
+    "status": 200,
+    "path": "/game/guide.html",
+    "sha256": "82093fa1afeebc7cce8d472178d17c4fa573ae541fea2105c3cc988d2450f7e6",
+    "same": true,
+    "title": "怎么玩 — 萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/home.en.html",
+    "status": 200,
+    "path": "/game/home.en.html",
+    "sha256": "2f788b0907aefa1b4c12f7118c5c034045856614e92fb24843e30a057978ed3b",
+    "same": true,
+    "title": "My garden — Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/home.html",
+    "status": 200,
+    "path": "/game/home.html",
+    "sha256": "4b825d306767a853ec8e1345a265371894aae843ef648b4b74b99790a0dae52d",
+    "same": true,
+    "title": "我的院子 — 萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/index.en.html",
+    "status": 200,
+    "path": "/game/index.en.html",
+    "sha256": "6fa4f42872fad5094ff37fd990ddfb6fd1e0832a1fdc7d6f55c5052f5f0e5abf",
+    "same": true,
+    "title": "Sprout Patrol — Protect what grows · Jiacheng Ma",
+    "revision": null
+  },
+  {
+    "route": "/game/",
+    "status": 200,
+    "path": "/game/",
+    "sha256": "e3c62a339a288889b88b61d4a91425c8ebe3ec0f829d7409665dbba63c402501",
+    "same": true,
+    "title": "萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/journal.en.html",
+    "status": 200,
+    "path": "/game/journal.en.html",
+    "sha256": "830a50fe5d014ed2945b078e857d60b2dee32eeb74a65b0cd9572db877e38aae",
+    "same": true,
+    "title": "Ratings, small upgrades and keepsakes — Sprout Patrol",
+    "revision": null
+  },
+  {
+    "route": "/game/journal.html",
+    "status": 200,
+    "path": "/game/journal.html",
+    "sha256": "de7a9ecd2facdfd583fb12f093041b93d9e3714e3815aa843fe145282572ae90",
+    "same": true,
+    "title": "评级、永久改善与成就 — 萌芽保卫队手记",
+    "revision": null
+  },
+  {
+    "route": "/game/press.en.html",
+    "status": 200,
+    "path": "/game/press.en.html",
+    "sha256": "84a8fd849af390fc405c9368f6a040c0cce2220969c4e0aa8fb18bbb1322cae6",
+    "same": true,
+    "title": "作品与作者 / Work &amp; author｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/press.html",
+    "status": 200,
+    "path": "/game/press.html",
+    "sha256": "5b05d6174d7e5b9f73976a2f289aab6ff15d4c0865534441b185ff58431bbf92",
+    "same": true,
+    "title": "作品与作者 / Work &amp; author｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/privacy.en.html",
+    "status": 200,
+    "path": "/game/privacy.en.html",
+    "sha256": "3fa4ada925e10a04c14dab197750bab14801cede1286c48a5623fe4a80fa9d3e",
+    "same": true,
+    "title": "隐私与存档 / Privacy &amp; saves｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/privacy.html",
+    "status": 200,
+    "path": "/game/privacy.html",
+    "sha256": "791db6e9439718b90ad9d7f1c38ab0cf08451d27e8b89714e7dc118d9729b9ec",
+    "same": true,
+    "title": "隐私与存档 / Privacy &amp; saves｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/replay.en.html",
+    "status": 200,
+    "path": "/game/replay.en.html",
+    "sha256": "4ecf2e6312db758fb3fa1ff2799df5aff0f45c04f74ca03904f3b204b81629f4",
+    "same": true,
+    "title": "对局记录 / Replay records｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/replay.html",
+    "status": 200,
+    "path": "/game/replay.html",
+    "sha256": "f7a86654ef6fa7b38a5b4738c0840253f605969c58e5a5b07f4697d82e15ca7c",
+    "same": true,
+    "title": "对局记录 / Replay records｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/trailer.en.html",
+    "status": 200,
+    "path": "/game/trailer.en.html",
+    "sha256": "a83adb987844c524e3b04e3f328dc34f59a410f7aa52ba05383eca313602e169",
+    "same": true,
+    "title": "游戏画面 / Game preview｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/trailer.html",
+    "status": 200,
+    "path": "/game/trailer.html",
+    "sha256": "b6dba807e999b9229ad5593f65f38ffa234e00857df4becdefa565ab57075ec9",
+    "same": true,
+    "title": "游戏画面 / Game preview｜萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/updates.en.html",
+    "status": 200,
+    "path": "/game/updates.en.html",
+    "sha256": "dcc888476a7f74bc4bc438bcfd0e2e12436a5e99837e5f8e3aa487f960f5641f",
+    "same": true,
+    "title": "The garden today · 萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/game/updates.html",
+    "status": 200,
+    "path": "/game/updates.html",
+    "sha256": "fce78703c720cebf275aa837218928240867a7f37c5f3776bbeb834a2bc09df1",
+    "same": true,
+    "title": "这座花园的现在 · 萌芽保卫队",
+    "revision": null
+  },
+  {
+    "route": "/honor/",
+    "status": 200,
+    "path": "/honor/",
+    "sha256": "ed4dde4f3c2ea1474713184221ca558f8b73dbc0dcc2760b3ec82762dc4b0b45",
+    "same": true,
+    "title": "荣誉 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/ice/",
+    "status": 200,
+    "path": "/ice/",
+    "sha256": "89d6b9be888eeed9cafcf3520a698fb2ba9ac1649566125a9a60deb91dad1fc9",
+    "same": true,
+    "title": "冰之圣殿 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/",
+    "status": 200,
+    "path": "/",
+    "sha256": "9222254b9e04471e3025039167270c7b4069b1711680451561a54c11db620138",
+    "same": true,
+    "title": "马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/offline.html",
+    "status": 200,
+    "path": "/offline.html",
+    "sha256": "243fa0aaf7f6b2c98f68f604ed4505ec4d928575188119ea038ede790a6cffab",
+    "same": true,
+    "title": "当前离线 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/plain/",
+    "status": 200,
+    "path": "/plain/",
+    "sha256": "3aa4c2a28147a430ece14a242f3f692f344f29900bbdaa64ea8f05c85a0710ea",
+    "same": true,
+    "title": "纯文字版 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/poster/",
+    "status": 200,
+    "path": "/poster/",
+    "sha256": "dbed4f52ed95f7bfd9969e295cc166827ea9f5a5ab9e0843de36ff44b043de66",
+    "same": true,
+    "title": "面包挑战 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/projects/ai-content/",
+    "status": 200,
+    "path": "/projects/ai-content/",
+    "sha256": "f214ff2ca32f4dc9fcd91c47b1717bc7c409dba182b3c5dd0a779a64cce4c366",
+    "same": true,
+    "title": "旧作品入口 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/projects/",
+    "status": 200,
+    "path": "/projects/",
+    "sha256": "3eb0e61f5c25073fa91fc0f718abb14c7e733fea4cc84f7e284da66e098e8021",
+    "same": true,
+    "title": "作品 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/projects/sprout-patrol/",
+    "status": 200,
+    "path": "/projects/sprout-patrol/",
+    "sha256": "bffcf688f59d2a297fa7c084f73e4c60ac353d7246e313c6ffbe2c9497d93ab0",
+    "same": true,
+    "title": "萌芽保卫队 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/standby/",
+    "status": 200,
+    "path": "/standby/",
+    "sha256": "00c2cbff4cb191ded20263b4807c27f9a7553155f6076b1b3b130b8b102331b4",
+    "same": true,
+    "title": "展台已合并 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/story/",
+    "status": 200,
+    "path": "/story/",
+    "sha256": "948ffe99b778e7d3ab02207e28123ff70be758bf645330a8f1bc2b538d96d07b",
+    "same": true,
+    "title": "故事已合并 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/updates/",
+    "status": 200,
+    "path": "/updates/",
+    "sha256": "c34fb986a335610f13827f8c76bffad22bc7078bc70d2f247a89a369581be097",
+    "same": true,
+    "title": "近况已合并 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/experience",
+    "status": 200,
+    "path": "/experience/",
+    "sha256": "b2c5ad6ebcf450772fe4a0e7b39ac8b6ea4a664f5797014c8d038e3a4842139f",
+    "same": null,
+    "title": "经历 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/projects",
+    "status": 200,
+    "path": "/projects/",
+    "sha256": "3eb0e61f5c25073fa91fc0f718abb14c7e733fea4cc84f7e284da66e098e8021",
+    "same": null,
+    "title": "作品 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/contact",
+    "status": 200,
+    "path": "/contact/",
+    "sha256": "ff6541f23a0a8d3a2631107245f80c4d6385240173605ef2bf5d942edb77bb7f",
+    "same": null,
+    "title": "联系 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/projects/sprout-patrol",
+    "status": 200,
+    "path": "/projects/sprout-patrol/",
+    "sha256": "bffcf688f59d2a297fa7c084f73e4c60ac353d7246e313c6ffbe2c9497d93ab0",
+    "same": null,
+    "title": "萌芽保卫队 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/__redo-missing-page__",
+    "status": 404,
+    "path": "/__redo-missing-page__",
+    "sha256": "129e2a170b36fdb48eed148f31a81e6f14608e6a4476af8c51f082ff9cd4053f",
+    "same": null,
+    "title": "找不到页面 · 马嘉程",
+    "revision": "2026-11-20-portfolio-redo"
+  },
+  {
+    "route": "/release.json",
+    "status": 200,
+    "path": "/release.json",
+    "sha256": "97504dd8eeda260c7ab9c86804a6f1424d53d5035340e25bbdb0800c7ff9301f",
+    "same": null,
+    "title": null,
+    "revision": null
+  },
+  {
+    "route": "/sw.js",
+    "status": 200,
+    "path": "/sw.js",
+    "sha256": "b7512fc6105c15eb1f44d1e6d3bb022f8a1585afbf172681e96c754b89bdbb29",
+    "same": null,
+    "title": null,
+    "revision": null
+  }
+]

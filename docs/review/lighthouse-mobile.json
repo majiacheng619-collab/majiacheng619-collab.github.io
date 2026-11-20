@@ -5,21 +5,17 @@
     "index": 1,
     "performance": 96,
     "accessibility": 100,
-    "benchmarkIndex": 2109.5,
-    "fcp": 753.4780000000001,
-    "si": 1094.9148979999495,
-    "lcp": 1192.478,
-    "tbt": 239,
+    "benchmarkIndex": 2132.5,
+    "fcp": 754.6199999999999,
+    "si": 1202.4107120002714,
+    "lcp": 1192.7749999999999,
+    "tbt": 213,
     "cls": 0,
-    "bytes": 328601,
+    "bytes": 328634,
     "longTasks": [
       {
-        "url": "http://127.0.0.1:44131/assets/portfolio.617b9426a253.js",
-        "duration": 289
-      },
-      {
-        "url": "Unattributable",
-        "duration": 66
+        "url": "http://127.0.0.1:43783/assets/portfolio.617b9426a253.js",
+        "duration": 263
       }
     ]
   },
@@ -27,19 +23,23 @@
     "name": "home",
     "route": "/",
     "index": 2,
-    "performance": 97,
+    "performance": 96,
     "accessibility": 100,
-    "benchmarkIndex": 2373.5,
-    "fcp": 751.114,
-    "si": 937.6606640004156,
-    "lcp": 1140.114,
-    "tbt": 189,
+    "benchmarkIndex": 1936,
+    "fcp": 756.6300000000001,
+    "si": 1103.1940039999586,
+    "lcp": 1077.2875000000001,
+    "tbt": 235,
     "cls": 0,
-    "bytes": 328601,
+    "bytes": 328634,
     "longTasks": [
       {
-        "url": "http://127.0.0.1:44131/assets/portfolio.617b9426a253.js",
-        "duration": 239
+        "url": "http://127.0.0.1:43783/assets/portfolio.617b9426a253.js",
+        "duration": 285
+      },
+      {
+        "url": "Unattributable",
+        "duration": 52
       }
     ]
   },
@@ -47,27 +47,19 @@
     "name": "home",
     "route": "/",
     "index": 3,
-    "performance": 96,
+    "performance": 98,
     "accessibility": 100,
-    "benchmarkIndex": 2254,
-    "fcp": 752.7950000000001,
-    "si": 970.8888400001963,
-    "lcp": 1034.49375,
-    "tbt": 219.60250000000008,
+    "benchmarkIndex": 2236.5,
+    "fcp": 750.887,
+    "si": 947.7434740002491,
+    "lcp": 1126.887,
+    "tbt": 176,
     "cls": 0,
-    "bytes": 328601,
+    "bytes": 328634,
     "longTasks": [
       {
-        "url": "http://127.0.0.1:44131/assets/portfolio.617b9426a253.js",
-        "duration": 218.0000000000001
-      },
-      {
-        "url": "Unattributable",
-        "duration": 124
-      },
-      {
-        "url": "Unattributable",
-        "duration": 69
+        "url": "http://127.0.0.1:43783/assets/portfolio.617b9426a253.js",
+        "duration": 226
       }
     ]
   },
