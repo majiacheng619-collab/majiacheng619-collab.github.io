@@ -13,7 +13,7 @@ import zipfile
 
 from PIL import Image
 from build_site import ALIASES, Portfolio
-from delivery_assets import fingerprint
+from delivery_assets import webp
 
 REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / 'portfolio-source'
@@ -57,7 +57,7 @@ def asset(root, path):
     return entry
 
 
-def review_assets(root, release):
+def portfolio_assets(root, release):
     retained = {
         'icon': choose(root, 'assets/identity.*.svg'),
         'touch': choose(root, 'assets/identity-touch.*.png'),
@@ -80,18 +80,20 @@ def review_assets(root, release):
     for path in root.rglob('*'):
         if path.is_file() and path not in preserved and path.relative_to(root).parts[0] != 'game':
             path.unlink()
-    from io import BytesIO
-    with Image.open(retained['portrait']) as original:
-        picture = original.resize((480, 480), Image.Resampling.LANCZOS)
-        data = BytesIO()
-        picture.save(data, format='WEBP', quality=80, method=6)
-    mobile_portrait = root / fingerprint(root, 'assets', 'portrait-480', 'webp', data.getvalue())
     images = {key: asset(root, path) for key, path in retained.items()}
-    images['portrait'].update(
-        srcset=f'{asset(root, mobile_portrait)["src"]} 480w, {images["portrait"]["src"]} 960w',
-        sizes='(max-width: 799px) 336px, 408px',
-    )
-    images['portrait_mobile'] = asset(root, mobile_portrait)
+    responsive = {
+        'portrait': (480, 80, '(max-width: 520px) 64vw, (max-width: 799px) 336px, 408px'),
+        'ribbon': (256, 66, '(max-width: 799px) 40vw, 288px'),
+        'game': (680, 76, '(max-width: 928px) calc(100vw - 48px), 880px'),
+        'poster': (512, 76, '312px'),
+    }
+    for key, (width, quality, sizes) in responsive.items():
+        smaller = webp(root, retained[key], f'{key}-compact', width, quality)
+        images[key + '_mobile'] = {**smaller, 'src': '/' + smaller['src']}
+        images[key].update(
+            srcset=f'/{smaller["src"]} {smaller["width"]}w, {images[key]["src"]} {images[key]["width"]}w',
+            sizes=sizes,
+        )
     return images
 
 
@@ -106,7 +108,7 @@ def write_metadata(root, site, release, assets):
     (root / 'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False) + '\n')
     (root / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /game/\nDisallow: /{release["resume"]["file"]}\n')
     (root / '.nojekyll').touch()
-    image_keys = ('icon', 'touch', 'portrait', 'portrait_mobile', 'ribbon', 'game', 'ice', 'poster', 'resume', 'certificate')
+    image_keys = ('icon', 'touch', 'portrait', 'portrait_mobile', 'ribbon', 'game', 'ice', 'poster', 'resume', 'certificate', 'ribbon_mobile', 'game_mobile', 'poster_mobile')
     cache_pages = [url for url in site.html if url.lstrip('/') not in ALIASES]
     files = sorted([*cache_pages, site.css, site.js, '/manifest.webmanifest',
                     *(assets[key]['src'] for key in image_keys)])
@@ -130,7 +132,7 @@ def prepare(keep_archive=False, use_archive_if_current=False):
             release['siteRevision'] = REVISION
             release['sourceFingerprint'] = source_fingerprint()
             release['film']['compact'] = choose(root, 'assets/media/film-compact.*.mp4').relative_to(root).as_posix()
-            assets = review_assets(root, release)
+            assets = portfolio_assets(root, release)
             site = Portfolio(root, assets, release)
             site.home()
             site.rest()

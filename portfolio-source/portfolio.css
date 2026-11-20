@@ -208,12 +208,14 @@ button[data-pwa-update] { text-align: left; }
 .sequence > h2 { margin-bottom: 24px; }
 .chapters { border-top: 1px solid var(--line); }
 .chapter, .case { border-bottom: 1px solid var(--line); }
-.chapter { padding-block: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .55fr); gap: 24px; align-items: center; }
+.chapter { padding-block: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .55fr); grid-template-areas: "title number" "copy number"; column-gap: 24px; row-gap: 16px; align-items: center; }
+.chapter-heading { grid-area: title; }
+.chapter-copy { grid-area: copy; }
 .chapter h3, .work-caption :is(h2, h3), .case h2, .case h3 { margin-top: 8px; }
-.chapter h3 + p, .work-caption :is(h2, h3) + p, .case h2 + p, .case h3 + p { margin-top: 16px; }
+.work-caption :is(h2, h3) + p, .case h2 + p, .case h3 + p { margin-top: 16px; }
 .chapter .link { margin-top: 8px; }
 .chapter-number dd { font-size: var(--display); }
-.chapter-number { text-align: right; }
+.chapter-number { grid-area: number; text-align: right; }
 
 .page-intro { padding-block: 56px 32px; }
 .page-intro > .meta { margin-bottom: 8px; }
@@ -271,8 +273,8 @@ figcaption { margin-top: 8px; color: var(--muted); }
   .ribbon { width: min(46%, 240px); top: 0; right: -10%; }
   .sequence { padding-block: 48px; }
   .page-intro { padding-block: 32px 24px; }
-  .chapter { grid-template-columns: 1fr; align-items: start; gap: 16px; }
-  .chapter-number { grid-row: 1; text-align: left; }
+  .chapter { grid-template-columns: 1fr; grid-template-areas: "title" "number" "copy"; align-items: start; }
+  .chapter-number { text-align: left; }
   .resume-section { grid-template-columns: 1fr; }
   .site-footer { margin-top: 48px; }
 }

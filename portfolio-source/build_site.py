@@ -186,9 +186,9 @@ class Portfolio:
         for key, (value, label), note in zip(BUSINESS, values, notes):
             case = CASES[key]
             business += f'''<article class="chapter" id="{key}">
-<div><p class="meta">{escape(case['time'])}</p><h3>{escape(case['summary']['title'])}</h3><p>{note}</p>
-{link('/experience/#' + key, '查看详情', 'link') }</div>
-{number_list(((value, label),), 'chapter-number')}</article>'''
+<div class="chapter-heading"><p class="meta">{escape(case['time'])}</p><h3>{escape(case['summary']['title'])}</h3></div>
+{number_list(((value, label),), 'chapter-number')}
+<div class="chapter-copy"><p>{note}</p>{link('/experience/#' + key, '查看详情', 'link')}</div></article>'''
         preview = self.image('resume', '马嘉程简历第一页预览', style='resume-image')
         self.page('index.html', PROFILE['name'], PROFILE['headline'], f'''{hero}
 <section class="wrap sequence" id="experience"><h2>业务经历</h2><div class="chapters">{business}</div></section>
