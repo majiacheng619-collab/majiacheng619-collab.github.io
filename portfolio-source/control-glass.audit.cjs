@@ -49,6 +49,7 @@ module.exports=async function auditGlass(page,origin,output){
  const styles = await page.locator('.ambient-field').evaluate(el => getComputedStyle(el).backgroundImage);
  assert.ok(styles.includes('radial-gradient'));
  assert.equal(await page.locator('canvas[data-optical-scene]').count(),0,'Reading surfaces use the static gradient on first load');
+ await page.getByRole('button',{name:'控制中心'}).click();
  const modes = ['light','dark','auto'];
  for (const mode of modes) {
   await page.locator('select[data-appearance]').selectOption(mode);
@@ -56,5 +57,6 @@ module.exports=async function auditGlass(page,origin,output){
   assert.equal(theme,mode==='dark'?'dark':'light');
   assert.equal(await page.locator('meta[name=theme-color]').getAttribute('content'),theme==='dark'?'#071625':'#ecf5ff');
  }
+ await page.keyboard.press('Escape');
  console.log(JSON.stringify({glassControls:true,realTouch:true,nativeAnchors:true,theme:true}));
 };

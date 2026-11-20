@@ -2,18 +2,20 @@ from pathlib import Path
 import hashlib, html, json, re
 ROOT=Path(__file__).resolve().parent/'site'
 from identity import build as build_identity
-from delivery_assets import compact_images, viewing_video
+from delivery_assets import compact_images, viewing_video, quick_look, site_music
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
 ribbon = json.loads(Path(__file__).with_name('hero-art.json').read_text())['src']
 artwork = compact_images(ROOT, ribbon, media['poster'])
 streams = viewing_video(ROOT, media)
+media['quickLook'] = quick_look(ROOT, Path(__file__).resolve().parents[1] / 'resume.pdf')
+media['siteMusic'] = site_music(ROOT, media['video'])
 media.update(poster=artwork['filmPoster']['src'], streamVideo=streams['standard'], streamMobile=streams['compact'])
 (ROOT/ribbon).unlink(missing_ok=True)
 (ROOT/'assets/ipad-pro-m5.d67558d91a2d.jpg').unlink(missing_ok=True)
-STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css')
-SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite-brain.js','sprite.js','control-glass.js','portfolio-material.js','appearance.js')
+STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css')
+SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','control-glass.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js')
 css='\n'.join((Path(__file__).parent/name).read_text() for name in STYLE_SOURCES)
 resume_sha=hashlib.sha256((Path(__file__).resolve().parent.parent/'resume.pdf').read_bytes()).hexdigest()
 resume_asset='resume-'+resume_sha[:12]+'.pdf'
@@ -47,7 +49,7 @@ def cta(url,label,secondary=False):
  return f'<a class="button {"secondary" if secondary else "primary"}" href="{url}"'+(' download="马嘉程_个人简历.pdf"' if url.endswith('.pdf') else '')+f'>{label}</a>'
 from device_frames import device_frame
 from site_shell import build_renderer
-render=build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,page_styles=page_styles,page_scripts=page_scripts)
+render=build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,page_styles=page_styles,page_scripts=page_scripts,resume=resume_asset)
 dimensions=json.loads((Path(__file__).parent/'image-dimensions.json').read_text())
 for name in ('avatar', 'filmPoster', 'gamePreview'):
  current = artwork[name]
@@ -69,7 +71,7 @@ for old in (ROOT/'assets').glob('poster-preview.*.webp'):
 
 from home import build_home, event_preview
 from film_player import build_live
-home=build_home(img, cta, media, transcript, artwork)
+home=build_home(img, cta, media, transcript, artwork).replace('href="resume.pdf"', f'href="{resume_asset}"')
 render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
 render('ice/index.html', '冰之圣殿', '25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。', build_live(media, media['preview']))
 
@@ -150,11 +152,27 @@ page.write_text(text)
 (ROOT/'sitemap.xml').unlink(missing_ok=True)
 (ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /game/\nDisallow: /resume-beb4a3432690.pdf\n')
 
-# Bind the companion to the same copy visitors actually read in this release.
+# Build the search index from the same visible copy. The panel loads it on demand.
 from sprite_content import build as build_sprite_content
-companion_js = js.replace('[]/*SPRITE_CONTENT*/', json.dumps(build_sprite_content(ROOT), ensure_ascii=False))
+from pypinyin import Style, lazy_pinyin
+
+records = build_sprite_content(ROOT)
+for record in records:
+ aliases = set()
+ for phrase in [record['title'], *record['keywords'].split()]:
+  if not re.search(r'[\u3400-\u9fff]', phrase):
+   continue
+  full = ''.join(lazy_pinyin(phrase, style=Style.NORMAL)).lower()
+  initials = ''.join(lazy_pinyin(phrase, style=Style.FIRST_LETTER)).lower()
+  aliases.update(alias for alias in (full, initials) if re.fullmatch(r'[a-z]{2,}', alias))
+ record['romanized'] = sorted(aliases)
+index = asset(json.dumps(records, ensure_ascii=False, separators=(',', ':')), 'spotlight', 'json')
+engine = asset(Path(__file__).with_name('sprite-brain.js').read_text(), 'spotlight-engine', 'mjs')
+companion_js = js.replace('SPOTLIGHT_INDEX_ASSET', index).replace('SPOTLIGHT_ENGINE_ASSET', engine)
 companion_asset = asset(companion_js, 'portfolio', 'js')
 for page in ROOT.rglob('*.html'):
- if page.parts[len(ROOT.parts)] != 'game':
-  page.write_text(page.read_text().replace(Path(JS).name, Path(companion_asset).name))
+ if not page.is_relative_to(ROOT / 'game'):
+  source = page.read_text().replace(Path(JS).name, Path(companion_asset).name)
+  source = source.replace('href="resume.pdf"', f'href="{resume_asset}"')
+  page.write_text(source)
 (ROOT/JS).unlink()

@@ -1,3 +1,4 @@
 Pillow
 numpy
 opencc-python-reimplemented
+pypinyin==0.55.0

@@ -78,3 +78,39 @@ def viewing_video(root, media):
             asset.unlink()
     manifest.write_text(json.dumps(result, sort_keys=True))
     return result
+
+
+def quick_look(root, original):
+    """Rasterize the first page below its contact line."""
+    from xml.etree import ElementTree
+
+    box = ElementTree.fromstring(subprocess.check_output([
+        'pdftotext', '-f', '1', '-l', '1', '-bbox', str(original), '-',
+    ]))
+    page = next(box.iterfind('.//{*}page'))
+    private_bottom = []
+    for word in page.iterfind('.//{*}word'):
+        value = word.text or ''
+        if '@' in value or (value.isdecimal() and len(value) == 11):
+            private_bottom.append(float(word.attrib['yMax']))
+    if not private_bottom:
+        raise RuntimeError('Unable to identify the contact line for the resume preview')
+    pixels = subprocess.check_output([
+        'pdftoppm', '-f', '1', '-l', '1', '-scale-to', '880', '-singlefile', '-png', str(original),
+    ])
+    with Image.open(io.BytesIO(pixels)) as image:
+        crop = int(image.height * (max(private_bottom) + 10) / float(page.attrib['height']))
+        preview = image.crop((0, crop, image.width, image.height)).convert('RGB')
+        data = io.BytesIO()
+        preview.save(data, 'WEBP', quality=81, method=6)
+    return {'src': fingerprint(root, 'assets', 'resume-preview', 'webp', data.getvalue()),
+            'width': preview.width, 'height': preview.height}
+
+
+def site_music(root, source):
+    """Keep the approved local soundtrack available as an opt-in media file."""
+    output = subprocess.check_output([
+        'ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error', '-i', str(root / source),
+        '-map', '0:a:0', '-c:a', 'aac', '-b:a', '64k', '-f', 'adts', 'pipe:1',
+    ])
+    return fingerprint(root, 'assets/media', 'site-music', 'aac', output)

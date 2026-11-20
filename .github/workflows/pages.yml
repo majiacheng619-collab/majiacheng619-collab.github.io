@@ -41,11 +41,11 @@ jobs:
           python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Install static build dependencies
         run: |
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
             sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg
+            sudo apt-get install -y ffmpeg poppler-utils
           fi
-          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
       - name: Prepare the render and verification browser
         timeout-minutes: 10
         run: |
@@ -132,12 +132,11 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install static build dependencies
         run: |
-          if [[ "$(python3 portfolio-source/film/cache_probe.py)" != true ]] &&
-             { ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; }; then
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
             sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg
+            sudo apt-get install -y ffmpeg poppler-utils
           fi
-          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
       - name: Prepare the render and verification browser
         timeout-minutes: 10
         run: |

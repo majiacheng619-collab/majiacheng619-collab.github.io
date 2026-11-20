@@ -10,7 +10,7 @@
 
 ## 构建与校验
 
-我使用 Python 3、Node.js 24、Java 21 和 FFmpeg 在本地构建与校验。
+我使用 Python 3、Node.js 24、Java 21、FFmpeg 与 Poppler 在本地构建与校验。
 
 ```sh
 python3 -m pip install -r requirements-build.txt

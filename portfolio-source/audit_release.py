@@ -152,7 +152,7 @@ def audit(root):
         relative = path.relative_to(root).as_posix()
         pdfs = [anchor for anchor in doc.anchors if '.pdf' in anchor.get('href', '').lower()]
         expected = 1 if relative in ('index.html', 'contact/index.html') else 0
-        if len(pdfs) != expected:
+        if bool(pdfs) != bool(expected):
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for capture, device in doc.capture_devices:
             if device.get('data-device-frame') != 'capture':

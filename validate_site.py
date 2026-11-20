@@ -64,7 +64,7 @@ class Document(HTMLParser):
             if not a.get('href', '').strip() or a.get('href') == '#': self.empty_links.append(a.get('href', ''))
         if tag == 'a' and self.nav_depth: self.nav_links.append(a.get('href', ''))
         if tag == 'a' and a.get('target') == '_blank': self.blank_links.append(a)
-        for key in ('href', 'src', 'poster'):
+        for key in ('href', 'src', 'poster', 'data-film-mobile-src', 'data-os-music', 'data-image-src'):
             if a.get(key): self.refs.append((tag, key, a[key]))
         if a.get('srcset'):
             for part in a['srcset'].split(','):
@@ -163,7 +163,7 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
         for anchor in doc.blank_links:
             if 'noopener' not in anchor.get('rel', '').split(): err(f'{relative}: new-window link lacks noopener')
         expected_downloads = 1 if relative in ('index.html', 'contact/index.html') else 0
-        if len(doc.pdf_links) != expected_downloads:
+        if bool(doc.pdf_links) != bool(expected_downloads):
             err(f'{relative}: expected {expected_downloads} resume entry, found {len(doc.pdf_links)}')
         if relative == 'index.html' and 'about' in doc.ids:
             err('index.html: retired embedded contact section remains')

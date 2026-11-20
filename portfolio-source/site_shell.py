@@ -3,8 +3,9 @@ from pathlib import Path
 import re
 from html import escape
 from sprite_shell import CLOSE_ICON, companion
+from os_components import chrome, shared_dialogs
 
-def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None,page_scripts=None):
+def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None,page_scripts=None,resume=None):
  page_styles = page_styles or {}
  page_scripts = page_scripts or {}
  theme_init = Path(__file__).with_name('appearance-init.js').read_text()
@@ -34,13 +35,13 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None
   footer='<footer class="site-footer"><div class="footer-bottom">© 2026 马嘉程</div></footer>'
   dialogs=f'<dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图"><button type="button" class="dialog-close" data-dialog-close aria-label="关闭大图">{CLOSE_ICON}</button><img data-dialog-image loading="lazy" decoding="async" src="assets/portrait-white-960.b8bfe698eef3.webp" alt="马嘉程证件照" width="960" height="960"/></dialog>'
 
+  raw_title = title
   title = escape(title if path=="index.html" else title+"｜马嘉程")
   desc = escape(desc, quote=True)
   assets = ''.join(f'<link rel="stylesheet" href="{item}"/>' for item in (CSS,*page_styles.get(path, ())))
   assets += ''.join(f'<script defer src="{item}"></script>' for item in (JS,*page_scripts.get(path, ())))
-  appearance = ('<div class="appearance-control" hidden><select aria-label="外观" data-appearance>'
-                '<option value="auto">自动外观</option><option value="light">浅色</option>'
-                '<option value="dark">深色</option></select></div>')
+  appearance = chrome(raw_title.split('｜', 1)[0], path=='index.html')
+  dialogs += shared_dialogs(media, path=='index.html', resume or 'resume-beb4a3432690.pdf')
   doc=f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <meta name="robots" content="noindex,nofollow,noarchive"/><meta name="color-scheme" content="light dark"/>
@@ -51,7 +52,7 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None
   <link rel="canonical" href="https://majiacheng619-collab.github.io/{"" if path=="index.html" else path.replace("index.html","")}"/>
   <link rel="icon" href="{ICON}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{TOUCH_ICON}"/>
   <script>{theme_init}</script>{assets}</head>
-  <body class="{'home-page' if path=='index.html' else 'inner-page'}" data-portfolio-ui="35" data-atmosphere="{scene}">
+  <body class="{'home-page' if path=='index.html' else 'inner-page'}" data-portfolio-ui="36" data-atmosphere="{scene}">
   <a class="skip-link" href="#main">跳转到正文</a>{appearance}
   <main id="main" tabindex="-1">{body}{footer}</main>{dialogs}{glass_dock(path)}{companion()}</body></html>'''
   doc=doc.replace(f'{footer}</main>',f'</main>{footer}')
@@ -62,7 +63,7 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None
   def relative(match):
    attr,value=match.groups()
    return f'{attr}="{value if re.match(r"^(?:https?:|mailto:|tel:|#|data:|/)",value) else prefix+value}"'
-  doc=re.sub(r'(href|src|poster)="([^"]+)"',relative,doc)
+  doc=re.sub(r'(data-os-music|href|src|poster)="([^"]+)"',relative,doc)
   target=ROOT/path; target.parent.mkdir(parents=True,exist_ok=True); target.write_text(doc)
   return doc
 
