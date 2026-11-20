@@ -1,163 +1,169 @@
 #!/usr/bin/env python3
-"""Build the complete current website and its single publication archive."""
-from pathlib import Path
+"""Build GitHub Pages with the approved résumé and the archived game unchanged."""
+import argparse
 import hashlib
 import json
 import os
-import re
+from pathlib import Path
 import shutil
-import stat
 import subprocess
+import stat
+import tempfile
 import zipfile
 
-REPO=Path(__file__).resolve().parent.parent
-SOURCE=REPO/'portfolio-source'
-SITE=SOURCE/'site'
-REVISION='2026-11-20-ios27-publication'
+from PIL import Image
+from build_site import ALIASES, Portfolio
+from delivery_assets import fingerprint
 
-def run(*args):
-    subprocess.run(args,cwd=REPO,check=True)
+REPO = Path(__file__).resolve().parent.parent
+SOURCE = REPO / 'portfolio-source'
+REVISION = '2026-11-20-portfolio-redo'
 
-def fingerprint_portfolio_artwork(root):
-    """Give mutable game previews immutable URLs on every portfolio page."""
-    replacements = {}
-    current = set()
-    for source in sorted((root/'assets').glob('garden-current-*.webp')):
-        # Overrides carry the canonical unversioned inputs. Inherited hashes are
-        # removed only after all generated page references have been updated.
-        if re.search(r'\.[a-f0-9]{12}\.webp$', source.name):
-            continue
-        name = source.stem + '.' + hashlib.sha256(source.read_bytes()).hexdigest()[:12] + '.webp'
-        target = source.with_name(name)
-        target.write_bytes(source.read_bytes())
-        replacements[source.name] = name
-        current.add(name)
-    if not replacements:
-        return
-    for page in root.rglob('*.html'):
-        content = page.read_text()
-        for previous, name in replacements.items():
-            stem = re.escape(previous.removesuffix('.webp'))
-            content = re.sub(stem + r'(?:\.[a-f0-9]{12})?\.webp', name, content)
-        page.write_text(content)
-    for old in (root/'assets').glob('garden-current-*.webp'):
-        if old.name not in current:
-            old.unlink()
 
 def source_fingerprint():
+    inputs = [REPO / 'data/profile.json', REPO / 'resume.pdf', REPO / 'requirements-build.txt']
+    inputs += [SOURCE / filename for filename in (
+        'prepare_release.py', 'build_site.py', 'profile_data.py', 'contact.py', 'delivery_assets.py',
+        'portfolio.css', 'portfolio-interactions.js', 'appearance-init.js', 'pwa-client.js', 'sw-template.js',
+    )]
     digest = hashlib.sha256()
-    ignored = {'site', '__pycache__', 'film-manifest.json', 'provenance.json', '.build'}
-    for base in (SOURCE, REPO / 'data'):
-        for path in sorted(base.rglob('*')):
-            if not path.is_file() or ignored.intersection(path.relative_to(base).parts):
-                continue
-            digest.update(path.relative_to(REPO).as_posix().encode() + b'\0')
-            digest.update(hashlib.sha256(path.read_bytes()).digest())
-    for name in ('resume.pdf', 'requirements-build.txt'):
-        digest.update(hashlib.sha256((REPO / name).read_bytes()).digest())
+    for path in inputs:
+        digest.update(path.relative_to(REPO).as_posix().encode() + b'\0')
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
 
 
 def extract_archive(archive, target):
-    if target.exists(): shutil.rmtree(target)
-    target.mkdir(parents=True)
     root = target.resolve()
     for entry in archive.infolist():
         path = (root / entry.filename).resolve()
         if not path.is_relative_to(root) or stat.S_ISLNK(entry.external_attr >> 16):
-            raise RuntimeError('Unsafe archive entry')
+            raise RuntimeError('Unsafe publication archive entry')
     archive.extractall(root)
 
 
-def publish(site):
-    published = REPO / '_site'
-    if published.exists(): shutil.rmtree(published)
-    shutil.copytree(site, published)
-    pdf = REPO / 'resume.pdf'
-    name = 'resume-' + hashlib.sha256(pdf.read_bytes()).hexdigest()[:12] + '.pdf'
-    shutil.copy2(pdf, published / name)
-    run('python3', 'validate_site.py', str(published), '--published', '--pdf', 'resume.pdf')
-    return published
+def choose(root, pattern):
+    paths = sorted(root.glob(pattern))
+    if len(paths) != 1:
+        raise RuntimeError(f'Expected one approved asset for {pattern}, found {len(paths)}')
+    return paths[0]
 
 
-def publish_current_archive():
-    with zipfile.ZipFile(REPO / 'deploy.zip') as archive:
-        metadata = json.loads(archive.read('release.json'))
-        if metadata.get('sourceFingerprint') != source_fingerprint():
-            return False
-        extract_archive(archive, SITE)
-    run('python3', 'portfolio-source/audit_release.py', str(SITE))
-    publish(SITE)
-    print('Published the validated, committed archive without rebuilding assets.')
-    return True
+def asset(root, path):
+    entry = {'src': '/' + path.relative_to(root).as_posix()}
+    if path.suffix in {'.png', '.jpeg', '.webp', '.jpg'}:
+        with Image.open(path) as image:
+            entry.update(width=image.width, height=image.height)
+    return entry
 
 
-def prepare(preserve_game=False, film_output=None, keep_archive=False):
-    # Always begin with the current tracked archive, never a stale build folder.
-    with zipfile.ZipFile(REPO/'deploy.zip') as archive:
-        frozen_game = {name: archive.read(name) for name in archive.namelist()
-                       if name.startswith('game/') and not name.endswith('/')} if preserve_game else None
-        if preserve_game and not frozen_game:
-            raise RuntimeError('Portfolio-only release requires the published game snapshot')
-        extract_archive(archive, SITE)
-    artwork=SOURCE/'assets-overrides'
-    if artwork.exists(): shutil.copytree(artwork,SITE/'assets',dirs_exist_ok=True)
-    overrides=SOURCE/'game-overrides'
-    if overrides.exists(): shutil.copytree(overrides,SITE/'game',dirs_exist_ok=True)
-    import sys
-    sys.path.insert(0, str(SOURCE/'optics'))
-    from render_field import build as build_optical_field
-    build_optical_field(SITE)
-    from game_release import fingerprint
-    fingerprint(SITE/'game')
-    from clean_release import clean
-    clean(SITE)
-    for retired in (SITE/'assets').glob('search-index*.json'):
-        retired.unlink()
-    from film.cache_probe import install_film
-    film = install_film(SITE, film_output)
-    (SOURCE/'film-manifest.json').write_text(json.dumps(film, ensure_ascii=False))
-    run('python3','portfolio-source/build_site.py')
-    fingerprint_portfolio_artwork(SITE)
-    # A portfolio-only release keeps the published game and its offline cache exact.
-    # Build tools may normalize aliases, so restore the input snapshot at the boundary.
-    if frozen_game is not None:
-        shutil.rmtree(SITE/'game')
-        for name, payload in frozen_game.items():
-            target = SITE/name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(payload)
-    release={'commit':os.environ.get('GITHUB_SHA','local-review'),'siteRevision':REVISION,'film':{k:film[k] for k in ('video','mobileVideo','poster','captions','duration','width','height','fps','frames','title','title_zh','chapters')},'resume':{'file':'resume-'+hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()[:12]+'.pdf','sha256':hashlib.sha256((REPO/'resume.pdf').read_bytes()).hexdigest()},'visitorAnalytics':{'enabled':False},'filmSHA256':hashlib.sha256((SITE/film['video']).read_bytes()).hexdigest()}
-    release['sourceFingerprint'] = source_fingerprint()
-    (SITE/'release.json').write_text(json.dumps(release,ensure_ascii=False))
-    if (SOURCE/'audit_release.py').exists(): run('python3','portfolio-source/audit_release.py',str(SITE))
-    published = publish(SITE)
-    if frozen_game is not None:
-        current = {path.relative_to(published).as_posix(): path.read_bytes()
-                   for path in (published/'game').rglob('*') if path.is_file()}
-        if current != frozen_game:
-            raise RuntimeError('Published game changed during a portfolio-only release')
-    if not keep_archive:
-        temporary=REPO/'deploy.next.zip'
-        with zipfile.ZipFile(temporary,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
-            for path in sorted(SITE.rglob('*')):
-                if path.is_file():
-                    item=zipfile.ZipInfo(path.relative_to(SITE).as_posix(),date_time=(2026,1,1,0,0,0))
-                    item.compress_type=zipfile.ZIP_DEFLATED
-                    item.external_attr=0o100644 << 16
-                    archive.writestr(item,path.read_bytes())
-        temporary.replace(REPO/'deploy.zip')
+def review_assets(root, release):
+    retained = {
+        'icon': choose(root, 'assets/identity.*.svg'),
+        'touch': choose(root, 'assets/identity-touch.*.png'),
+        'icon192': choose(root, 'assets/pwa-icon-192.*.png'),
+        'icon512': choose(root, 'assets/pwa-icon-512.*.png'),
+        'portrait': choose(root, 'assets/portrait-white-960.*.webp'),
+        'ribbon': choose(root, 'assets/ribbon-480.*.webp'),
+        'game': choose(root, 'assets/garden-current-play.*.webp'),
+        'ice': choose(root, 'assets/ice-cover.*.webp'),
+        'poster': choose(root, 'assets/poster-preview.*.webp'),
+        'resume': choose(root, 'assets/resume-preview.*.webp'),
+        'certificate': root / 'honor/live-honor-2026.jpeg',
+    }
+    preserved = set(retained.values())
+    preserved.update(root / name for name in (
+        'assets/fonts/Noto-OFL.txt', 'assets/media/CREDITS.md', 'assets/media/intro-script.txt', 'poster/poster.png',
+        release['film']['compact'], release['film']['captions'], release['film']['video'],
+        release['film']['mobileVideo'], release['film']['poster'],
+    ))
+    for path in root.rglob('*'):
+        if path.is_file() and path not in preserved and path.relative_to(root).parts[0] != 'game':
+            path.unlink()
+    from io import BytesIO
+    with Image.open(retained['portrait']) as original:
+        picture = original.resize((480, 480), Image.Resampling.LANCZOS)
+        data = BytesIO()
+        picture.save(data, format='WEBP', quality=80, method=6)
+    mobile_portrait = root / fingerprint(root, 'assets', 'portrait-480', 'webp', data.getvalue())
+    images = {key: asset(root, path) for key, path in retained.items()}
+    images['portrait'].update(
+        srcset=f'{asset(root, mobile_portrait)["src"]} 480w, {images["portrait"]["src"]} 960w',
+        sizes='(max-width: 799px) 336px, 408px',
+    )
+    images['portrait_mobile'] = asset(root, mobile_portrait)
+    return images
 
-if __name__=='__main__':
-    import argparse
+
+def write_metadata(root, site, release, assets):
+    (root / 'release.json').write_text(json.dumps(release, ensure_ascii=False) + '\n')
+    manifest = {
+        'name': '马嘉程', 'short_name': '马嘉程', 'lang': 'zh-CN', 'start_url': '/', 'scope': '/',
+        'display': 'standalone', 'background_color': '#f6f8fa', 'theme_color': '#f6f8fa',
+        'icons': [{'src': assets[key]['src'], 'sizes': f'{size}x{size}', 'type': 'image/png'}
+                  for key, size in (('icon192', 192), ('icon512', 512))],
+    }
+    (root / 'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False) + '\n')
+    (root / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /game/\nDisallow: /{release["resume"]["file"]}\n')
+    (root / '.nojekyll').touch()
+    image_keys = ('icon', 'touch', 'portrait', 'portrait_mobile', 'ribbon', 'game', 'ice', 'poster', 'resume', 'certificate')
+    cache_pages = [url for url in site.html if url.lstrip('/') not in ALIASES]
+    files = sorted([*cache_pages, site.css, site.js, '/manifest.webmanifest',
+                    *(assets[key]['src'] for key in image_keys)])
+    cache_id = hashlib.sha256(b''.join((root / url[1:]).read_bytes() for url in files)).hexdigest()[:16]
+    worker = (SOURCE / 'sw-template.js').read_text()
+    worker = worker.replace('CACHE_VERSION', cache_id).replace('CACHE_FILES', json.dumps(files))
+    (root / 'sw.js').write_text(worker)
+    (root / 'sw-state.json').write_text(json.dumps({'enabled': True, 'version': cache_id}) + '\n')
+
+
+def prepare(keep_archive=False, use_archive_if_current=False):
+    release_zip = REPO / 'deploy.zip'
+    with tempfile.TemporaryDirectory(prefix='portfolio-build-', dir=REPO) as temporary:
+        root = Path(temporary)
+        with zipfile.ZipFile(release_zip) as archive:
+            release = json.loads(archive.read('release.json'))
+            extract_archive(archive, root)
+
+        if not (use_archive_if_current and release.get('sourceFingerprint') == source_fingerprint()):
+            release['commit'] = os.environ.get('GITHUB_SHA', 'local-review')
+            release['siteRevision'] = REVISION
+            release['sourceFingerprint'] = source_fingerprint()
+            release['film']['compact'] = choose(root, 'assets/media/film-compact.*.mp4').relative_to(root).as_posix()
+            assets = review_assets(root, release)
+            site = Portfolio(root, assets, release)
+            site.home()
+            site.rest()
+            write_metadata(root, site, release, assets)
+
+        pdf = REPO / 'resume.pdf'
+        if hashlib.sha256(pdf.read_bytes()).hexdigest() != release['resume']['sha256']:
+            raise RuntimeError('Repository résumé does not match the approved version')
+        shutil.copy2(pdf, root / release['resume']['file'])
+        subprocess.run(['python3', 'validate_site.py', str(root), '--published', '--pdf', str(pdf)], cwd=REPO, check=True)
+        subprocess.run(['python3', 'portfolio-source/audit_release.py', str(root)], cwd=REPO, check=True)
+        published = REPO / '_site'
+        if published.exists():
+            shutil.rmtree(published)
+        shutil.copytree(root, published)
+
+        if not keep_archive:
+            (root / release['resume']['file']).unlink()
+            next_archive = REPO / 'deploy.next.zip'
+            with zipfile.ZipFile(next_archive, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+                for path in sorted(root.rglob('*')):
+                    if path.is_file():
+                        entry = zipfile.ZipInfo(path.relative_to(root).as_posix(), date_time=(2026, 1, 1, 0, 0, 0))
+                        entry.compress_type = zipfile.ZIP_DEFLATED
+                        entry.external_attr = 0o100644 << 16
+                        archive.writestr(entry, path.read_bytes())
+            next_archive.replace(release_zip)
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--preserve-game', action='store_true',
-                        help='Publish portfolio changes while retaining every current game file byte-for-byte')
-    parser.add_argument('--film-output', type=Path, help='Use a freshly rendered film export')
-    parser.add_argument('--keep-archive', action='store_true', help='Build and check without replacing the tracked input archive')
-    parser.add_argument('--use-archive-if-current', action='store_true',
-                        help='Publish the committed build if it matches the source fingerprint')
+    parser.add_argument('--preserve-game', action='store_true', help='Retained for existing build commands. The game is always preserved.')
+    parser.add_argument('--keep-archive', action='store_true', help='Validate without changing the tracked asset archive.')
+    parser.add_argument('--use-archive-if-current', action='store_true', help='Reuse a validated archive with the same build inputs.')
     args = parser.parse_args()
-    if args.use_archive_if_current and args.film_output is None and publish_current_archive():
-        raise SystemExit(0)
-    prepare(preserve_game=args.preserve_game, film_output=args.film_output, keep_archive=args.keep_archive)
+    prepare(args.keep_archive, args.use_archive_if_current)

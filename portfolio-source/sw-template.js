@@ -1,4 +1,5 @@
-const prefix = 'mjc-os-static-';
+const prefix = 'mjc-portfolio-static-';
+const legacyPrefix = 'mjc-os-static-';
 const cacheName = prefix + 'CACHE_VERSION';
 const files = CACHE_FILES;
 const controlUrl = new URL('/sw-state.json', self.location.origin).href;
@@ -25,7 +26,7 @@ function retire() {
   if (!retirement) retirement = (async () => {
     await self.registration.unregister();
     for (const key of await caches.keys()) {
-      if (key.startsWith(prefix)) await caches.delete(key);
+      if (key.startsWith(prefix) || key.startsWith(legacyPrefix)) await caches.delete(key);
     }
   })();
   return retirement;
@@ -36,7 +37,7 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key.startsWith(prefix) && key !== cacheName) await caches.delete(key);
+    for (const key of await caches.keys()) if ((key.startsWith(prefix) || key.startsWith(legacyPrefix)) && key !== cacheName) await caches.delete(key);
     await self.clients.claim();
   })());
 });
