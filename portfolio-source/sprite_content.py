@@ -37,6 +37,7 @@ class Passages(HTMLParser):
         super().__init__()
         self.route, self.records = route, []
         self.main = False
+        self.noscript = False
         self.stack = []
         self.capture = None
         self.buffer = []
@@ -62,6 +63,10 @@ class Passages(HTMLParser):
         self.parts = []
 
     def handle_starttag(self, tag, attrs):
+        if tag == 'noscript':
+            self.noscript = True
+        if self.noscript:
+            return
         attrs = dict(attrs)
         if tag == 'main': self.main = True
         if not self.main: return
@@ -85,13 +90,18 @@ class Passages(HTMLParser):
             self.capture, self.buffer = tag, []
 
     def handle_data(self, value):
+        if self.noscript:
+            return
         if self.contact_capture:
             self.contact_buffer.append(value)
         if self.capture: self.buffer.append(value)
         elif self.facts_depth is not None and value.strip(): self.facts.append(value.strip())
 
     def handle_endtag(self, tag):
-        if not self.main: return
+        if tag == 'noscript':
+            self.noscript = False
+            return
+        if self.noscript or not self.main: return
         if tag == self.contact_capture:
             value = re.sub(r'\s+', ' ', ''.join(self.contact_buffer)).strip()
             if tag == 'dt': self.contact_label = value

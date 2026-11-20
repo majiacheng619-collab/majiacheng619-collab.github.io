@@ -72,10 +72,12 @@
     entranceAnimations.clear();
   }
   function observeEntrances(){
-    if(motionPreference.matches||!('IntersectionObserver' in window))return;
+    if (motionPreference.matches || document.documentElement.dataset.polish !== 'ready' ||
+        !('IntersectionObserver' in window)) return;
+    entranceObserver?.disconnect();
     const nodes=[...document.querySelectorAll('.practice-glass,.work-card,.detail-row-list,.case-study,.detail-split,.contact-identity')];
     entranceObserver=new IntersectionObserver(entries=>{
-      if(motionPreference.matches)return;
+      if (motionPreference.matches || document.documentElement.dataset.polish !== 'ready') return;
       for(const entry of entries){
         if(!entry.isIntersecting)continue;
         const node=entry.target;entranceObserver.unobserve(node);
@@ -98,5 +100,5 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearEntrances();else observeEntrances();});
   addEventListener('pagehide',clearEntrances);
   addEventListener('pageshow',event=>{if(event.persisted)observeEntrances();});
-  observeEntrances();
+  addEventListener('portfolio:polish',observeEntrances);
 })();

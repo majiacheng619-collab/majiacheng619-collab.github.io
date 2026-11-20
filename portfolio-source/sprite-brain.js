@@ -272,6 +272,11 @@
       return found;
     }
     if(rejected.length)return [];
+    const romanized = key.replace(/\s+/g, '');
+    if (/^[a-z]{2,}$/.test(romanized)) {
+      const matches = records.filter(record => record.romanized?.includes(romanized));
+      if (matches.length) return unique(matches).slice(0,limit);
+    }
     // Unrecognised titles and exact product names remain searchable. Require
     // meaningful whole terms; isolated coincidental Chinese bigrams do not count.
     const terms=questionWords(key).filter(term=>term.length>=2 && !/^(?:什么|怎么|如何|多少|在哪里|有没有|可以|帮我|谢谢)$/.test(term));

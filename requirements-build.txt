@@ -1,0 +1,5 @@
+Pillow
+numpy
+opencc-python-reimplemented
+pypinyin==0.55.0
+qrcode==8.2

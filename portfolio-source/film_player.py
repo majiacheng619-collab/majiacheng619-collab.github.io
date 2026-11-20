@@ -44,9 +44,9 @@ def build_film(media, transcript):
  </div>
  <div class="premium-film-player" data-intro-player data-dock-tone="dark">
   <div class="film-stage">
-   <video id="intro-video" controls playsinline preload="none" width="{media['width']}" height="{media['height']}"
-    poster="{media['poster']}" aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
-    <source src="{media['video']}" data-film-mobile-src="{media['mobileVideo']}" type="video/mp4">
+   <video id="intro-video" playsinline preload="none" width="{media['width']}" height="{media['height']}"
+    poster="{media['poster']}" data-film-src="{media['streamVideo']}" data-film-mobile-src="{media['streamMobile']}"
+    aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
     <track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">
     你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。
    </video>
@@ -55,6 +55,7 @@ def build_film(media, transcript):
    </button>
    <span class="film-loading" data-film-loading role="status" hidden>正在缓冲</span>
   </div>
+  <noscript><p><a class="film-live-link" href="{media['streamMobile']}">播放影片</a></p></noscript>
   <div class="film-transport" data-film-controls role="group" aria-label="播放控制" hidden>
    <input type="range" class="film-scrub" data-film-scrub min="0" max="{duration}" step="0.1" value="0"
     aria-label="播放进度" aria-valuetext="0 秒，共 {duration} 秒">
@@ -82,15 +83,22 @@ def build_live(media, preview):
   <div><p class="film-kicker">实时 3D 场景</p><h1 id="ice-title">冰之圣殿 <span lang="en">Cathedral of Ice</span></h1></div>
   <a class="film-live-link" href="index.html#introduction">返回作品影片</a>
  </div>
- <div class="ice-screen" data-dock-tone="dark">
-  <img src="{media['poster']}" width="{media['width']}" height="{media['height']}" alt="极光下，科考船驶入蓝色冰川峡谷">
+ <div class="ice-screen" data-dock-tone="dark" aria-label="冰之圣殿环视" role="group">
+  <img data-ice-poster src="{media['poster']}" width="{media['width']}" height="{media['height']}" alt="极光下，科考船驶入蓝色冰川峡谷">
   <canvas aria-label="实时三维动画，包含极光、冰川、科考船与鲸跃" role="img" hidden></canvas>
  </div>
  <div class="ice-transport" role="group" aria-label="实时场景控制">
   <button type="button" class="film-live-link" data-ice-play hidden>播放实时场景</button>
+  <button type="button" class="film-live-link" data-ice-gyro aria-pressed="false" hidden>陀螺仪环视</button>
   <input type="range" class="film-scrub" min="0" max="{media['duration']}" step="0.1" value="0" aria-label="实时场景进度" disabled hidden>
   <span class="ice-clock" aria-hidden="true"><span data-ice-clock>0:00</span> / 0:{media['duration']:02}</span>
   <a class="film-live-link" href="{media['video']}" download="Cathedral-of-Ice-Portfolio.mp4">下载作品影片</a>
+ </div>
+ <div class="ice-chapters" role="group" aria-label="场景章节" hidden data-ice-chapters>
+  <button type="button" class="os-action" data-ice-chapter="0">极光与冰谷</button>
+  <button type="button" class="os-action" data-ice-chapter="4">航迹与驾驶室</button>
+  <button type="button" class="os-action" data-ice-chapter="10">峡谷鲸跃</button>
+  <button type="button" class="os-action" data-ice-chapter="17">驶向冰拱</button>
  </div>
  <p class="ice-status" data-ice-status role="status"></p>
 </section>
