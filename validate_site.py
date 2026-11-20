@@ -21,7 +21,7 @@ import zipfile
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
          'updates/index.html',
          'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html',
-         'ice/index.html', '404.html')
+         'ice/index.html', 'story/index.html', '404.html')
 APPROVED_PDF = 'beb4a3432690f81b952fd8108eddd7b8bc26fa6905c2a62e573a83e7098031cd'
 ORIGIN = 'majiacheng619-collab.github.io'
 

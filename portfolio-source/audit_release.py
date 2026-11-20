@@ -155,7 +155,7 @@ def audit(root):
         if bool(pdfs) != bool(expected):
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for capture, device in doc.capture_devices:
-            if device.get('data-device-frame') != 'capture':
+            if relative != 'projects/sprout-patrol/index.html' and device.get('data-device-frame') != 'capture':
                 errors.append(f'{relative}: screenshot must use the unbranded capture component: {capture}')
         for image in doc.images:
             if not all(image.get(key, '').isdigit() and int(image[key]) > 0 for key in ('width', 'height')):

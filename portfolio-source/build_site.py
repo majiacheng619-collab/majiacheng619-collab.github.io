@@ -2,7 +2,7 @@ from pathlib import Path
 import hashlib, html, json, re
 ROOT=Path(__file__).resolve().parent/'site'
 from identity import build as build_identity
-from delivery_assets import compact_images, viewing_video, quick_look, site_music
+from delivery_assets import compact_images, viewing_video, quick_look, site_music, contact_qr
 ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
 transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
 media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
@@ -37,10 +37,18 @@ capture_css = asset(Path(__file__).with_name('device-frame.css').read_text(), 'c
 home_js = asset('\n'.join(Path(__file__).with_name(name).read_text()
                          for name in ('film-player.js', 'portfolio-sculpture.js')), 'home-media', 'js')
 gallery_js = asset(Path(__file__).with_name('editorial-gallery.js').read_text(), 'gallery', 'js')
-contact_js = asset(Path(__file__).with_name('contact-reveal.js').read_text(), 'contact-reveal', 'js')
+contact_js = asset('\n'.join(Path(__file__).with_name(name).read_text()
+                            for name in ('contact-reveal.js', 'contact-card.js')), 'contact-reveal', 'js')
+story_js = asset(Path(__file__).with_name('story.js').read_text(), 'story', 'js')
+app_css = asset(Path(__file__).with_name('apps.css').read_text(), 'apps', 'css')
+viewer_js = asset(Path(__file__).with_name('image-viewer.js').read_text(), 'image-viewer', 'js')
+case_js = asset(Path(__file__).with_name('case-preview.js').read_text(), 'case-preview', 'js')
 page_styles = dict.fromkeys(('index.html', 'projects/index.html', 'projects/sprout-patrol/index.html'), (capture_css,))
+for route in ('projects/sprout-patrol/index.html', 'contact/index.html', 'experience/index.html',
+              'story/index.html', 'poster/index.html', 'honor/index.html', 'ice/index.html'):
+ page_styles[route] = (*page_styles.get(route, ()), app_css)
 page_scripts = {'index.html': (home_js,), 'projects/index.html': (gallery_js,),
-                'contact/index.html': (contact_js,)}
+                'contact/index.html': (contact_js,), 'honor/index.html': (viewer_js,), 'poster/index.html': (viewer_js,), 'experience/index.html': (case_js,), 'story/index.html': (story_js,)}
 def img(src,alt,classes='',eager=False):
  width,height=dimensions.get(src,(1280,720))
  return f'<img class="{classes}" src="{src}" alt="{alt}" width="{width}" height="{height}" decoding="async" '+('fetchpriority="high"' if eager else 'loading="lazy"')+'/>'
@@ -71,6 +79,8 @@ for old in (ROOT/'assets').glob('poster-preview.*.webp'):
 
 from home import build_home, event_preview
 from film_player import build_live
+from pages_v3 import honor_wall, sprout_screens, game_version, story
+from os_components import icon
 home=build_home(img, cta, media, transcript, artwork).replace('href="resume.pdf"', f'href="{resume_asset}"')
 render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
 render('ice/index.html', '冰之圣殿', '25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。', build_live(media, media['preview']))
@@ -99,8 +109,10 @@ from case_studies import build_experience
 experience=build_experience(cta,detail_rows)
 render('experience/index.html','实践经历','马嘉程的电商教学、直播运营、线下经营与教育经历。',experience)
 
-game=detail_open('game')+detail_hero('萌芽保卫队','种下、守护、成长。',cta('game/index.html','开始游戏'))
-game+='<section class="detail-game-visual"><div class="detail-shell"><a class="product-visual device-preview" href="game/index.html">'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队7.0黄昏实战截图',eager=True))+'</a></div></section>'
+game=detail_open('game')+f'''<section class="detail-hero app-hero"><div class="detail-shell app-heading">
+<span class="app-mark">{icon('seed')}</span><div><h1>萌芽保卫队</h1><p class="detail-intro">种下、守护、成长。</p>
+<div class="actions">{cta('game/index.html','开始游戏')}{cta('game/home.html','花园首页',True)}</div></div></div></section>'''
+game+=sprout_screens(img)
 game+=detail_split('overview','我的分工','<p id="product-process">独立负责玩法策划、需求拆解、交互与迭代验收，通过 Codex 辅助实现代码。</p>','<div class="detail-game-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div>')
 game+='<section class="detail-growth" id="mechanism"><div class="detail-shell"><h2>成长机制</h2><p class="detail-intro">用阳光补充防线，或等待现有植物成长。</p><div class="growth-demo"><div class="growth-steps">'
 for i,t in enumerate(['萌芽','成株','开花']):
@@ -113,7 +125,7 @@ game+='</div></div></section>'
 game+=detail_split('journey','花园旅程','<p>完成当前关卡后解锁下一关，可在旅程中查看进度。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"))+'</a>')
 game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导帮助理解操作，图鉴用于查阅植物和敌人信息；将学习规则与进入玩法的过程衔接起来。'),('存档与继续','本机自动保存进度，也可导出存档码，让玩家能够中断后继续已有旅程。')])
 
-game+=detail_close()
+game+=game_version(ROOT)+detail_close()
 render('projects/sprout-patrol/index.html','萌芽保卫队','网页塔防游戏：体验植物成长与资源分配，了解马嘉程的项目分工。',game)
 
 poster=detail_open('poster')+detail_hero('面包挑战','2025.07—2025.08、2026.10 起，与朋友共同开展。')
@@ -123,17 +135,15 @@ poster+=detail_rows('thinking','策划与执行',[('场景与目标','基于南�
 poster+=detail_close()
 render('poster/index.html','面包挑战','面包挑战的实际宣传物料与马嘉程参与的规则设计、筹备和现场执行。',poster)
 
-honor=detail_open('honor')+detail_hero('荣誉','')
-honor+=detail_split('livestream-honor','青山湖区区县 100 强','<p>2026 年抖音家乡荣耀季</p><div class="actions">'+cta('experience/index.html#livestream','相关经历',True)+'</div>',f'<a class="detail-certificate" data-image-open data-image-target="image-dialog" href="honor/live-honor-2026.jpeg">{img("honor/live-honor-2026.jpeg","2026抖音家乡荣耀季青山湖区区县100强荣誉凭证",eager=True)}</a>')
-honor+=detail_split('campus-honor','校优秀学生干部','<p>2023 年 · 华东交通大学</p><div class="actions">'+cta('experience/index.html#education','教育经历')+'</div>')+detail_close()
-render('honor/index.html','荣誉','马嘉程的抖音家乡荣耀季荣誉凭证与校园服务荣誉。',honor)
+render('honor/index.html','荣誉','马嘉程的抖音家乡荣耀季荣誉凭证与校园服务荣誉。',honor_wall(img,cta))
+render('story/index.html','一分钟故事','马嘉程的作品与实践。',story(img,artwork,media))
 
 updates=detail_open('updates')+detail_hero('近况','')
 updates+=detail_rows('recent-work','2026 年秋',[('面包挑战','2026 年 10 月起与朋友继续开展线下活动。<a href="poster/index.html">查看活动方案与物料</a>')])+detail_close()
 render('updates/index.html','近况','马嘉程的近期作品与实践。',updates)
 
 from contact import build_contact
-render('contact/index.html','联系','联系马嘉程：邮箱、电话与个人简历。',build_contact(img,cta))
+render('contact/index.html','联系','联系马嘉程：邮箱、电话与个人简历。',build_contact(img,cta,contact_qr(ROOT)))
 
 # Keep only the current generated portfolio CSS and JS.
 for item in (ROOT/'assets').glob('portfolio.*'):

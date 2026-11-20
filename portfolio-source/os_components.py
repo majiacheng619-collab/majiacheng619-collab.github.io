@@ -117,6 +117,8 @@ def launchpad(img, media):
           <div class="os-notification"><div>面包挑战</div><p>2026 年 10 月起与朋友继续开展线下活动。</p>
           <a href="updates/index.html">查看近况</a></div>
         </details>
+        <a class="os-widget" href="story/index.html" data-shared-card="story" data-glass-press>
+          {icon('work')}<strong>一分钟故事</strong></a>
         <a class="os-widget" data-continue-game hidden href="game/index.html" data-glass-press>
           {icon('seed')}<strong>继续游戏</strong></a>
       </div>

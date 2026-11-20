@@ -151,6 +151,7 @@ const server=http.createServer((req,res)=>{
     assert.deepEqual(audit.violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],'Accessibility: '+route);
    }
    if(route==='contact/'){
+    await page.locator('[data-contact-flip]').click();
     const email=page.locator('[data-contact-row="email"]');
     assert.equal(await email.locator('[data-contact-value]').isHidden(),true);
     await email.locator('[data-contact-reveal]').click();
@@ -210,6 +211,7 @@ const server=http.createServer((req,res)=>{
   }
   await page.goto(origin+'/contact/');
   await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
+  await page.locator('[data-contact-flip]').click();
   for (const kind of ['email', 'phone']) {
    const row = page.locator('[data-contact-row="'+kind+'"]');
    assert.equal(await row.locator('[data-contact-value]').textContent(),'');

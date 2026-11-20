@@ -10,7 +10,7 @@ CASES = PROFILE['cases']
 def case_section(case, cta):
     e = escape
     facts = ''.join(f'<div><strong>{e(value)}</strong><span>{e(label)}</span></div>' for value, label in case['facts'])
-    actions = ''.join(f'<li><h4>{e(title)}</h4><p>{e(copy)}</p></li>' for title, copy in case['actions'])
+    actions = ''.join(f'<li><details><summary>{e(title)}</summary><p>{e(copy)}</p></details></li>' for title, copy in case['actions'])
     links = ''
     if case['id'] == 'livestream': links = cta('honor/index.html', '查看荣誉凭证', True)
     if case['id'] == 'field': links = cta('poster/index.html', '查看现场宣传物料', True)
@@ -18,9 +18,9 @@ def case_section(case, cta):
     return f'''<section class="case-study detail-shell" id="{e(case['id'])}" data-case-id="{e(case['id'])}" aria-labelledby="case-{e(case['id'])}">
 <div class="case-overview"><div class="case-heading"><p class="case-meta">{e(case['time'])}<span>{e(case['role'])}</span></p><h2 id="case-{e(case['id'])}">{e(case['title'])}</h2></div>
 <div class="case-facts case-facts-{len(case["facts"])}">{facts}</div></div>
-<div class="case-reading"><div class="star-grid"><article class="star-result"><h3>实际结果</h3><p>{e(case['result'])}</p></article><article class="star-actions"><h3>我做了什么</h3><ol>{actions}</ol></article></div>
+<div class="case-reading"><div class="star-grid"><article class="star-result"><h3>实际结果</h3><p>{e(case['result'])}</p></article><article class="star-actions"><details class="case-actions-fold"><summary>我做了什么</summary><ol>{actions}</ol></details></article></div>
 <details class="case-context"><summary>项目背景</summary><p>{e(case['context'])}</p></details>
-{f'<div class="case-evidence">{links}</div>' if links else ''}</div></section>'''
+{f'<div class="case-evidence">{links}</div>' if links else ''}</div><button type="button" class="os-action case-app-open" data-case-preview hidden>展开经历</button></section>'''
 
 
 def build_experience(cta, detail_rows):
@@ -28,7 +28,7 @@ def build_experience(cta, detail_rows):
     links = ''.join(f'<a href="#{anchor}">{label}</a>' for anchor,label in index)
     result = '<div class="detail-page detail-experience"><section class="detail-hero"><div class="detail-shell"><h1>实践经历</h1><p class="detail-intro">做过的业务、承担的职责与实际结果。</p></div></section><div class="case-index detail-shell"><div class="case-jump" role="group" aria-label="经历目录">'+links+'</div></div>'
     result += '<section class="career-section detail-shell" id="roles"><h2>求职方向</h2><p class="career-intro">' + PROFILE['roles'] + '</p>' + lenses() + '</section>'
-    result += '<div data-lens-list>' + ''.join(case_section(case,cta) for case in CASES) + '</div>'
+    result += '<div class="case-timeline" data-lens-list>' + ''.join(case_section(case,cta) for case in CASES) + '</div>'
     result += detail_rows('skills', '工具与工作方法', PROFILE['skills'])
     result += detail_rows('education', '教育与校园服务', PROFILE['education'])
     return result + '</div>'

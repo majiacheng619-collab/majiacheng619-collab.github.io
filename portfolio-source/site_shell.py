@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 from html import escape
 from sprite_shell import CLOSE_ICON, companion
-from os_components import chrome, shared_dialogs
+from os_components import chrome, shared_dialogs, sheet
 
 def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None,page_scripts=None,resume=None):
  page_styles = page_styles or {}
@@ -20,7 +20,7 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None
   }
   entries=[('首页','index.html','home'),('作品','projects/index.html','work'),('经历','experience/index.html','journey'),('荣誉','honor/index.html','award'),('联系','contact/index.html','contact')]
   links=[]
-  group_path='projects/index.html' if path.startswith(('poster/', 'ice/')) else 'experience/index.html' if path.startswith('updates/') else path
+  group_path='projects/index.html' if path.startswith(('poster/', 'ice/', 'story/')) else 'experience/index.html' if path.startswith('updates/') else path
   for label,href,icon in entries:
    active=group_path==href or (href!='index.html' and '#' not in href and group_path.startswith(href.removesuffix('index.html')))
    current=' aria-current="page"' if active else ''
@@ -33,7 +33,16 @@ def build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,*,page_styles=None
   depth=len(Path(path).parts)-1; prefix='../'*depth
   scene = 'home' if path=='index.html' else 'experience' if path.startswith(('experience/','updates/')) else 'honor' if path.startswith('honor/') else 'contact' if path.startswith('contact/') else 'work'
   footer='<footer class="site-footer"><div class="footer-bottom">© 2026 马嘉程</div></footer>'
-  dialogs=f'<dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图"><button type="button" class="dialog-close" data-dialog-close aria-label="关闭大图">{CLOSE_ICON}</button><img data-dialog-image loading="lazy" decoding="async" src="assets/portrait-white-960.b8bfe698eef3.webp" alt="马嘉程证件照" width="960" height="960"/></dialog>'
+  dialogs=f'''<dialog id="image-dialog" class="image-dialog" aria-label="作品与照片大图">
+    <button type="button" class="dialog-close" data-dialog-close aria-label="关闭大图">{CLOSE_ICON}</button>
+    <div class="image-view-tools"><button type="button" class="os-action" data-image-prev hidden>上一张</button>
+    <button type="button" class="os-action" data-image-zoom aria-pressed="false">缩放</button>
+    <button type="button" class="os-action" data-image-next hidden>下一张</button></div>
+    <div class="image-view-area" data-image-area><img data-dialog-image loading="lazy" decoding="async"
+      src="assets/portrait-white-960.b8bfe698eef3.webp" alt="作品图片" width="960" height="960"/></div></dialog>'''
+  if path == 'experience/index.html':
+   dialogs += sheet('case-sheet', '实践经历', '<div data-case-sheet-content></div>', 'case-sheet')
+
 
   raw_title = title
   title = escape(title if path=="index.html" else title+"｜马嘉程")

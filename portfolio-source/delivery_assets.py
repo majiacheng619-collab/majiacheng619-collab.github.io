@@ -114,3 +114,14 @@ def site_music(root, source):
         '-map', '0:a:0', '-c:a', 'aac', '-b:a', '64k', '-f', 'adts', 'pipe:1',
     ])
     return fingerprint(root, 'assets/media', 'site-music', 'aac', output)
+
+
+def contact_qr(root):
+    import qrcode
+    import qrcode.image.svg
+
+    image = qrcode.make('https://majiacheng619-collab.github.io/contact/',
+                        image_factory=qrcode.image.svg.SvgPathImage, border=4)
+    output = io.BytesIO()
+    image.save(output)
+    return fingerprint(root, 'assets', 'contact-qr', 'svg', output.getvalue())

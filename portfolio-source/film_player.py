@@ -82,15 +82,22 @@ def build_live(media, preview):
   <div><p class="film-kicker">实时 3D 场景</p><h1 id="ice-title">冰之圣殿 <span lang="en">Cathedral of Ice</span></h1></div>
   <a class="film-live-link" href="index.html#introduction">返回作品影片</a>
  </div>
- <div class="ice-screen" data-dock-tone="dark">
-  <img src="{media['poster']}" width="{media['width']}" height="{media['height']}" alt="极光下，科考船驶入蓝色冰川峡谷">
+ <div class="ice-screen" data-dock-tone="dark" aria-label="冰之圣殿环视" role="group">
+  <img data-ice-poster src="{media['poster']}" width="{media['width']}" height="{media['height']}" alt="极光下，科考船驶入蓝色冰川峡谷">
   <canvas aria-label="实时三维动画，包含极光、冰川、科考船与鲸跃" role="img" hidden></canvas>
  </div>
  <div class="ice-transport" role="group" aria-label="实时场景控制">
   <button type="button" class="film-live-link" data-ice-play hidden>播放实时场景</button>
+  <button type="button" class="film-live-link" data-ice-gyro aria-pressed="false" hidden>陀螺仪环视</button>
   <input type="range" class="film-scrub" min="0" max="{media['duration']}" step="0.1" value="0" aria-label="实时场景进度" disabled hidden>
   <span class="ice-clock" aria-hidden="true"><span data-ice-clock>0:00</span> / 0:{media['duration']:02}</span>
   <a class="film-live-link" href="{media['video']}" download="Cathedral-of-Ice-Portfolio.mp4">下载作品影片</a>
+ </div>
+ <div class="ice-chapters" role="group" aria-label="场景章节" hidden data-ice-chapters>
+  <button type="button" class="os-action" data-ice-chapter="0">极光与冰谷</button>
+  <button type="button" class="os-action" data-ice-chapter="4">航迹与驾驶室</button>
+  <button type="button" class="os-action" data-ice-chapter="10">峡谷鲸跃</button>
+  <button type="button" class="os-action" data-ice-chapter="17">驶向冰拱</button>
  </div>
  <p class="ice-status" data-ice-status role="status"></p>
 </section>
