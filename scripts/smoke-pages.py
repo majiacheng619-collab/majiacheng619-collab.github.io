@@ -41,7 +41,7 @@ def require(condition, description):
 def paths_in(origin, url, document, tags):
     hostname = urlsplit(origin).netloc
     for tag, attr, value in document.refs:
-        if tag not in tags or attr != 'href':
+        if tag not in tags or attr != 'href' or value.startswith('#'):
             continue
         target = urlsplit(urljoin(origin + url, value))
         if target.netloc == hostname and target.scheme in ('https', 'http'):

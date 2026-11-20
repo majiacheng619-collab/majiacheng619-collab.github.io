@@ -200,6 +200,11 @@ const server=http.createServer((req,res)=>{
  if(scope==='all'||scope==='cleanup'){
   await page.setViewportSize({width:390,height:844});
   await page.goto(origin);
+  await page.locator('.premium-film-player').evaluate(scene => {
+   const dock = document.querySelector('.glass-dock').getBoundingClientRect();
+   const area = scene.getBoundingClientRect();
+   scrollBy({ top: area.top + Math.min(area.height / 2, 60) - dock.top - dock.height / 2, behavior: 'instant' });
+  });
   await page.waitForSelector('.glass-dock[data-over-media]');
   await page.locator('#career-lens').evaluate(section=>section.scrollIntoView({block:'start',behavior:'instant'}));
   await page.waitForSelector('.glass-dock:not([data-over-media])');
@@ -258,7 +263,9 @@ const server=http.createServer((req,res)=>{
  assert.equal(await fallback.locator('[data-studio-panel]:visible').count(),2,'Works remain readable without scripts');
  assert.equal(await fallback.locator('.sprite-launcher').isVisible(),false);
  assert.equal(await fallback.locator('#career-lens a').count(),4,'Every practice stays reachable without scripts');
- assert.equal(await fallback.locator('#intro-video').evaluate(video=>video.controls),true,'Browser video controls work without scripts');
+ const fallbackFilm=fallback.locator('#introduction noscript a[href$=".mp4"]');
+ assert.ok(await fallbackFilm.isVisible(),'Without scripts the local film opens through a direct link');
+ assert.equal(new URL(await fallbackFilm.getAttribute('href'),fallback.url()).origin,origin);
  // Printing excludes the floating search without clearing an in-progress query.
  await page.goto(origin);await launcher.click();await input.fill('学历');await input.press('Enter');
  await page.locator('.sprite-answer').waitFor();
