@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
@@ -77,6 +77,8 @@ jobs:
           python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
           npm ci --ignore-scripts
           npm run check -- --built
+      - name: Verify search against the generated archive
+        run: node --test portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once
@@ -121,6 +123,11 @@ jobs:
           git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
           baseline=$(git rev-parse refs/remotes/origin/main)
           git show "$baseline:deploy.zip" > "$RUNNER_TEMP/pre-ios27.zip"
+          tag=$(git ls-remote --tags origin refs/tags/pre-ios27 | cut -f 1)
+          if [[ -n "$tag" ]]; then
+            git fetch origin refs/tags/pre-ios27:refs/tags/pre-ios27
+            git show "$tag:deploy.zip" > "$RUNNER_TEMP/tagged-pre-ios27.zip"
+          fi
           curl --fail --silent --show-error --retry 2 "${live}release.json?preflight=${GITHUB_RUN_ID}" > "$RUNNER_TEMP/pre-ios27-live.json"
           python3 - "$RUNNER_TEMP" <<'PYCODE'
           import json, sys, zipfile
@@ -130,16 +137,19 @@ jobs:
               saved = json.loads(archive.read('release.json'))
           live = json.loads((root / 'pre-ios27-live.json').read_text())
           if saved != live:
-              raise SystemExit('Main archive and live Pages metadata differ')
+              tagged = root / 'tagged-pre-ios27.zip'
+              if not tagged.exists():
+                  raise SystemExit('Main archive and live Pages metadata differ')
+              with zipfile.ZipFile(tagged) as archive:
+                  if json.loads(archive.read('release.json')) != live:
+                      raise SystemExit('Live Pages metadata matches neither main nor the rollback tag')
           print('Verified live release:', live['siteRevision'])
           PYCODE
-          tag=$(git ls-remote --tags origin refs/tags/pre-ios27 | cut -f 1)
           if [[ -z "$tag" ]]; then
-            git push origin "$baseline:refs/tags/pre-ios27"
-          else
-            test "$tag" = "$baseline"
+            tag="$baseline"
+            git push origin "$tag:refs/tags/pre-ios27"
           fi
-          printf 'Pages uses GitHub Actions from main, uploading _site.\n\nLive rollback tag: %s\n' "$baseline" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Pages uses GitHub Actions from main, uploading _site.\n\nLive rollback tag: %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
 
   stage-ios27:
     if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
@@ -200,7 +210,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify garden combat and save compatibility
-        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
       - name: Verify cleanup safeguards
         run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
       - name: Verify unified navigation shell
@@ -249,6 +259,8 @@ jobs:
           python3 portfolio-source/prepare_release.py --preserve-game --use-archive-if-current "${film_args[@]}"
           npm ci --ignore-scripts
           npm run check -- --built
+      - name: Verify search against the generated archive
+        run: node --test portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
       - name: Verify my repository cleanup and current-file integrity
         run: python3 portfolio-source/audit_repository.py
       - name: Verify portfolio experience once
