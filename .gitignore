@@ -7,5 +7,4 @@ _site/
 deploy.next.zip
 portfolio-source/film/.build/
 portfolio-source/optics/sample_tile_*.py
-node_modules/
 

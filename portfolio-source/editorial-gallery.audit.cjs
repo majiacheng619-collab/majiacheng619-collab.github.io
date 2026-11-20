@@ -7,23 +7,21 @@ module.exports=async function auditGallery(page,origin,output){
  for(const width of [320,390,768,1440]){
   await page.setViewportSize({width,height:900});
   await page.goto(origin+'/projects/');
-  assert.equal(await page.locator('.work-card').count(),3);
+  assert.equal(await page.locator('.work-card').count(),2);
   assert.equal(await page.locator('.theme-art,.detail-number,.project-collection').count(),0);
   assert.equal(await page.locator('main img[src*="poster-preview"]').count(),0,'The original poster stays in the evidence disclosure');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Gallery fits '+width);
 
   const material=await page.locator('.work-event .button.primary').evaluate(el=>({color:getComputedStyle(el).backgroundColor,backdrop:getComputedStyle(el).backdropFilter}));
   assert.equal(material.color,'rgba(0, 0, 0, 0)');
-  assert.equal(material.backdrop,'none','Idle actions keep their glass tint without continuous backdrop work');
+  assert.ok(material.backdrop.includes('blur'),'Actions use the clear material');
   const game=page.locator('.work-feature .work-art').getByRole('img',{name:'萌芽保卫队实际游戏画面'});
   await game.scrollIntoViewIfNeeded();
   assert.ok(await game.evaluate(async img=>{await img.decode();return img.naturalWidth>=1000;}),'The game preview uses its real screen capture');
   assert.match(await page.locator('.work-event .event-preview').textContent(),/19\.9/);
   if(output&&(width===390||width===1440))await page.screenshot({path:path.join(output,'gallery-'+width+'.png'),fullPage:true});
  }
- const legacy = await page.request.get(origin+'/projects/ai-content/');
- assert.equal(legacy.status(),200,'The old works URL serves a redirect page');
- assert.match(await legacy.text(),/http-equiv="refresh" content="0; url=\/projects\/"/);
+ assert.equal((await page.request.get(origin+'/projects/ai-content/')).status(),404,'The retired works route is out of the release');
  await page.setViewportSize({width:390,height:844});
  await page.goto(origin+'/poster/');
  const disclosure=page.locator('.proof-disclosure'),poster=disclosure.locator('img');

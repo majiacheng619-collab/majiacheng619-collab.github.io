@@ -112,8 +112,6 @@
     all('[data-dialog-close], [data-portrait-close]', dialog).forEach(button => button.addEventListener('click', () => close(dialog)));
   });
 
-  window.PortfolioDialogs = { open, close };
-
   all('[data-dialog-open], [data-portrait-open], [data-image-open]').forEach(opener => {
     const id = opener.dataset.dialogOpen || opener.dataset.imageTarget || 'portrait-dialog';
     const dialog = byId(id);

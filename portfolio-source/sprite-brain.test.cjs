@@ -69,13 +69,15 @@ test('a thirty-second introduction gives a grounded overview rather than an empt
  assert.ok(new Set(answer.sources.map(record=>record.section)).size>=2,'Overview should cite different aspects of the portfolio');
 });
 
-test('contact answers lead to the reveal controls without indexing the address or number',()=>{
+test('contact answers cite the actual contact destination without inventing contact details',()=>{
  const answer=grounded(brain.answer('怎么联系嘉程',records));
  assert.ok(answer.sources.some(record=>record.url==='contact/index.html'));
- assert.equal(answer.facts.length,0);
- const contactRecords=records.filter(record=>record.url.startsWith('contact/'));
- const publishedText=contactRecords.map(record=>record.title+' '+record.text).join(' ');
- assert.doesNotMatch(publishedText+' '+textOf(answer),/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b1[3-9]\d{9}\b/);
+ const phones=textOf(answer).match(/1[3-9]\d{9}/g)||[];
+ for(const phone of phones)assert.ok(records.some(record=>record.text.includes(phone)),phone);
+ assert.ok(answer.facts.some(fact=>fact.label==='邮箱'));
+ assert.ok(answer.facts.some(fact=>fact.label==='手机'));
+ const emails=textOf(answer).match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g)||[];
+ for(const email of emails)assert.ok(records.some(record=>(record.text+' '+record.title).includes(email)),email);
 });
 
 test('a follow-up can resolve through the preceding education or commerce topic',()=>{
@@ -249,11 +251,13 @@ test('specific published fields answer directly while full source passages remai
   assert.match(answer.facts[0].value,/288\s*元\s*\/\s*人/);
   assert.ok(answer.sources.length>0);
  }
- for(const query of ['联系方式','邮箱','手机号']){
-  const answer=grounded(brain.answer(query,records));
-  assert.equal(answer.facts.length,0,query);
-  assert.ok(answer.sources.some(source=>source.url==='contact/index.html'),query);
- }
+ const contact=grounded(brain.answer('联系方式',records));
+ assert.equal(contact.paragraphs.length,0);
+ assert.deepEqual(Array.from(contact.facts,fact=>fact.label),['邮箱','手机']);
+ const email=grounded(brain.answer('邮箱',records));
+ assert.deepEqual(Array.from(email.facts,fact=>fact.label),['邮箱']);
+ const phone=grounded(brain.answer('手机号',records));
+ assert.deepEqual(Array.from(phone.facts,fact=>fact.label),['手机']);
  assert.equal(brain.answer('学校学费',records),null);
 });
 

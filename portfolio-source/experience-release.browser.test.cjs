@@ -27,14 +27,7 @@ const server=http.createServer((req,res)=>{
   external.push(url.href);return route.abort();
  });
  const Axe=process.env.AUDIT_ACCESSIBILITY==='1'?require('@axe-core/playwright').default:null;
- const page=await context.newPage();
- let nativeTransitionOptOuts=0;
- page.on('pageerror',error=>{
-  // Chromium can surface a rejected transition when its destination has no
-  // CSS opt-in, such as the pure text page. Navigation assertions still run.
-  if(error.message==='Transition was aborted because of invalid state. ViewTransition opt-in disabled') nativeTransitionOptOuts++;
-  else errors.push(error.message);
- });
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  page.on('response',r=>{if(r.status()>=400)missing.push(r.url());});
  const routes=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
  const screenshot=process.env.AUDIT_OUTPUT;if(screenshot)fs.mkdirSync(screenshot,{recursive:true});
@@ -42,8 +35,7 @@ const server=http.createServer((req,res)=>{
  const {resume,film:filmMedia}=JSON.parse(fs.readFileSync(path.join(root,'release.json'),'utf8'));
  const digest=file=>require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
  assert.equal(digest(resume.file),resume.sha256,'Fingerprint download is the current resume');
- assert.equal(fs.existsSync(path.join(root,'resume.pdf')),false,'The publish tree has one resume');
- const stream=JSON.parse(fs.readFileSync(path.join(root,'assets/media/viewing-video.json'),'utf8'));
+ assert.equal(digest('resume.pdf'),resume.sha256,'Stable download alias is the same current resume');
  if(scope==='all'||scope==='companion'){
   for(const width of [320,390,768,1024,1440]){
    await page.setViewportSize({width,height:844});await page.goto(origin);
@@ -87,8 +79,7 @@ const server=http.createServer((req,res)=>{
    for(const href of await page.locator('main a[href$=".pdf"]').evaluateAll(nodes=>nodes.map(node=>node.href)))assert.ok(href.endsWith('/'+resume.file),'Every visible resume entry uses the current version');
    if(!route){
     assert.equal(await page.locator('.lens-tabs,.lens-evidence,.hero-command,.studio-contact-band,.orbital-field,.orbital-reticle').count(),0);
-    const resumeTargets = await page.locator('a[href$=".pdf"]').evaluateAll(links => [...new Set(links.map(link => new URL(link.href).pathname))]);
-    assert.deepEqual(resumeTargets,['/'+resume.file],'Every resume and Quick Look action points at one PDF');
+    assert.equal(await page.locator('a[href$=".pdf"]').count(),1);
     if(width<=768){
      assert.equal(await page.evaluate(()=>{
       const search=document.querySelector('.sprite-launcher').getBoundingClientRect(),dock=document.querySelector('.glass-dock').getBoundingClientRect();
@@ -159,11 +150,8 @@ const server=http.createServer((req,res)=>{
     assert.deepEqual(audit.violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],'Accessibility: '+route);
    }
    if(route==='contact/'){
-    await page.locator('[data-contact-flip]').click();
-    const email=page.locator('[data-contact-row="email"]');
-    assert.equal(await email.locator('[data-contact-value]').isHidden(),true);
-    await email.locator('[data-contact-reveal]').click();
-    assert.ok(await email.locator('[data-contact-value]').isVisible(),'The email is available after a deliberate reveal');
+    const email=page.locator('.contact-methods a[href^="mailto:"]');
+    assert.ok(await email.evaluate(node=>node.getBoundingClientRect().height<=parseFloat(getComputedStyle(node).lineHeight)+1),'Email address never leaves an orphaned character');
    }
    if(route==='experience/'){
     assert.equal(await page.locator('.case-study').count(),6);
@@ -177,9 +165,9 @@ const server=http.createServer((req,res)=>{
  }
  if(scope==='all'||scope==='film'){
   const variants=[
-   {width:390,network:'4g',asset:stream.compact,videoWidth:960,start:6.25,end:12.5},
-   {width:1440,network:'4g',asset:stream.standard,videoWidth:1440,start:12.5,end:17},
-   {width:1440,network:'3g',asset:stream.compact,videoWidth:960,start:12.5,end:17},
+   {width:390,network:'4g',asset:filmMedia.mobileVideo,videoWidth:1280,start:6.25,end:12.5},
+   {width:1440,network:'4g',asset:filmMedia.video,videoWidth:1920,start:12.5,end:17},
+   {width:1440,network:'3g',asset:filmMedia.mobileVideo,videoWidth:1280,start:12.5,end:17},
   ];
   for(const {width,network,asset,videoWidth,start,end} of variants){
    await page.setViewportSize({width,height:844});
@@ -207,11 +195,6 @@ const server=http.createServer((req,res)=>{
  if(scope==='all'||scope==='cleanup'){
   await page.setViewportSize({width:390,height:844});
   await page.goto(origin);
-  await page.locator('.premium-film-player').evaluate(scene => {
-   const dock = document.querySelector('.glass-dock').getBoundingClientRect();
-   const area = scene.getBoundingClientRect();
-   scrollBy({ top: area.top + Math.min(area.height / 2, 60) - dock.top - dock.height / 2, behavior: 'instant' });
-  });
   await page.waitForSelector('.glass-dock[data-over-media]');
   await page.locator('#career-lens').evaluate(section=>section.scrollIntoView({block:'start',behavior:'instant'}));
   await page.waitForSelector('.glass-dock:not([data-over-media])');
@@ -224,16 +207,10 @@ const server=http.createServer((req,res)=>{
   }
   await page.goto(origin+'/contact/');
   await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
-  await page.locator('[data-contact-flip]').click();
-  for (const kind of ['email', 'phone']) {
-   const row = page.locator('[data-contact-row="'+kind+'"]');
-   assert.equal(await row.locator('[data-contact-value]').textContent(),'');
-   await row.locator('[data-contact-reveal]').click();
-   const value = await row.locator('[data-contact-value]').textContent();
-   assert.ok(value);
-   await row.locator('[data-contact-copy]').click();
+  for(const value of ['19870043434@163.com','19870043434']){
+   const copy=page.locator('[data-copy-value="'+value+'"]');await copy.click();
    await page.waitForFunction(value=>navigator.clipboard.readText().then(text=>text===value),value);
-   assert.equal(await row.locator('[data-copy-status]').textContent(),'已复制');
+   assert.equal(await copy.textContent(),'已复制');
   }
   await context.clearPermissions();
  }
@@ -270,9 +247,7 @@ const server=http.createServer((req,res)=>{
  assert.equal(await fallback.locator('[data-studio-panel]:visible').count(),2,'Works remain readable without scripts');
  assert.equal(await fallback.locator('.sprite-launcher').isVisible(),false);
  assert.equal(await fallback.locator('#career-lens a').count(),4,'Every practice stays reachable without scripts');
- const fallbackFilm=fallback.locator('#introduction noscript a[href$=".mp4"]');
- assert.ok(await fallbackFilm.isVisible(),'Without scripts the local film opens through a direct link');
- assert.equal(new URL(await fallbackFilm.getAttribute('href'),fallback.url()).origin,origin);
+ assert.equal(await fallback.locator('#intro-video').evaluate(video=>video.controls),true,'Browser video controls work without scripts');
  // Printing excludes the floating search without clearing an in-progress query.
  await page.goto(origin);await launcher.click();await input.fill('学历');await input.press('Enter');
  await page.locator('.sprite-answer').waitFor();
@@ -286,6 +261,6 @@ const server=http.createServer((req,res)=>{
  await page.keyboard.press('Escape');
  }
  assert.deepEqual(external,[]);assert.deepEqual(missing,[]);assert.deepEqual(errors,[]);
- console.log(JSON.stringify({ok:true,scope,routes:scope==='all'?routes.length:undefined,glassControls:scope!=='search',localSearch:scope!=='controls'&&scope!=='drag',nativeTransitionOptOuts}));
+ console.log(JSON.stringify({ok:true,scope,routes:scope==='all'?routes.length:undefined,glassControls:scope!=='search',localSearch:scope!=='controls'&&scope!=='drag'}));
  }finally{await browser?.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

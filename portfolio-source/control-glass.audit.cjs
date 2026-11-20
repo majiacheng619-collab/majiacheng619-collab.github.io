@@ -2,6 +2,12 @@
 'use strict';
 const assert=require('node:assert/strict'),path=require('node:path');
 module.exports=async function auditGlass(page,origin,output){
+ const readField=()=>page.locator('[data-optical-scene="webgl"]').evaluate(canvas=>{
+  const sample=document.createElement('canvas');sample.width=sample.height=24;
+  const ctx=sample.getContext('2d');ctx.drawImage(canvas,0,0,24,24);
+  return [...ctx.getImageData(0,0,24,24).data];
+ });
+ const mean=bytes=>[0,1,2].map(c=>bytes.reduce((sum,v,i)=>sum+(i%4===c?v:0),0)/(bytes.length/4));
  const settle=selector=>page.waitForFunction(selector=>{
   const group=document.querySelector(selector),lens=group?.querySelector('.control-lens');
   const selected=group?.querySelector('[aria-selected="true"],[aria-pressed="true"],[aria-current]');
@@ -46,17 +52,44 @@ module.exports=async function auditGlass(page,origin,output){
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Glass controls fit '+width);
  }
  await page.setViewportSize({width:390,height:844});
- const styles = await page.locator('.ambient-field').evaluate(el => getComputedStyle(el).backgroundImage);
- assert.ok(styles.includes('radial-gradient'));
- assert.equal(await page.locator('canvas[data-optical-scene]').count(),0,'Reading surfaces use the static gradient on first load');
- await page.getByRole('button',{name:'控制中心'}).click();
- const modes = ['light','dark','auto'];
- for (const mode of modes) {
-  await page.locator('select[data-appearance]').selectOption(mode);
-  const theme = await page.locator('html').getAttribute('data-tone');
-  assert.equal(theme,mode==='dark'?'dark':'light');
-  assert.equal(await page.locator('meta[name=theme-color]').getAttribute('content'),theme==='dark'?'#071625':'#ecf5ff');
+ await page.waitForSelector('[data-optical-scene="webgl"]');
+ const before=await readField();await page.waitForTimeout(1300);const after=await readField();
+ const temporal=before.reduce((sum,v,i)=>sum+(i%4===3?0:Math.abs(v-after[i])),0)/(before.length*.75);
+ assert.ok(temporal>.7,'Actual background pixels move: '+temporal.toFixed(2));
+ const scene=page.locator('[data-optical-scene="webgl"]');
+ const inputs=Number(await scene.getAttribute('data-optical-inputs')||0);
+ await page.mouse.move(8,410);await page.mouse.down();
+ await page.waitForFunction(previous=>Number(document.querySelector('[data-optical-scene]').dataset.opticalInputs)>previous,inputs);
+ await page.mouse.up();
+ assert.equal(Number(await scene.getAttribute('data-optical-inputs')),inputs+2,'Both phases of contact reach the optical field');
+ assert.equal(await page.locator('.surface-touch').getAttribute('data-held'),null,'The live field owns contact while WebGL is active');
+ await scene.evaluate(canvas=>canvas.getContext('webgl').getExtension('WEBGL_lose_context').loseContext());
+ await page.waitForSelector('.water-events');
+ await page.mouse.down();
+ assert.equal(await page.locator('.surface-touch').getAttribute('data-held'),'','Fallback has its own visible contact');
+ await page.mouse.up();
+ await page.waitForFunction(()=>document.querySelector('.surface-touch').getAnimations().length>0);
+ await page.goto(origin+'/');
+ await page.waitForSelector('[data-optical-scene="webgl"]');
+ assert.ok(mean(await readField()).every(channel=>channel<105),'The live field lights the navy hero');
+ await page.evaluate(()=>scrollTo(0,document.querySelector('.era-hero').offsetHeight+100));
+ await page.waitForFunction(()=>{const hero=document.querySelector('.era-hero');return hero.getBoundingClientRect().bottom<0;});
+ await page.waitForTimeout(100);
+ assert.ok(mean(await readField()).every(channel=>channel>160),'The same field lights the reading surfaces');
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.waitForFunction(()=>document.querySelector('[data-optical-scene]').dataset.opticalMotion==='still');
+ const still=await scene.getAttribute('data-optical-seconds');await page.waitForTimeout(160);
+ assert.equal(await scene.getAttribute('data-optical-seconds'),still,'Reduced motion is stationary');
+ const profiles=[];
+ for(const route of ['projects/','experience/','honor/','contact/']){
+  await page.goto(origin+'/'+route);await page.waitForSelector('[data-optical-scene="webgl"]');
+  profiles.push({name:await page.locator('body').getAttribute('data-atmosphere'),rgb:mean(await readField())});
+  if(output)await page.screenshot({path:path.join(output,'scene-'+profiles.at(-1).name+'.png')});
  }
- await page.keyboard.press('Escape');
- console.log(JSON.stringify({glassControls:true,realTouch:true,nativeAnchors:true,theme:true}));
+ assert.equal(new Set(profiles.map(p=>p.name)).size,4);
+ for(let i=0;i<profiles.length;i++)for(let j=0;j<i;j++){
+  const distance=profiles[i].rgb.reduce((sum,c,k)=>sum+Math.abs(c-profiles[j].rgb[k]),0);
+  assert.ok(distance>5,'Page atmospheres are visibly distinct: '+profiles[i].name+'/'+profiles[j].name);
+ }
+ console.log(JSON.stringify({glassControls:true,realTouch:true,nativeAnchors:true,backgroundPixelChange:temporal,pageAtmospheres:profiles}));
 };

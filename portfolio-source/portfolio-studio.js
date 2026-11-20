@@ -129,4 +129,17 @@
     addEventListener('pointerdown',clearIntent,{passive:true});
     addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule,{passive:true});update();
   }
+  for(const button of document.querySelectorAll('[data-copy-value]')){
+    button.hidden=false;
+    let timer;
+    button.addEventListener('click',async()=>{
+      const status=button.closest('[data-contact-row]')?.querySelector('[data-copy-status]');
+      try{
+        if(!navigator.clipboard?.writeText)throw Error('clipboard unavailable');
+        await navigator.clipboard.writeText(button.dataset.copyValue);
+        button.textContent='已复制';if(status)status.textContent='已复制到剪贴板';
+      }catch{if(status)status.textContent='可长按上方地址复制';}
+      clearTimeout(timer);timer=setTimeout(()=>{button.textContent='复制';if(status)status.textContent='';},3500);
+    });
+  }
 })();

@@ -3,21 +3,8 @@
   'use strict';
   const root = document.querySelector('[data-sprite]');
   if (!root) return;
-  let records, loading;
+  const records = []/*SPRITE_CONTENT*/;
   const siteURL = new URL('../', document.currentScript.src);
-  function loadIndex() {
-    if (records) return Promise.resolve();
-    if (!loading) {
-      loading = Promise.all([
-        import(new URL('SPOTLIGHT_ENGINE_ASSET', siteURL)),
-        fetch(new URL('SPOTLIGHT_INDEX_ASSET', siteURL)).then(response => {
-          if (!response.ok) throw new Error('Index unavailable');
-          return response.json();
-        }),
-      ]).then(([, data]) => { records = data; }).catch(error => { loading = undefined; throw error; });
-    }
-    return loading;
-  }
   const launcher=root.querySelector('.sprite-launcher'), panel=root.querySelector('.sprite-panel');
   const input=root.querySelector('input'), results=root.querySelector('.sprite-results');
   const scroller=root.querySelector('.sprite-scroll'), status=root.querySelector('[data-sprite-status]');
@@ -98,19 +85,6 @@
     results.replaceChildren();results.setAttribute('aria-busy','false');
     root.dataset.spriteState=value?'results':'welcome';
     if(!value){status.textContent='';committedContext=null;return;}
-    if (!records) {
-      status.textContent = '正在载入搜索';
-      results.setAttribute('aria-busy', 'true');
-      loadIndex().then(() => {
-        if (!opened || input.value.trim().slice(0, 140) !== value) return;
-        render(input.value, { commit });
-        if (commit) focusContent();
-      }).catch(() => {
-        status.textContent = '搜索暂不可用';
-        results.setAttribute('aria-busy', 'false');
-      });
-      return;
-    }
     if(!window.XiaoChengBrain?.search){
       root.dataset.spriteState='empty';status.textContent='搜索暂不可用';
       const message=document.createElement('p');message.className='sprite-unavailable';message.textContent='搜索暂不可用，请刷新后重试。';results.append(message);return;
@@ -146,7 +120,6 @@
   function open() {
     if(document.querySelector('dialog[open]'))return;
     if (opened) { input.focus({preventScroll:true}); return; }
-    loadIndex().catch(() => {});
     opened = true; clearTimeout(closing); previousFocus = document.activeElement;
     panel.hidden = false; panel.inert = false;
     launcher.setAttribute('aria-expanded','true');
@@ -219,7 +192,7 @@
   document.addEventListener('keydown',event=>{
     if(event.isComposing || composing || event.defaultPrevented)return;
     if(event.key==='Escape' && opened){event.preventDefault();close();}
-
+    if((event.metaKey || event.ctrlKey) && event.key.toLowerCase()==='k'){event.preventDefault();open();}
   });
   render('');
   launcher.hidden=false;

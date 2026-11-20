@@ -1,5 +1,8 @@
 """我用三层透明玻璃折面保留无需 WebGL 的完整视觉。"""
-def silk_art(variants):
+from pathlib import Path
+import json
+
+def silk_art():
     markup = '''<div class="era-silk" aria-hidden="true"><svg viewBox="0 0 900 900" focusable="false"><defs>
 <linearGradient id="spatial-body" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#fff" stop-opacity=".96"/><stop offset=".18" stop-color="#caedff" stop-opacity=".76"/><stop offset=".39" stop-color="#80a9f0" stop-opacity=".57"/><stop offset=".52" stop-color="#fff" stop-opacity=".83"/><stop offset=".72" stop-color="#a3c4f5" stop-opacity=".5"/><stop offset=".88" stop-color="#b9a7df" stop-opacity=".64"/><stop offset="1" stop-color="#f4faff" stop-opacity=".9"/></linearGradient>
 <linearGradient id="spatial-side" x1="0" y1=".3" x2="1" y2=".7"><stop stop-color="#dbeaff" stop-opacity=".4"/><stop offset=".3" stop-color="#83abec" stop-opacity=".55"/><stop offset=".6" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#9f91ce" stop-opacity=".5"/></linearGradient>
@@ -10,9 +13,6 @@ def silk_art(variants):
 <g class="era-fold era-fold-three"><circle cx="655" cy="247" r="36" fill="url(#spatial-pearl)" stroke="#fff" stroke-opacity=".9" stroke-width="2"/><circle cx="205" cy="650" r="23" fill="url(#spatial-pearl)" stroke="#fff" stroke-width="1.5"/><ellipse cx="644" cy="232" rx="12" ry="7" fill="#fff" stroke="none" opacity=".7"/></g>
 </svg></div>'''
 
-    meta = variants[0]
-    srcset = ', '.join(f'/{item["src"]} {item["width"]}w' for item in variants)
-    art = (f'<div class="spatial-art"><img class="spatial-hero-art" src="{meta["src"]}" '
-           f'srcset="{srcset}" sizes="(max-width: 650px) 63vw, (max-width: 1100px) 57vw, 800px" '
-           f'alt="" width="{meta["width"]}" height="{meta["height"]}" decoding="async" fetchpriority="high"/></div>')
+    meta=json.loads((Path(__file__).parent/'hero-art.json').read_text())
+    art=f'<div class="spatial-art"><img class="spatial-hero-art" src="{meta["src"]}" alt="" width="{meta["width"]}" height="{meta["height"]}" decoding="async" fetchpriority="high"/></div>'
     return markup.replace('</div>',art+'</div>')

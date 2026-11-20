@@ -15,12 +15,12 @@ REPO = SOURCE.parent
 CACHE = 'assets/media/film-build.json'
 GAME_FRAME = SOURCE / 'assets-overrides/garden-current-play.webp'
 RUNTIME = (
-    'scene.mjs', 'environment.mjs', 'vessels.mjs', 'preview.mjs', 'look.mjs',
+    'scene.mjs', 'environment.mjs', 'vessels.mjs', 'preview.mjs',
     'three.module.min.js', 'three.core.min.js', 'three-LICENSE.txt',
 )
 RENDER_INPUTS = (
     'export.mjs', 'cards.mjs', 'score.mjs', 'inputs/ice-title.woff',
-    *(f'ice/{name}' for name in RUNTIME if name not in ('preview.mjs', 'look.mjs', 'three-LICENSE.txt')),
+    *(f'ice/{name}' for name in RUNTIME if name not in ('preview.mjs', 'three-LICENSE.txt')),
 )
 RENDERED_OUTPUTS = ('video', 'poster', 'captions')
 ASSETS = {
@@ -168,17 +168,6 @@ def register_export(site, output):
     return manifest
 
 
-def live_scene(source):
-    """Add the optional view input to the packaged preview, leaving the master inputs intact."""
-    signature = 'function renderAt(seconds) {'
-    look_at = '    camera.lookAt(target);'
-    if source.count(signature) != 1 or source.count(look_at) != 1:
-        raise RuntimeError('The preview camera hook no longer matches the source scene')
-    return ("import { applyLook } from './look.mjs';\n" +
-            source.replace(signature, 'function renderAt(seconds, view) {')
-            .replace(look_at, '    applyLook(camera, target, view);\n' + look_at))
-
-
 def install_film(site, output=None):
     render_key = signature()
     read = lambda name: (site / name).read_bytes()
@@ -205,17 +194,15 @@ def install_film(site, output=None):
         'outputs': {manifest[key]: digest(read(manifest[key])) for key in ASSETS},
     }
     (ROOT / 'provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
-    runtime = {name: (ROOT / 'ice' / name).read_bytes() for name in RUNTIME}
-    runtime['scene.mjs'] = live_scene(runtime['scene.mjs'].decode()).encode()
-    runtime_key = digest(b''.join(runtime.values()))[:12]
+    runtime_key = digest(b''.join((ROOT / 'ice' / name).read_bytes() for name in RUNTIME))[:12]
     route = f'assets/ice.{runtime_key}'
     target = site / route
     for retired in (site / 'assets').glob('ice.*'):
         if retired.is_dir() and retired != target:
             shutil.rmtree(retired)
     target.mkdir(exist_ok=True)
-    for name, payload in runtime.items():
-        (target / name).write_bytes(payload)
+    for name in RUNTIME:
+        shutil.copy2(ROOT / 'ice' / name, target / name)
     manifest['preview'] = f'{route}/preview.mjs'
     return manifest
 
