@@ -1,74 +1,234 @@
-name: Publish archived portfolio
+name: Publish portfolio
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  actions: read
   pages: write
   id-token: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  review:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify garden combat and save compatibility
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+      - name: Verify cleanup safeguards
+        run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
+      - name: Verify unified navigation shell
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 -m unittest discover -s portfolio-source -p sprite_content_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
+      - name: Install static build dependencies
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
+      - name: Prepare the render and verification browser
+        timeout-minutes: 10
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install -y fonts-noto-cjk
+          mkdir -p /tmp/fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /tmp/fonts/
+          npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
+          export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
+          export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Build and validate the complete release
+        run: |
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
+      - name: Verify portfolio experience once
+        timeout-minutes: 8
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
+      - name: Save temporary visual verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-ui-review
+          path: ${{ runner.temp }}/portfolio-review
+          retention-days: 1
+
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    outputs:
+      cleanup_authorized: ${{ steps.retire-authorization.outputs.enabled }}
+      published_head: ${{ steps.archive.outputs.sha }}
+    timeout-minutes: 55
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/configure-pages@v5
-      - name: Validate the original Pages archive
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Read one-time cleanup authorization
+        id: retire-authorization
         run: |
-          python3 - <<'PY'
-          from hashlib import sha256
+          python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
+          import json, sys
           from pathlib import Path
-          from shutil import copy2
-          from zipfile import ZipFile
-          import json
-          import re
-          
-          archive = Path('deploy.zip')
-          assert sha256(archive.read_bytes()).hexdigest() == 'a6591a6641c93dd64fd95ac40250ef3df03d3c6d7fa87d2870c76dadc5ef03eb'
-          target = Path('_site')
-          with ZipFile(archive) as bundle:
-              release = json.loads(bundle.read('release.json'))
-              assert release['siteRevision'] == '2026-11-19-capabilities-and-cathedral'
-              bundle.extractall(target)
-          
-          resume = Path('resume.pdf')
-          assert sha256(resume.read_bytes()).hexdigest() == release['resume']['sha256']
-          name = release['resume']['file']
-          copy2(resume, target / resume.name)
-          copy2(resume, target / name)
-          
-          # Apply the same résumé link substitution as this archive's original publisher.
-          pattern = re.compile(r"""(href=["'])([^"']*?)resume\.pdf(?:\?[^"']*)?(["'])""")
-          for page in target.rglob('*.html'):
-              if page.is_relative_to(target / 'game'):
-                  continue
-              contents = page.read_text(encoding='utf-8')
-              page.write_text(pattern.sub(lambda match: match[1] + match[2] + name + match[3], contents), encoding='utf-8')
-          PY
-          python3 validate_site.py _site --published --pdf resume.pdf
-          python3 portfolio-source/audit_release.py _site
-      - uses: actions/upload-pages-artifact@v4
-        id: artifact
+          sys.path.insert(0, 'portfolio-source')
+          from prepare_release import REVISION
+          marker = Path('.github/retire-history-once.json')
+          enabled = marker.exists()
+          if enabled and json.loads(marker.read_text()) != {'siteRevision': REVISION, 'branch': 'main'}:
+              raise SystemExit('Cleanup authorization does not match the release.')
+          print('enabled=' + str(enabled).lower())
+          PYCODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify garden combat and save compatibility
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+      - name: Verify cleanup safeguards
+        run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
+      - name: Verify unified navigation shell
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 -m unittest discover -s portfolio-source -p sprite_content_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Install static build dependencies
+        run: |
+          if [[ "$(python3 portfolio-source/film/cache_probe.py)" != true ]] &&
+             { ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; }; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 Pillow numpy opencc-python-reimplemented
+      - name: Prepare the render and verification browser
+        timeout-minutes: 10
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install -y fonts-noto-cjk
+          mkdir -p /tmp/fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /tmp/fonts/
+          npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
+          export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
+          export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Build and validate the complete release
+        run: |
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
+      - name: Verify portfolio experience once
+        timeout-minutes: 8
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
+      - name: Save temporary visual verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-review
+          path: ${{ runner.temp }}/portfolio-review
+          retention-days: 1
+      - name: Keep the current publish archive in sync
+        id: archive
+        run: |
+          if ! git diff --quiet -- deploy.zip portfolio-source/film/timeline.json portfolio-source/film/provenance.json; then
+            git config user.name "马嘉程"
+            git config user.email "majiacheng619@gmail.com"
+            git add deploy.zip portfolio-source/film/timeline.json portfolio-source/film/provenance.json
+            git commit -m "同步个人网站发布归档"
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Upload site
+        id: pages-artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
       - name: Wait for the Pages artifact
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact_id }}
+          PAGES_ARTIFACT_ID: ${{ steps.pages-artifact.outputs.artifact_id }}
         run: |
           for attempt in {1..6}; do
-            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" --jq '.artifacts[].id' | grep -Fxq "$ARTIFACT_ID"; then
+            sleep 5
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" \
+                 --jq '.artifacts[].id' | grep -Fxq "$PAGES_ARTIFACT_ID"; then
               exit 0
             fi
-            sleep 5
           done
+          echo "Pages artifact $PAGES_ARTIFACT_ID did not become visible after upload." >&2
           exit 1
-      - uses: actions/deploy-pages@v4
+      - name: Deploy
         id: deployment
+        uses: actions/deploy-pages@v4
+
+  cleanup:
+    if: needs.deploy.outputs.cleanup_authorized == 'true'
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      deployments: write
+    steps:
+      - name: Checkout the current published source
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Verify publication and retire obsolete records
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN: ${{ github.run_id }}
+          DEPLOYED_SHA: ${{ github.sha }}
+          EXPECTED_HEAD: ${{ needs.deploy.outputs.published_head }}
+        run: |
+          git config user.name "马嘉程"
+          git config user.email "majiacheng619@gmail.com"
+          REVISION=$(python3 -c 'import sys; sys.path.insert(0,"portfolio-source"); from prepare_release import REVISION; print(REVISION)')
+          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "$REVISION" --expected-head "$EXPECTED_HEAD" --rewrite-main --apply --authorization-file .github/retire-history-once.json
