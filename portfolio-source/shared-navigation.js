@@ -7,19 +7,18 @@
   const heading = document.querySelector('[data-shared-target], .detail-hero, .ice-theater .film-heading, .story-page h1');
   let active, lastCard, outgoing = false;
 
-  if (native) {
-    function handleAbort(event) {
-      const transition = event.viewTransition;
-      if (!transition) return;
-      // The browser can cancel a native transition when a page opts out or
-      // the motion preference changes during navigation.
-      transition.ready.catch(() => {});
-      transition.finished.catch(() => {});
-      transition.updateCallbackDone.catch(() => {});
-    }
-    addEventListener('pageswap', handleAbort);
-    addEventListener('pagereveal', handleAbort);
+  function settleNativeTransition(event) {
+    const transition = event.viewTransition;
+    if (!transition) return;
+    // Keep the CSS opt-in stable. Cancel the current transition when the
+    // motion preference changes, without leaving a rejected browser promise.
+    transition.ready.catch(() => {});
+    transition.finished.catch(() => {});
+    transition.updateCallbackDone.catch(() => {});
+    if (disabled()) transition.skipTransition();
   }
+  addEventListener('pageswap', settleNativeTransition);
+  addEventListener('pagereveal', settleNativeTransition);
 
   function remember(element, path, card, from, returning) {
     const { left, top, width, height } = element.getBoundingClientRect();

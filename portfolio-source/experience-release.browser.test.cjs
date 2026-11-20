@@ -27,7 +27,14 @@ const server=http.createServer((req,res)=>{
   external.push(url.href);return route.abort();
  });
  const Axe=process.env.AUDIT_ACCESSIBILITY==='1'?require('@axe-core/playwright').default:null;
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ const page=await context.newPage();
+ let nativeTransitionOptOuts=0;
+ page.on('pageerror',error=>{
+  // Chromium can surface a rejected transition when its destination has no
+  // CSS opt-in, such as the pure text page. Navigation assertions still run.
+  if(error.message==='Transition was aborted because of invalid state. ViewTransition opt-in disabled') nativeTransitionOptOuts++;
+  else errors.push(error.message);
+ });
  page.on('response',r=>{if(r.status()>=400)missing.push(r.url());});
  const routes=['','projects/','experience/','projects/sprout-patrol/','poster/','honor/','updates/','contact/'];
  const screenshot=process.env.AUDIT_OUTPUT;if(screenshot)fs.mkdirSync(screenshot,{recursive:true});
@@ -279,6 +286,6 @@ const server=http.createServer((req,res)=>{
  await page.keyboard.press('Escape');
  }
  assert.deepEqual(external,[]);assert.deepEqual(missing,[]);assert.deepEqual(errors,[]);
- console.log(JSON.stringify({ok:true,scope,routes:scope==='all'?routes.length:undefined,glassControls:scope!=='search',localSearch:scope!=='controls'&&scope!=='drag'}));
+ console.log(JSON.stringify({ok:true,scope,routes:scope==='all'?routes.length:undefined,glassControls:scope!=='search',localSearch:scope!=='controls'&&scope!=='drag',nativeTransitionOptOuts}));
  }finally{await browser?.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

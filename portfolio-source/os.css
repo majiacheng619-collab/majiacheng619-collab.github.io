@@ -147,7 +147,9 @@ a.os-widget, .os-widget summary { display: flex; gap: 8px; align-items: center; 
 :root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
   animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important;
 }
-@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
 @supports (corner-shape: squircle) { :is(.os-app,.os-widget,.os-stats,.os-app-icon) { corner-shape: squircle; } }
 @media (hover:hover) {
   .os-app:hover, a.os-widget:hover { box-shadow: var(--os-shadow), inset 0 0 0 1px var(--accent); }
