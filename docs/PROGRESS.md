@@ -38,3 +38,4 @@
 
 - 三次中位数与分项见 [DECISIONS.md](DECISIONS.md)。移动性能 62，桌面 61，CLS 均为 0。两种配置的无障碍与最佳实践均为 100。
 - 404 和旧作品跳转纳入静态链接与 HTML 校验。发布回滚步骤见 [ROLLBACK.md](ROLLBACK.md)。
+- Chromium 和 WebKit 分别通过六项降级测试，14 个入口在关闭脚本、320 px 和 130% 字号下保持可读。Chromium 验证旧版恢复、主站 Worker 注销与游戏缓存保留。

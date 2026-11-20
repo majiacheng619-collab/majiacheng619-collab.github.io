@@ -114,6 +114,16 @@ body .ambient-field::before, body .ambient-field::after { display: none; }
   background: linear-gradient(150deg, #304b6aee, #102740f5 70%, #213650ee);
   color: #eff8ff;
 }
+.glass-dock[data-over-media] .glass-dock__link,
+.glass-dock[data-over-media] .glass-dock__link:is([aria-current],[data-active="true"]) {
+  color: #eff8ff;
+}
+.os-notifications summary strong {
+  padding: .08em .32em;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--surface);
+}
 .os-widget-ice strong {
   padding: .22em .55em;
   border-radius: 9px;
@@ -126,9 +136,10 @@ body .ambient-field::before, body .ambient-field::after { display: none; }
 }
 :root[data-tone="dark"] :is(
   .practice-stats dd,.case-facts strong,.detail-game-facts strong,.work-metrics dd,
-  .film-heading h2 span,.film-heading h2 bdi,.studio-tabs button,.case-jump a,
-  .sprite-facts dd,.sprite-answer-title,#sprite-title
+  .film-heading h2 span,.film-heading h2 bdi,.case-jump a,
+  .sprite-facts dd,.sprite-answer-title
 ) { color: var(--ink); }
+:root[data-tone="dark"] #sprite-title { color: var(--ink); }
 :root[data-tone="dark"] :is(
   .practice-stats dt,.case-facts span,.work-metrics dt,.practice-card .practice-period,
   .sprite-answer-source,.sprite-facts dt,.contact-eyebrow,.sprite-panel p
