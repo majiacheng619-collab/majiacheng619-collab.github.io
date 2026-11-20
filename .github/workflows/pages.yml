@@ -40,10 +40,12 @@ jobs:
           python3 portfolio-source/optics/generate_field.py --check
           python3 -m unittest discover -s portfolio-source -p optics_test.py
       - name: Install static build dependencies
+        timeout-minutes: 5
         run: |
           if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg poppler-utils
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 update -qq
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 install -y ffmpeg poppler-utils
           fi
           python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
       - name: Prepare the render and verification browser
@@ -99,9 +101,8 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  stage-ios27:
+  preserve-live:
     if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
-    needs: review
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -109,10 +110,6 @@ jobs:
       pages: read
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v4
-        with:
-          name: verified-pages-archive
-          path: preview-build
       - name: Verify Pages and preserve the live release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -143,6 +140,20 @@ jobs:
             test "$tag" = "$baseline"
           fi
           printf 'Pages uses GitHub Actions from main, uploading _site.\n\nLive rollback tag: %s\n' "$baseline" >> "$GITHUB_STEP_SUMMARY"
+
+  stage-ios27:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
+    needs: [review, preserve-live]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-pages-archive
+          path: preview-build
       - name: Commit verified publication archive
         run: |
           mv preview-build/deploy.zip deploy.zip
@@ -201,10 +212,12 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Install static build dependencies
+        timeout-minutes: 5
         run: |
           if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg poppler-utils
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 update -qq
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 install -y ffmpeg poppler-utils
           fi
           python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
       - name: Prepare the render and verification browser
