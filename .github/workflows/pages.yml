@@ -2,118 +2,333 @@ name: Publish portfolio
 
 on:
   push:
-    branches: [main, redo]
+    branches: [main, feat/ios27]
   pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: portfolio-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  baseline:
-    if: github.event_name != 'pull_request'
+  review:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27')
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     permissions:
-      contents: write
-    env:
-      PRE_REDO: 7d894c50c306c90cfbffb913645d5833a6d92c1b
+      contents: read
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Preserve the pre-redesign publication ref
-        run: |
-          current=$(git ls-remote --tags origin refs/tags/pre-redo | cut -f1)
-          if [ -z "$current" ]; then
-            git push origin "$PRE_REDO:refs/tags/pre-redo"
-          else
-            test "$current" = "$PRE_REDO"
-          fi
-
-  build:
-    needs: baseline
-    if: always() && (needs.baseline.result == 'success' || needs.baseline.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Verify garden combat and save compatibility
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
+      - name: Verify cleanup safeguards
+        run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
+      - name: Verify unified navigation shell
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 -m unittest discover -s portfolio-source -p sprite_content_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
+      - name: Install static build dependencies
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 update -qq
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 install -y ffmpeg poppler-utils
+          fi
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
+      - name: Prepare the render and verification browser
+        timeout-minutes: 10
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install -y fonts-noto-cjk
+          mkdir -p /tmp/fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /tmp/fonts/
+          npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
+          export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
+          export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install build dependencies
+      - name: Build and validate the complete release
         run: |
-          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game "${film_args[@]}"
           npm ci --ignore-scripts
-      - name: Check game and saves
-        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs
-      - name: Build and validate the site
-        run: |
-          python3 portfolio-source/prepare_release.py --use-archive-if-current
           npm run check -- --built
-      - name: Upload Pages payload
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
-      - name: Upload the audited release archive
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      - name: Verify search against the generated archive
+        run: node --test portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
+      - name: Verify portfolio experience once
+        timeout-minutes: 8
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
+      - name: Verify browser fallbacks and rollback
+        timeout-minutes: 5
+        run: node scripts/verify-launch.cjs _site
+      - name: Save temporary visual verification
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: portfolio-release-archive
+          name: pr-ui-review
+          path: ${{ runner.temp }}/portfolio-review
+          retention-days: 1
+      - name: Package verified release for staging
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-pages-archive
           path: deploy.zip
+          if-no-files-found: error
           retention-days: 1
 
-  deploy:
-    needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+  preserve-live:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
+      pages: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify Pages and preserve the live release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          config=$(gh api "repos/$GITHUB_REPOSITORY/pages")
+          test "$(jq -r '.build_type' <<< "$config")" = workflow
+          live=$(jq -r '.html_url' <<< "$config")
+          test "$live" = 'https://majiacheng619-collab.github.io/'
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          baseline=$(git rev-parse refs/remotes/origin/main)
+          git show "$baseline:deploy.zip" > "$RUNNER_TEMP/pre-ios27.zip"
+          tag=$(git ls-remote --tags origin refs/tags/pre-ios27 | cut -f 1)
+          if [[ -n "$tag" ]]; then
+            git fetch origin refs/tags/pre-ios27:refs/tags/pre-ios27
+            git show "$tag:deploy.zip" > "$RUNNER_TEMP/tagged-pre-ios27.zip"
+          fi
+          curl --fail --silent --show-error --retry 2 "${live}release.json?preflight=${GITHUB_RUN_ID}" > "$RUNNER_TEMP/pre-ios27-live.json"
+          python3 - "$RUNNER_TEMP" <<'PYCODE'
+          import json, sys, zipfile
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          with zipfile.ZipFile(root / 'pre-ios27.zip') as archive:
+              saved = json.loads(archive.read('release.json'))
+          live = json.loads((root / 'pre-ios27-live.json').read_text())
+          if saved != live:
+              tagged = root / 'tagged-pre-ios27.zip'
+              if not tagged.exists():
+                  raise SystemExit('Main archive and live Pages metadata differ')
+              with zipfile.ZipFile(tagged) as archive:
+                  if json.loads(archive.read('release.json')) != live:
+                      raise SystemExit('Live Pages metadata matches neither main nor the rollback tag')
+          print('Verified live release:', live['siteRevision'])
+          PYCODE
+          if [[ -z "$tag" ]]; then
+            tag="$baseline"
+            git push origin "$tag:refs/tags/pre-ios27"
+          fi
+          printf 'Pages uses GitHub Actions from main, uploading _site.\n\nLive rollback tag: %s\n' "$tag" >> "$GITHUB_STEP_SUMMARY"
+
+  stage-ios27:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/ios27'
+    needs: [review, preserve-live]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-pages-archive
+          path: preview-build
+      - name: Commit verified publication archive
+        run: |
+          mv preview-build/deploy.zip deploy.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- deploy.zip
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: commit the verified iOS 27 Pages archive"
+          git push origin HEAD:refs/heads/feat/ios27
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    outputs:
+      cleanup_authorized: ${{ steps.retire-authorization.outputs.enabled }}
+      published_head: ${{ steps.archive.outputs.sha }}
+    timeout-minutes: 55
     permissions:
       actions: read
       contents: write
       pages: write
       id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/configure-pages@v5
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Read one-time cleanup authorization
+        id: retire-authorization
+        run: |
+          python3 - <<'PYCODE' >> "$GITHUB_OUTPUT"
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'portfolio-source')
+          from prepare_release import REVISION
+          marker = Path('.github/retire-history-once.json')
+          enabled = marker.exists()
+          if enabled and json.loads(marker.read_text()) != {'siteRevision': REVISION, 'branch': 'main'}:
+              raise SystemExit('Cleanup authorization does not match the release.')
+          print('enabled=' + str(enabled).lower())
+          PYCODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify garden combat and save compatibility
+        run: node --test portfolio-source/game-journey.test.cjs portfolio-source/game-engine.test.cjs portfolio-source/game-save-recovery.test.cjs game-audio.test.cjs portfolio-source/glass-dock.test.cjs
+      - name: Verify cleanup safeguards
+        run: python3 -m unittest discover -s portfolio-source -p release_cleanup_test.py
+      - name: Verify unified navigation shell
+        run: |
+          python3 -m unittest discover -s portfolio-source -p site_shell_test.py
+          python3 -m unittest discover -s portfolio-source -p sprite_content_test.py
+          python3 portfolio-source/optics/generate_field.py --check
+          python3 -m unittest discover -s portfolio-source -p optics_test.py
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Install static build dependencies
+        timeout-minutes: 5
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v pdftoppm >/dev/null; then
+            printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 update -qq
+            sudo apt-get -o Acquire::http::Timeout=25 -o Acquire::https::Timeout=25 -o Acquire::Retries=2 install -y ffmpeg poppler-utils
+          fi
+          python3 -m pip install --disable-pip-version-check --retries 2 --timeout 30 -r requirements-build.txt
+      - name: Prepare the render and verification browser
+        timeout-minutes: 10
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install -y fonts-noto-cjk
+          mkdir -p /tmp/fonts
+          cp /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc /tmp/fonts/
+          npm install --prefix "$RUNNER_TEMP/portfolio-browser" playwright@1.62.1 @axe-core/playwright@4.14.0 @sparticuz/chromium@153.0.0
+          export CHROME_HELPER="$RUNNER_TEMP/portfolio-browser/node_modules/@sparticuz/chromium/build/index.js"
+          export CHROME_PATH=$(node --input-type=module -e 'const {default:c}=await import(process.env.CHROME_HELPER); console.log(await c.executablePath())')
+          echo "CHROME_HELPER=$CHROME_HELPER" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          echo "NODE_PATH=$RUNNER_TEMP/portfolio-browser/node_modules" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build and validate the complete release
+        run: |
+          film_args=()
+          if [[ "$(python3 portfolio-source/film/cache_probe.py --master-only)" != true ]]; then
+            export FILM_SINGLE_PROCESS=1
+            node portfolio-source/film/export.mjs --software --workers 2 --output "$RUNNER_TEMP/cathedral-export"
+            film_args=(--film-output "$RUNNER_TEMP/cathedral-export")
+          fi
+          python3 portfolio-source/prepare_release.py --preserve-game --use-archive-if-current "${film_args[@]}"
+          npm ci --ignore-scripts
+          npm run check -- --built
+      - name: Verify search against the generated archive
+        run: node --test portfolio-source/sprite.test.cjs portfolio-source/sprite-brain.test.cjs
+      - name: Verify my repository cleanup and current-file integrity
+        run: python3 portfolio-source/audit_repository.py
+      - name: Verify portfolio experience once
+        timeout-minutes: 8
+        run: AUDIT_ACCESSIBILITY=1 AUDIT_OUTPUT="$RUNNER_TEMP/portfolio-review" node portfolio-source/experience-release.browser.test.cjs _site
+      - name: Save temporary visual verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-review
+          path: ${{ runner.temp }}/portfolio-review
+          retention-days: 1
+      - name: Keep the current publish archive in sync
+        id: archive
+        run: |
+          if ! git diff --quiet -- deploy.zip portfolio-source/film/timeline.json portfolio-source/film/provenance.json; then
+            git config user.name "马嘉程"
+            git config user.email "majiacheng619@gmail.com"
+            git add deploy.zip portfolio-source/film/timeline.json portfolio-source/film/provenance.json
+            git commit -m "同步个人网站发布归档"
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Upload site
+        id: pages-artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
       - name: Wait for the Pages artifact
         env:
           GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_ID: ${{ steps.pages-artifact.outputs.artifact_id }}
         run: |
           for attempt in {1..6}; do
-            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" --jq '.artifacts[].id' | grep -q .; then
+            sleep 5
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" \
+                 --jq '.artifacts[].id' | grep -Fxq "$PAGES_ARTIFACT_ID"; then
               exit 0
             fi
-            sleep 5
           done
+          echo "Pages artifact $PAGES_ARTIFACT_ID did not become visible after upload." >&2
           exit 1
-      - uses: actions/deploy-pages@v4
+      - name: Deploy
         id: deployment
-      - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v4
+        uses: actions/deploy-pages@v4
+
+  cleanup:
+    if: needs.deploy.outputs.cleanup_authorized == 'true'
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+      deployments: write
+    steps:
+      - name: Checkout the current published source
+        uses: actions/checkout@v6
         with:
-          name: portfolio-release-archive
-          path: released
-      - name: Sync the archive to the published revision
+          ref: main
+          fetch-depth: 1
+      - name: Verify publication and retire obsolete records
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN: ${{ github.run_id }}
+          DEPLOYED_SHA: ${{ github.sha }}
+          EXPECTED_HEAD: ${{ needs.deploy.outputs.published_head }}
         run: |
-          mv released/deploy.zip deploy.zip
-          git add deploy.zip
-          if git diff --cached --quiet; then exit 0; fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Sync the verified Pages archive [skip ci]'
-          git push origin HEAD:main
+          git config user.name "马嘉程"
+          git config user.email "majiacheng619@gmail.com"
+          REVISION=$(python3 -c 'import sys; sys.path.insert(0,"portfolio-source"); from prepare_release import REVISION; print(REVISION)')
+          python3 portfolio-source/release_cleanup.py --run-id "$CURRENT_RUN" --deployed-sha "$DEPLOYED_SHA" --site-revision "$REVISION" --expected-head "$EXPECTED_HEAD" --rewrite-main --apply --authorization-file .github/retire-history-once.json

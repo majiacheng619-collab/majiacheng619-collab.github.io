@@ -1,281 +1,207 @@
-"""Render the static portfolio from the approved profile and existing artwork."""
-from html import escape
 from pathlib import Path
+import hashlib, html, json, re
+ROOT=Path(__file__).resolve().parent/'site'
+from identity import build as build_identity
+from pwa import pwa_manifest, service_worker
+from delivery_assets import fingerprint, compact_images, viewing_video, quick_look, site_music, contact_qr
+ICON, TOUCH_ICON, MONOGRAM = build_identity(ROOT)
+pwa_manifest(ROOT, TOUCH_ICON)
+transcript=html.escape((ROOT/'assets/media/intro-script.txt').read_text())
+media=json.loads((Path(__file__).parent/'film-manifest.json').read_text())
+ribbon = json.loads(Path(__file__).with_name('hero-art.json').read_text())['src']
+artwork = compact_images(ROOT, ribbon, media['poster'])
+streams = viewing_video(ROOT, media)
+media['quickLook'] = quick_look(ROOT, Path(__file__).resolve().parents[1] / 'resume.pdf')
+media['siteMusic'] = site_music(ROOT, media['video'])
+media.update(poster=artwork['filmPoster']['src'], streamVideo=streams['standard'], streamMobile=streams['compact'])
+(ROOT/ribbon).unlink(missing_ok=True)
+(ROOT/'assets/ipad-pro-m5.d67558d91a2d.jpg').unlink(missing_ok=True)
+STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css','secondary.css','first-paint.css')
+SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js','pwa-client.js','extras.js','idle-polish.js')
+css='\n'.join((Path(__file__).parent/name).read_text() for name in STYLE_SOURCES)
+resume_sha=hashlib.sha256((Path(__file__).resolve().parent.parent/'resume.pdf').read_bytes()).hexdigest()
+resume_asset='resume-'+resume_sha[:12]+'.pdf'
+js='\n'.join((Path(__file__).parent/name).read_text() for name in SCRIPT_SOURCES).replace('RESUME_PDF_ASSET',resume_asset)
+def asset(text,stem,ext):
+ return fingerprint(ROOT, 'assets', stem, ext, text.encode())
+# Retire the model worker from inherited release archives as well as this build.
+for old in (ROOT/'assets').glob('companion-worker.*.js'):
+ old.unlink()
+import sys
+sys.path.insert(0,str(Path(__file__).parent/'optics'))
+optical_manifest=json.loads((ROOT/'assets/optical-field.json').read_text())
+optical_asset=optical_manifest['fallback']
+css=css.replace('GLASS_FIELD_ASSET',optical_asset)
+CSS=asset(css,'portfolio','css'); JS=asset(js,'portfolio','js')
+capture_css = asset(Path(__file__).with_name('device-frame.css').read_text(), 'capture', 'css')
+home_js = asset(Path(__file__).with_name('film-player.js').read_text(), 'home-media', 'js')
+polish_art = asset(Path(__file__).with_name('portfolio-sculpture.js').read_text(), 'polish-art', 'mjs')
+control_js = asset(Path(__file__).with_name('control-glass.js').read_text(), 'control-input', 'js')
+gallery_js = asset(Path(__file__).with_name('editorial-gallery.js').read_text(), 'gallery', 'js')
+contact_js = asset('\n'.join(Path(__file__).with_name(name).read_text()
+                            for name in ('contact-reveal.js', 'contact-card.js')), 'contact-reveal', 'js')
+story_js = asset(Path(__file__).with_name('story.js').read_text(), 'story', 'js')
+app_css = asset(Path(__file__).with_name('apps.css').read_text(), 'apps', 'css')
+viewer_js = asset(Path(__file__).with_name('image-viewer.js').read_text(), 'image-viewer', 'js')
+case_js = asset(Path(__file__).with_name('case-preview.js').read_text(), 'case-preview', 'js')
+page_styles = dict.fromkeys(('index.html', 'projects/index.html', 'projects/sprout-patrol/index.html'), (capture_css,))
+for route in ('projects/sprout-patrol/index.html', 'contact/index.html', 'experience/index.html',
+              'story/index.html', 'poster/index.html', 'honor/index.html', 'ice/index.html'):
+ page_styles[route] = (*page_styles.get(route, ()), app_css)
+page_scripts = {'index.html': (home_js, control_js), 'projects/sprout-patrol/index.html': (control_js,), 'projects/index.html': (gallery_js,),
+                'contact/index.html': (contact_js,), 'honor/index.html': (viewer_js,), 'poster/index.html': (viewer_js,), 'experience/index.html': (case_js, control_js), 'story/index.html': (story_js,)}
+def img(src,alt,classes='',eager=False):
+ width,height=dimensions.get(src,(1280,720))
+ return f'<img class="{classes}" src="{src}" alt="{alt}" width="{width}" height="{height}" decoding="async" '+('fetchpriority="high"' if eager else 'loading="lazy"')+'/>'
+def cta(url,label,secondary=False):
+ if url=='resume.pdf': url=resume_asset
+ return f'<a class="button {"secondary" if secondary else "primary"}" href="{url}"'+(' download="马嘉程_个人简历.pdf"' if url.endswith('.pdf') else '')+f'>{label}</a>'
+from device_frames import device_frame
+from site_shell import build_renderer
+render=build_renderer(ROOT,CSS,JS,ICON,TOUCH_ICON,MONOGRAM,media,page_styles=page_styles,page_scripts=page_scripts,resume=resume_asset)
+dimensions=json.loads((Path(__file__).parent/'image-dimensions.json').read_text())
+for name in ('avatar', 'filmPoster', 'gamePreview'):
+ current = artwork[name]
+ dimensions[current['src']] = (current['width'], current['height'])
+from PIL import Image
+for current in (Path(__file__).parent/'assets-overrides').glob('garden-current-*.webp'):
+ dimensions['assets/'+current.name]=Image.open(current).size
+preview=Image.open(ROOT/'poster/poster.png').convert('RGB')
+preview.thumbnail((1100,1600))
+import io
+preview_bytes=io.BytesIO(); preview.save(preview_bytes,format='WEBP',quality=86,method=6)
+poster_preview='assets/poster-preview.'+hashlib.sha256(preview_bytes.getvalue()).hexdigest()[:12]+'.webp'
+(ROOT/poster_preview).write_bytes(preview_bytes.getvalue())
+dimensions[poster_preview]=preview.size
+for old in (ROOT/'assets').glob('poster-preview.*.webp'):
+ if old.name!=Path(poster_preview).name: old.unlink()
 
-from contact import EMAIL, PHONE
-from delivery_assets import fingerprint
-from profile_data import PROFILE
-
-ORIGIN = 'https://majiacheng619-collab.github.io'
-HERE = Path(__file__).resolve().parent
-CASES = {case['id']: case for case in PROFILE['cases']}
-BUSINESS = ('ecommerce', 'printing', 'store', 'livestream')
-METRICS = (
-    ('50 万+', '多项目净利润（元）'),
-    ('近 1,000', '电商去重学员'),
-    ('30 万+', '直播最高曝光'),
-)
-WORKS = (
-    ('/projects/sprout-patrol/', '萌芽保卫队', '网页游戏', '把植物成长与资源分配做成可以直接上手的塔防游戏。',
-     'Sprout Patrol', 'Web game', 'A playable tower-defense game built around plant growth and resource choices.', 'game', 'sprout-work'),
-    ('/ice/', '冰之圣殿', '3D 短片', '从极光下的冰峡到鲸鱼跃出海面，一次用实时 3D 做成的极地航行。',
-     'Cathedral of Ice', '3D short film', 'A real-time 3D voyage through an arctic fjord, from the northern lights to a breaching whale.', 'ice', 'cathedral'),
-    ('/poster/', '面包挑战', '线下活动', '和朋友一起设计挑战规则、准备海报，并根据实际人流调整活动场地。',
-     'Bread Challenge', 'Live event', 'I helped design the rules, prepare the poster and adjust the event location to foot traffic.', 'poster', 'field-work'),
-)
-ALIASES = {
-    'projects/ai-content/index.html': ('/projects/', '作品'),
-    'standby/index.html': ('/', '首页'),
-    'story/index.html': ('/#selected-work', '作品'),
-    'updates/index.html': ('/#recent-work', '面包挑战近况'),
-}
-NAV = (
-    ('/projects/', '作品', 'Work'),
-    ('/experience/', '经历', 'Career'),
-    ('/honor/', '荣誉', 'Honors'),
-    ('/contact/', '联系', 'Contact'),
-)
 
 
-def link(href, label, style='link', download=False):
-    return f'<a class="{style}" href="{escape(href, quote=True)}"{" download" if download else ""}>{escape(label)}</a>'
+from home import build_home, event_preview
+from film_player import build_live
+from pages_v3 import honor_wall, sprout_screens, game_version, story
+from os_components import icon
+from public_views import english, offline, plain, standby
+home=build_home(img, cta, media, transcript, artwork).replace('href="resume.pdf"', f'href="{resume_asset}"')
+render('index.html','马嘉程','马嘉程，2027届本科生。独立开展电商教学、校园打印与直播，参与门店经营和线下活动，策划并交付网页产品。',home)
+render('ice/index.html', '冰之圣殿', '25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。', build_live(media, media['preview']))
+
+# A shared, quiet layout for every portfolio destination.
+def detail_open(name): return f'<div class="detail-page detail-{name}">'
+def detail_close(): return '</div>'
+def detail_hero(title,desc,actions=''):
+ return f'<section class="detail-hero"><div class="detail-shell"><h1>{title}</h1>'+(f'<p class="detail-intro">{desc}</p>' if desc else '')+ (f'<div class="actions">{actions}</div>' if actions else '')+'</div></section>'
+def detail_split(anchor,title,text,visual='',theme=''):
+ return f'<section class="detail-split {theme}{" detail-copy-only" if not visual else ""}" id="{anchor}"><div class="detail-shell"><div class="detail-split-copy"><h2>{title}</h2>{text}</div>'+ (f'<div class="detail-split-media">{visual}</div>' if visual else '')+'</div></section>'
+def detail_rows(anchor,title,entries):
+ return f'<section class="detail-rows" id="{anchor}"><div class="detail-shell"><h2>{title}</h2><div class="detail-row-list">'+''.join(f'<article class="detail-row"><h3>{t}</h3><p>{d}</p></article>' for t,d in entries)+'</div></div></section>'
+projects=detail_open('projects')+detail_hero('作品','在线体验网页游戏，查看线下活动方案与实际物料。')
+projects+='<section class="work-gallery detail-shell" aria-label="作品与项目">'
+projects+='<article class="work-card work-feature" id="selected-work"><div class="work-copy"><p class="work-meta">交互产品 · 独立策划 · AI 辅助实现</p><h2>萌芽保卫队</h2><p>把植物成长与资源分配做成可玩的网页产品。我负责玩法设计、需求拆解与迭代验收。</p><dl class="work-metrics"><div><dt>世界</dt><dd>4</dd></div><div><dt>关卡</dt><dd>20</dd></div></dl><div class="actions">'+cta('game/index.html','开始游戏')+cta('projects/sprout-patrol/index.html','产品分工',True)+'</div></div><figure class="work-art" data-gallery-reveal>'+device_frame(img('assets/garden-current-play.webp','萌芽保卫队实际游戏画面',eager=True))+'</figure></article>'
+projects+='<article class="work-card work-event" id="field-work"><div class="work-copy"><p class="work-meta">线下活动 · 与朋友共同开展</p><h2>面包挑战</h2><p>参与规则设计与组织，在现场用 A3 海报说明挑战要求、价格和奖励。</p><div class="actions">'+cta('poster/index.html','活动方案与原件')+'</div></div>'+event_preview()+'</article>'
+projects+=f'''<article class="work-card work-ice" id="cathedral"><div class="work-copy"><h2>冰之圣殿</h2>
+<p>25 秒极地实时三维动画。科考船在极光下航行，鲸鱼穿过冰川峡谷的海面。</p>
+<div class="actions">{cta('ice/index.html','实时 3D 场景')}{cta('index.html#introduction','观看作品影片',True)}</div></div>
+{img(media['poster'],'极光下，科考船驶入蓝色冰川峡谷','work-ice-image')}</article>'''
+projects+='</section>'+detail_close()
+render('projects/index.html','作品','马嘉程的网页游戏与线下活动作品。',projects)
+
+from case_studies import build_experience
+experience=build_experience(cta,detail_rows)
+render('experience/index.html','实践经历','马嘉程的电商教学、直播运营、线下经营与教育经历。',experience)
+
+game=detail_open('game')+f'''<section class="detail-hero app-hero"><div class="detail-shell app-heading">
+<span class="app-mark">{icon('seed')}</span><div><h1>萌芽保卫队</h1><p class="detail-intro">种下、守护、成长。</p>
+<div class="actions">{cta('game/index.html','开始游戏')}{cta('game/home.html','花园首页',True)}</div></div></div></section>'''
+game+=sprout_screens(img)
+game+=detail_split('overview','我的分工','<p id="product-process">独立负责玩法策划、需求拆解、交互与迭代验收，通过 Codex 辅助实现代码。</p>','<div class="detail-game-facts"><div><strong>4</strong><span>个世界</span></div><div><strong>20</strong><span>个关卡</span></div></div>')
+game+='<section class="detail-growth" id="mechanism"><div class="detail-shell"><h2>成长机制</h2><p class="detail-intro">用阳光补充防线，或等待现有植物成长。</p><div class="growth-demo"><div class="growth-steps">'
+for i,t in enumerate(['萌芽','成株','开花']):
+ game+=f'<button type="button" data-growth-step="{i}" aria-controls="growth-panel-{i}" aria-pressed="{str(i==0).lower()}"><strong>{t}</strong></button>'
+game+='</div>'
+for i,(t,d) in enumerate([('争取时间','保护萌芽，等待它长成。'),('形成防线','成株获得作战能力。'),('强化能力','投入阳光，让植物开花。')]):
+ growth_image=['assets/growth-seed-sprout.da294e149655.png','assets/growth-seed-adult.01b9f733e3e8.png','assets/growth-seed-flower.3fb952bbfb40.png'][i]
+ game+=f'<div id="growth-panel-{i}" data-growth-panel="{i}"'+f'><img class="growth-real" src="{growth_image}" alt="种子投手的{["萌芽","成株","开花"][i]}阶段" width="384" height="384" loading="lazy" decoding="async"/><div><h3>{t}</h3><p>{d}</p></div></div>'
+game+='</div></div></section>'
+game+=detail_split('journey','花园旅程','<p>完成当前关卡后解锁下一关，可在旅程中查看进度。</p>','<a class="product-visual device-preview" href="game/journal.html">'+device_frame(img("assets/garden-current-journey.webp","萌芽保卫队7.0花园旅程与关卡进度"))+'</a>')
+game+=detail_rows('decisions','随时继续',[('引导与图鉴','首关引导帮助理解操作，图鉴用于查阅植物和敌人信息；将学习规则与进入玩法的过程衔接起来。'),('存档与继续','本机自动保存进度，也可导出存档码，让玩家能够中断后继续已有旅程。')])
+
+game+=game_version(ROOT)+detail_close()
+render('projects/sprout-patrol/index.html','萌芽保卫队','网页塔防游戏：体验植物成长与资源分配，了解马嘉程的项目分工。',game)
+
+poster=detail_open('poster')+detail_hero('面包挑战','2025.07—2025.08、2026.10 起，与朋友共同开展。')
+poster+=detail_split('visual','现场参与方式','<p>收费、挑战要求与分档奖励均在现场宣传海报中说明。</p><dl class="event-facts"><div><dt>参与价格</dt><dd>19.9 元 / 次</dd></div></dl>')
+poster+='<section class="detail-shell evidence-section"><details class="proof-disclosure"><summary>查看现场使用的海报</summary><div class="proof-content"><a class="detail-poster-original" data-image-open data-image-target="image-dialog" href="poster/poster.png">'+img(poster_preview,'面包挑战实际使用的活动宣传海报，原始物料')+'</a></div></details></section>'
+poster+=detail_rows('thinking','策划与执行',[('场景与目标','基于南昌当地市场观察，与朋友将互动挑战整理为可以在现场开展的低投入活动。'),('规则与物料','参与规则设计，准备 A3 海报，让参与者能在现场了解挑战要求。'),('组织与调整','统筹物料与现场安排，向参与者说明规则，根据人流调整场地与经营方式。'),('实际交付','完成策划与现场执行，吸引参与及围观，通常在 2–3 小时完成当场挑战安排。')])
+poster+=detail_close()
+render('poster/index.html','面包挑战','面包挑战的实际宣传物料与马嘉程参与的规则设计、筹备和现场执行。',poster)
+
+render('honor/index.html','荣誉','马嘉程的抖音家乡荣耀季荣誉凭证与校园服务荣誉。',honor_wall(img,cta))
+render('story/index.html','一分钟故事','马嘉程的作品与实践。',story(img,artwork,media))
+
+updates=detail_open('updates')+detail_hero('近况','')
+updates+=detail_rows('recent-work','2026 年秋',[('面包挑战','2026 年 10 月起与朋友继续开展线下活动。<a href="poster/index.html">查看活动方案与物料</a>')])+detail_close()
+render('updates/index.html','近况','马嘉程的近期作品与实践。',updates)
+
+from contact import build_contact
+render('contact/index.html','联系','联系马嘉程：邮箱、电话与个人简历。',build_contact(img,cta,contact_qr(ROOT)))
+render('en/index.html','Jiacheng Ma','Projects, experience and contact information.',english(cta),lang='en')
+render('standby/index.html','展台','马嘉程的作品与实践。',standby())
+(ROOT/'plain').mkdir(exist_ok=True)
+(ROOT/'plain/index.html').write_text(plain(resume_asset))
+(ROOT/'offline.html').write_text(offline())
 
 
-def list_cards(rows):
-    return '<dl class="rows">' + ''.join(
-        f'<div><dt>{escape(label)}</dt><dd>{value}</dd></div>' for label, value in rows) + '</dl>'
+# Keep only the current generated portfolio CSS and JS.
+for item in (ROOT/'assets').glob('portfolio.*'):
+ if item.name not in [Path(CSS).name,Path(JS).name]: item.unlink()
+print('Rebuilt portfolio pages with standalone contact and a shared minimal layout.')
 
 
-def number_list(rows, style='metrics'):
-    return f'<dl class="{style}">' + ''.join(
-        f'<div><dt>{escape(label)}</dt><dd>{escape(value)}</dd></div>' for value, label in rows) + '</dl>'
+# Stable entry points, crawl metadata and a useful destination for retired links.
+not_found = '<section class="page-hero"><h1>换个入口，<br>继续探索。</h1><p class="lead">这个地址可能已更新。我的作品与经历都在这里。</p><div class="actions" style="margin-top:30px">'+cta('/','返回首页')+cta('/projects/','浏览作品',True)+cta('resume.pdf','下载简历',True)+'</div></section>'
+render('404.html', '页面未找到', '返回马嘉程的个人网站，继续浏览作品与实践经历。', not_found)
+page = ROOT/'404.html'
+# Absolute site-root URLs remain valid for any missing multi-level route.
+text = page.read_text()
+text = re.sub(r'(href|src|poster|data-os-music)="(?!https?:|mailto:|tel:|#|data:|/)([^"]+)"', r'\1="/\2"', text)
+page.write_text(text)
+legacy = ROOT/'projects/ai-content/index.html'
+legacy.parent.mkdir(parents=True, exist_ok=True)
+legacy.write_text('''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="refresh" content="0; url=/projects/">
+<link rel="canonical" href="https://majiacheng619-collab.github.io/projects/">
+<title>作品入口</title><main><h1>作品入口</h1><p><a href="/projects/">浏览作品</a></p></main></html>
+''')
+(ROOT/'sitemap.xml').unlink(missing_ok=True)
+(ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /game/\nDisallow: /resume-beb4a3432690.pdf\n')
 
+# Build the search index from the same visible copy. The panel loads it on demand.
+from sprite_content import build as build_sprite_content
+from pypinyin import Style, lazy_pinyin
 
-def intro(title, label='', text='', extra=''):
-    tag = f'<p class="meta">{escape(label)}</p>' if label else ''
-    copy = f'<p class="intro-copy">{escape(text)}</p>' if text else ''
-    return f'<div class="page-intro">{tag}<h1>{escape(title)}</h1>{copy}{extra}</div>'
+records = build_sprite_content(ROOT)
+for record in records:
+ aliases = set()
+ for phrase in [record['title'], *record['keywords'].split()]:
+  if not re.search(r'[\u3400-\u9fff]', phrase):
+   continue
+  full = ''.join(lazy_pinyin(phrase, style=Style.NORMAL)).lower()
+  initials = ''.join(lazy_pinyin(phrase, style=Style.FIRST_LETTER)).lower()
+  aliases.update(alias for alias in (full, initials) if re.fullmatch(r'[a-z]{2,}', alias))
+ record['romanized'] = sorted(aliases)
+index = asset(json.dumps(records, ensure_ascii=False, separators=(',', ':')), 'spotlight', 'json')
+engine = asset(Path(__file__).with_name('sprite-brain.js').read_text(), 'spotlight-engine', 'mjs')
+companion_js = js.replace('SPOTLIGHT_INDEX_ASSET', index).replace('SPOTLIGHT_ENGINE_ASSET', engine).replace('POLISH_ART_ASSET', './' + Path(polish_art).name)
+companion_asset = asset(companion_js, 'portfolio', 'js')
+for page in ROOT.rglob('*.html'):
+ if not page.is_relative_to(ROOT / 'game'):
+  source = page.read_text().replace(Path(JS).name, Path(companion_asset).name)
+  source = source.replace('href="resume.pdf"', f'href="{resume_asset}"')
+  page.write_text(source)
+(ROOT/JS).unlink(missing_ok=True)
 
-
-class Portfolio:
-    def __init__(self, root, assets, release):
-        self.root = root
-        self.assets = assets
-        self.release = release
-        self.resume = '/' + release['resume']['file']
-        css = fingerprint(root, 'assets', 'portfolio', 'css', (HERE / 'portfolio.css').read_bytes())
-        scripts = ('portfolio-interactions.js', 'pwa-client.js')
-        js = fingerprint(root, 'assets', 'portfolio', 'js', b'\n'.join((HERE / name).read_bytes() for name in scripts))
-        self.css, self.js = '/' + css, '/' + js
-        self.html = []
-        self.locale = (HERE / 'appearance-init.js').read_text().strip()
-
-    def write(self, output, content):
-        page = self.root / output
-        page.parent.mkdir(parents=True, exist_ok=True)
-        page.write_text(content, encoding='utf-8')
-        self.html.append('/' + output)
-
-    def image(self, key, alt, *, eager=False, style='', decorative=False):
-        image = self.assets[key]
-        sources = image.get('srcset')
-        responsive = f' srcset="{sources}" sizes="{image["sizes"]}"' if sources else ''
-        policy = 'fetchpriority="high"' if eager else ('loading="lazy" decoding="async"' if not decorative else 'loading="lazy" decoding="async" fetchpriority="low"')
-        return (f'<img class="{style}" src="{image["src"]}"{responsive} width="{image["width"]}" '
-                f'height="{image["height"]}" alt="{escape(alt, quote=True)}" {policy}>')
-
-    def settings(self, english, plain):
-        theme, size, language = ('Appearance', 'Text size', 'Language') if english else ('外观', '字号', '语言')
-        automatic, light, dark = ('System', 'Light', 'Dark') if english else ('跟随系统', '浅色', '深色')
-        normal, large = ('Default', 'Large') if english else ('标准', '加大')
-        lang_link = link('/', '简体中文') if english else '<a class="link" href="/en/" lang="en" hreflang="en">English</a>'
-        plain_link = link('/', '图文版') if plain else link('/plain/', 'Text only' if english else '纯文字版')
-        return f'''<details class="settings">
-          <summary>{'Settings' if english else '设置'}</summary>
-          <div class="settings-panel">
-            <label hidden data-setting>{theme}<select data-theme-choice><option value="auto">{automatic}</option><option value="light">{light}</option><option value="dark">{dark}</option></select></label>
-            <label hidden data-setting>{size}<select data-size-choice><option value="normal">{normal}</option><option value="large">{large}</option></select></label>
-            <div class="settings-language"><span>{language}</span>{lang_link}{plain_link}</div>
-          </div>
-        </details>'''
-
-    def page(self, output, title, description, body, *, active='', english=False, plain=False, home=False):
-        name = PROFILE['en']['name'] if english else PROFILE['name']
-        lang = 'en' if english else 'zh-CN'
-        page_title = name if home else f'{title} · {name}'
-        skip = 'Skip to content' if english else '跳到正文'
-        nav_name = 'Main navigation' if english else '主导航'
-        nav = ''.join(
-            f'<a href="{path}"{" aria-current=\x22page\x22" if path == active else ""}>{en if english else zh}</a>'
-            for path, zh, en in NAV)
-        navigation = f'<nav aria-label="{nav_name}">{nav}</nav>'
-        icon = self.assets['icon']['src']
-        touch = self.assets['touch']['src']
-        preload = ''
-        if home and not english:
-            image = self.assets['portrait']
-            preload = (f'<link rel="preload" as="image" href="{image["src"]}" '
-                       f'imagesrcset="{image["srcset"]}" imagesizes="{image["sizes"]}">')
-        footer = f'<footer class="site-footer"><div class="wrap"><span>© 2026 {name}</span><button class="link" type="button" data-pwa-update hidden>{"Reload to update" if english else "有新版本，刷新页面"}</button></div></footer>'
-        document = f'''<!doctype html>
-<html lang="{lang}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex,follow"><meta name="portfolio-revision" content="{self.release["siteRevision"]}">
-<title>{escape(page_title)}</title><meta name="description" content="{escape(description, quote=True)}">
-<meta property="og:title" content="{escape(page_title, quote=True)}"><meta property="og:description" content="{escape(description, quote=True)}">
-<meta name="color-scheme" content="light dark"><link rel="icon" href="{icon}" type="image/svg+xml">
-<link rel="apple-touch-icon" href="{touch}"><link rel="manifest" href="/manifest.webmanifest">
-<script>{self.locale}</script>{preload}<link rel="stylesheet" href="{self.css}"><script defer src="{self.js}"></script>
-</head>
-<body{" class=\x22text-edition\x22" if plain else ""}>
-<a class="skip" href="#main">{skip}</a>
-<header class="site-header"><div class="wrap header-inner"><a class="brand" href="{"/en/" if english else "/"}"{" aria-current=\x22page\x22" if home else ""}>{name}</a>{navigation}{self.settings(english, plain)}</div></header>
-<main id="main" tabindex="-1">{body}</main>
-{footer}
-</body></html>
-'''
-        self.write(output, document)
-
-    def alias(self, output, target, title):
-        # GitHub Pages serves static aliases with HTTP 200. Keep a native link for
-        # readers who disable refresh; its page uses the same navigation as any other.
-        description = f'此网址已移至{title}。'
-        route = (self.root / output)
-        self.page(output, {'standby/index.html': '展台已合并', 'story/index.html': '故事已合并', 'updates/index.html': '近况已合并', 'projects/ai-content/index.html': '旧作品入口'}[output], description, f'<section class="wrap">{intro(f"前往{title}", text=description, extra=link(target, title, "button"))}</section>')
-        html = route.read_text()
-        route.write_text(html.replace('</head>', f'<meta http-equiv="refresh" content="0; url={escape(target, quote=True)}"></head>'))
-
-    def download(self, english=False, secondary=False):
-        return link(self.resume, 'Download résumé' if english else '下载简历', 'button soft' if secondary else 'button', download=True)
-
-    def work_list(self, english=False, direct=False):
-        heading_tag = 'h2' if direct else 'h3'
-        parts = []
-        alt = {
-            'game': ('《萌芽保卫队》黄昏关卡实战截图', 'A dusk level in Sprout Patrol'),
-            'ice': ('绿极光下，科考船驶入蓝色峡湾', 'A research vessel sails under the northern lights'),
-            'poster': ('面包挑战现场使用的红色宣传海报', 'The red poster used at the Bread Challenge'),
-        }
-        for route, title, category, desc, en_title, en_category, en_desc, key, section in WORKS:
-            picture = self.image(key, alt[key][english], style='work-image')
-            label, heading, copy = (en_category, en_title, en_desc) if english else (category, title, desc)
-            note = '<p class="meta recent" id="recent-work">2026 年 10 月起，与朋友继续开展线下活动。</p>' if key == 'poster' and not english else ''
-            parts.append(f'''<article class="work" id="{section}">
-<div class="work-visual {key}">{picture}</div>
-<div class="work-caption"><p class="meta">{label}</p><{heading_tag}>{link(route,heading,"work-title")}</{heading_tag}><p>{copy}</p>{note}</div></article>''')
-        return '<div class="work-list">' + ''.join(parts) + '</div>'
-
-    def home(self):
-        portrait = self.image('portrait', '马嘉程的个人照片', eager=True, style='portrait')
-        ribbon = self.image('ribbon', '', style='ribbon', decorative=True)
-        hero = f'''<section class="hero"><div class="wrap hero-inner">
-<div class="hero-copy"><p class="meta">{PROFILE["cohort"]}</p><h1>{PROFILE["name"]}</h1>
-<p class="tagline">{PROFILE["headline"]}</p></div>
-<div class="portrait-frame">{ribbon}{portrait}</div>
-{number_list(METRICS)}
-<div class="actions hero-actions">{link("#selected-work", "查看作品", "button")}{self.download(secondary=True)}</div>
-</div></section>'''
-        values = (('40 万+', '项目净利润（元）'), ('0.2 元', '每张黑白打印'), ('50%', '合伙持股'), ('1 万+', '抖音粉丝'))
-        notes = (
-            '我招募推广伙伴，并把店铺经验整理成课程、操作手册和售后答疑。',
-            '我在宿舍提供低价打印和上门配送，跑通盈利后将业务交给同学。',
-            '我和朋友推进一家韩式炸鸡店从选址、采购到开业，并参与定价和出餐。',
-            '我独立准备主题、封面和开播场地，并用社群与私信维系观众。',
-        )
-        business = ''
-        for key, (value, label), note in zip(BUSINESS, values, notes):
-            case = CASES[key]
-            business += f'''<article class="chapter" id="{key}">
-<div class="chapter-heading"><p class="meta">{escape(case['time'])}</p><h3>{escape(case['summary']['title'])}</h3></div>
-{number_list(((value, label),), 'chapter-number')}
-<div class="chapter-copy"><p>{note}</p>{link('/experience/#' + key, '查看详情', 'link')}</div></article>'''
-        preview = self.image('resume', '马嘉程简历第一页预览', style='resume-image')
-        self.page('index.html', PROFILE['name'], PROFILE['headline'], f'''{hero}
-<section class="wrap sequence" id="experience"><h2>业务经历</h2><div class="chapters">{business}</div></section>
-<section class="wrap sequence" id="selected-work"><h2>作品</h2>{self.work_list()}</section>
-<section class="wrap sequence resume-section" id="resume"><div><h2>简历与联系</h2>
-<p>{PROFILE['school']}</p>{link('/contact/', '联系我', 'button soft')}</div>
-<details class="resume-preview"><summary>预览简历</summary>{preview}</details></section>''', home=True)
-
-    def cases(self, *, english=False, text=False):
-        cases = []
-        for case in CASES.values():
-            copy = case['en'] if english else case
-            key = case['id']
-            title = copy['title']
-            dates = copy.get('time', case['time'])
-            heading = f'<p class="meta">{escape(dates)} · {escape(copy["role"])}</p><h{"3" if english or text else "2"}>{escape(title)}</h{"3" if english or text else "2"}>'
-            actions = list_cards((label, escape(value)) for label, value in copy['actions'])
-            facts = number_list(copy['facts'], 'case-numbers')
-            cases.append(f'''<article class="case" id="{key}">{heading}
-<p>{escape(copy['context'])}</p>{facts}<div id="case-{key}">{actions}</div><p>{escape(copy['result'])}</p></article>''')
-        return ''.join(cases)
-
-    def education(self, english=False):
-        profile = PROFILE['en'] if english else PROFILE
-        return f'''<section class="sequence" id="{'en-education' if english else 'education'}">
-<h2>{'Education' if english else '教育经历'}</h2>{list_cards(profile['education'])}</section>
-<section class="sequence" id="{'en-skills' if english else 'skills'}">
-<h2>{'Skills' if english else '技能'}</h2>{list_cards((label, escape(value)) for label, value in profile['skills'])}</section>'''
-
-    def rest(self):
-        self.page('projects/index.html', '作品', '网页游戏、3D 短片和线下活动。', f'<section class="wrap" id="selected-work">{intro("作品")}{self.work_list(direct=True)}</section>', active='/projects/')
-        self.page('experience/index.html', '经历', '业务、教育及技能经历。', f'''<div class="wrap reading">{intro('经历')}
-<p id="roles">{escape(PROFILE['roles'])}</p><div class="cases">{self.cases()}</div>{self.education()}</div>''', active='/experience/')
-        self.page('contact/index.html', '联系', '马嘉程公开的联系邮箱和手机。', f'''<section class="wrap reading">{intro('联系')}
-<dl class="rows" id="contact-card-back"><div id="contact-email"><dt>邮箱</dt><dd>{link('mailto:' + EMAIL, EMAIL)}</dd></div>
-<div id="contact-phone"><dt>手机</dt><dd>{link('tel:' + PHONE, '198 7004 3434')}</dd></div></dl>
-<div class="actions">{self.download()}</div></section>''', active='/contact/')
-        certificate = self.image('certificate', '抖音家乡荣耀季青山湖区区县 100 强荣誉凭证', style='evidence-image')
-        self.page('honor/index.html', '荣誉', '直播与校园服务所获荣誉。', f'''<div class="wrap reading">{intro('荣誉')}
-<section class="case" id="livestream-honor"><p class="meta">2026 年 · 抖音家乡荣耀季</p><h2>青山湖区区县 100 强</h2>
-<details class="evidence"><summary>查看荣誉凭证</summary>{certificate}</details></section>
-<section class="case" id="campus-honor"><p class="meta">2023 年 · 华东交通大学</p><h2>校优秀学生干部</h2></section></div>''', active='/honor/')
-
-        self.page('projects/sprout-patrol/index.html', '萌芽保卫队', WORKS[0][3], f'''<div class="wrap">
-{intro('萌芽保卫队', '网页游戏', '我独立策划玩法与关卡，用 AI 辅助实现，并验收从新手引导到存档恢复的完整流程。',
-         f'<div class="actions">{link("/game/", "开始游戏", "button")}</div>')}
-<div id="overview" class="work-visual game">{self.image('game', '《萌芽保卫队》黄昏关卡实战截图', eager=True, style='work-image')}</div>
-<section class="sequence reading" id="product-process"><h2>从想法到可玩</h2>
-{list_cards((label, escape(value)) for label, value in CASES['digital-work']['actions'])}
-<div id="journey">{number_list(CASES['digital-work']['facts'], 'case-numbers')}</div>
-<p id="mechanism">植物经历萌芽、成株、开花三个阶段，玩家需要在等待成长和布置防御之间做取舍。</p>
-<div id="decisions" class="actions">{link('/game/guide.html', '游戏指南', 'button soft')}<span id="app-version">{link('/game/updates.html', '游戏更新记录', 'button soft')}</span></div>
-</section></div>''', active='/projects/')
-
-        poster = self.image('poster', '面包挑战现场海报，说明定价、时限和奖励', eager=True, style='work-image')
-        field = CASES['field']
-        self.page('poster/index.html', '面包挑战', WORKS[2][3], f'''<div class="wrap">
-{intro('面包挑战', field['time'], field['context'])}
-<div id="visual" class="work-visual poster">{poster}</div>
-<div class="actions">{link('/poster/poster.png', '查看海报原件', 'button soft')}</div>
-<section class="sequence reading" id="thinking"><h2>从规则到现场</h2>
-{list_cards((label, escape(value)) for label, value in field['actions'])}
-<p>{escape(field['result'])}</p></section></div>''', active='/projects/')
-
-        film = self.release['film']
-        transcript = (self.root / 'assets/media/intro-script.txt').read_text()
-        paragraphs = ''.join(f'<p>{escape(line)}</p>' for line in transcript.splitlines() if line.strip())
-        self.page('ice/index.html', '冰之圣殿', WORKS[1][3], f'''<div class="wrap">
-{intro('冰之圣殿', 'Cathedral of Ice', WORKS[1][3])}
-<figure id="introduction" class="film"><video controls preload="none" playsinline width="{film['width']}" height="{film['height']}" aria-label="冰之圣殿短片" poster="{self.assets['ice']['src']}">
-<source src="/{film['compact']}" type="video/mp4"><track kind="captions" label="简体中文" srclang="zh-CN" src="/{film['captions']}">
-</video><figcaption>25 秒短片 · Three.js / GLSL</figcaption></figure>
-<details class="reading evidence"><summary>阅读文字稿</summary>{paragraphs}</details></div>''', active='/projects/')
-
-        english = PROFILE['en']
-        self.page('en/index.html', english['name'], english['headline'], f'''<div class="wrap reading">
-{intro(english['name'], english['cohort'], english['headline'], f'<div class="actions">{self.download(english=True)}</div>')}
-<section class="sequence" id="selected-work"><h2>Selected work</h2>{self.work_list(english=True)}</section>
-<section class="sequence"><h2>Experience</h2><p id="en-roles">{escape(english['roles'])}</p>{self.cases(english=True)}</section>
-{self.education(english=True)}</div>''', english=True, home=True)
-        self.page('plain/index.html', '纯文字版', '马嘉程个人站纯文字版。', f'''<div class="wrap reading">
-{intro('纯文字版', PROFILE['name'], PROFILE['headline'], f'<div class="actions">{self.download()}</div>')}
-<section class="sequence" id="selected-work"><h2>作品</h2>{list_cards((title, link(url, description)) for url, title, _, description, *_ in WORKS)}</section>
-<section class="sequence"><h2>经历</h2>{self.cases(text=True)}</section>{self.education()}</div>''', plain=True)
-        self.page('404.html', '找不到页面', '这个地址可能已更新。', f'''<section class="wrap reading">{intro('找不到页面', '404', '这个地址可能已更新。')}
-<div class="actions">{link('/', '返回首页', 'button')}{link('/projects/', '查看作品', 'button soft')}</div></section>''')
-        self.page('offline.html', '当前离线', '网络恢复前，可以阅读已保存的纯文字版。', f'''<section class="wrap reading">{intro('当前离线', text='可以继续阅读已保存的纯文字版。')}
-<div class="actions">{link('/plain/', '阅读纯文字版', 'button')}{link('/', '返回首页', 'button soft')}</div></section>''')
-        for route, (target, title) in ALIASES.items():
-            self.alias(route, target, title)
+service_worker(ROOT)

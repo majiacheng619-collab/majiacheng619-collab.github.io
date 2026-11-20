@@ -19,12 +19,9 @@ from urllib.parse import unquote, urlsplit
 import zipfile
 
 PAGES = ('index.html', 'projects/index.html', 'experience/index.html',
-         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html',
-         'contact/index.html', 'ice/index.html', '404.html', 'offline.html', 'en/index.html',
-         'plain/index.html', 'updates/index.html', 'story/index.html', 'standby/index.html',
-         'projects/ai-content/index.html')
-NAV = ('projects/index.html', 'experience/index.html', 'honor/index.html', 'contact/index.html')
-DOWNLOAD_PAGES = {'index.html', 'contact/index.html', 'en/index.html', 'plain/index.html'}
+         'updates/index.html',
+         'projects/sprout-patrol/index.html', 'poster/index.html', 'honor/index.html', 'contact/index.html',
+         'ice/index.html', 'story/index.html', 'standby/index.html', '404.html')
 APPROVED_PDF = 'beb4a3432690f81b952fd8108eddd7b8bc26fa6905c2a62e573a83e7098031cd'
 ORIGIN = 'majiacheng619-collab.github.io'
 
@@ -35,7 +32,7 @@ class Document(HTMLParser):
         self.ids = set(); self.duplicates = []; self.refs = []; self.meta = {}
         self.lang = ''; self.h1 = 0; self.main = 0; self.title = ''
         self.in_title = False; self.nav_depth = 0; self.nav_links = []
-        self.nav_count = 0; self.nav_labels = []; self.nav_current = 0; self.headers = 0; self.settings = 0
+        self.nav_count = 0; self.docks = []; self.dock_items = []; self.retired_navigation = []
         self.pdf_links = []; self.images = []; self.blank_links = []; self.empty_links = []
         self.actions = []; self.active_anchor = None
         self.feed(text)
@@ -52,11 +49,16 @@ class Document(HTMLParser):
         if tag == 'meta': self.meta[a.get('name') or a.get('property')] = a.get('content', '')
         if tag == 'nav':
             self.nav_count += 1
-            self.nav_depth += 1
-            self.nav_labels.append(a.get('aria-label', ''))
-        if tag == 'header' and 'site-header' in a.get('class', '').split(): self.headers += 1
-        if tag == 'details' and 'settings' in a.get('class', '').split(): self.settings += 1
-        if tag == 'a' and self.nav_depth and 'aria-current' in a: self.nav_current += 1
+            if 'data-glass-dock' in a:
+                self.docks.append(a)
+                self.nav_depth = 1
+            elif self.nav_depth:
+                self.nav_depth += 1
+        if self.nav_depth and 'data-dock-item' in a:
+            self.dock_items.append((tag, a))
+        if (tag == 'header' or 'data-menu-open' in a or a.get('id') == 'menu-dialog'
+                or {'chapter-nav', 'reading-progress'} & set(a.get('class', '').split())):
+            self.retired_navigation.append(tag)
         if tag == 'a':
             self.active_anchor = {'label': '', 'href': a.get('href', '')}
             if not a.get('href', '').strip() or a.get('href') == '#': self.empty_links.append(a.get('href', ''))
@@ -115,14 +117,13 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
         try: docs[page.resolve()] = Document(page.read_text(encoding='utf-8'))
         except (UnicodeError, OSError) as exc: err(f'{page.relative_to(root)}: cannot parse HTML: {exc}')
     counts['html_pages'] = len(docs)
-    titles = set()
+    titles = set(); nav_signature = None
     for relative in PAGES:
         page = root / relative
         doc = docs.get(page)
         if not doc: err(f'Missing main page: {relative}'); continue
         counts['main_pages'] += 1
-        expected_lang = 'en' if relative == 'en/index.html' else 'zh-cn'
-        if doc.lang.lower() != expected_lang: err(f'{relative}: expected lang {expected_lang}')
+        if not doc.lang.lower().startswith('zh'): err(f'{relative}: Chinese lang missing')
         if doc.main != 1 or 'main' not in doc.ids: err(f'{relative}: requires one main and a static #main target')
         if doc.h1 != 1: err(f'{relative}: expected one h1, found {doc.h1}')
         if not doc.title.strip(): err(f'{relative}: title missing')
@@ -134,26 +135,42 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             err(f'{relative}: robots noindex missing')
         if not doc.meta.get('og:title') or not doc.meta.get('og:description'):
             warn(f'{relative}: social sharing title/description incomplete')
-        if doc.headers != 1 or doc.settings != 1 or doc.nav_count != 1 or not all(doc.nav_labels):
-            err(f'{relative}: shared header, settings and labelled navigation required')
-        targets = tuple(str(result[0].relative_to(root)) for value in doc.nav_links if (result := local(page, value)))
-        if targets != NAV or doc.nav_current > 1:
-            err(f'{relative}: inconsistent navigation links or current states')
-        markup = page.read_text(encoding='utf-8')
-        if not doc.meta.get('portfolio-revision') or any(token in markup for token in (
-            '马嘉程 OS', 'data-glass-dock', 'id="search-dialog"', 'data-search-open', 'data-search-index',
-            'sprite-panel', 'control-center', 'data-os-music',
-        )):
-            err(f'{relative}: obsolete UI or missing new-release marker')
+        if doc.nav_count != 1 or len(doc.docks) != 1:
+            err(f'{relative}: requires one shared glass-dock navigation')
+        elif not (doc.docks[0].get('aria-label', '').strip() or doc.docks[0].get('aria-labelledby', '').strip()):
+            err(f'{relative}: shared glass navigation lacks an accessible label')
+        if doc.retired_navigation:
+            err(f'{relative}: retired header/chapter/menu navigation remains')
+        controls = doc.dock_items
+        if [tag for tag, attrs in controls] != ['a'] * 5:
+            err(f'{relative}: shared navigation requires exactly five real links')
+        elif any('data-dock-link' not in attrs or not attrs.get('href') for _, attrs in controls):
+            err(f'{relative}: unified navigation link semantics invalid')
+        if any(token in page.read_text(encoding='utf-8') for token in ('data-search-open', 'id="search-dialog"', 'data-search-index')):
+            err(f'{relative}: retired website search remains')
+        if sum('aria-current' in attrs for _, attrs in controls) > 1:
+            err(f'{relative}: more than one current navigation destination')
+        if not doc.nav_links:
+            err(f'{relative}: shared navigation links missing')
+        else:
+            targets = tuple((str(result[0].relative_to(root)), result[1]) for value in doc.nav_links if (result := local(page, value)))
+            if nav_signature is None: nav_signature = targets
+            elif targets != nav_signature: err(f'{relative}: shared navigation destinations differ: {targets}')
         if doc.duplicates: err(f'{relative}: duplicate IDs {doc.duplicates}')
         if doc.empty_links: err(f'{relative}: empty/placeholder hrefs: {doc.empty_links}')
         for image in doc.images:
             if 'alt' not in image: err(f'{relative}: image lacks alt: {image.get("src", "")}')
         for anchor in doc.blank_links:
             if 'noopener' not in anchor.get('rel', '').split(): err(f'{relative}: new-window link lacks noopener')
-        expected_downloads = int(relative in DOWNLOAD_PAGES)
-        if len(doc.pdf_links) != expected_downloads:
-            err(f'{relative}: expected {expected_downloads} resume entries, found {len(doc.pdf_links)}')
+        expected_downloads = 1 if relative in ('index.html', 'contact/index.html', '404.html') else 0
+        if bool(doc.pdf_links) != bool(expected_downloads):
+            err(f'{relative}: expected {expected_downloads} resume entry, found {len(doc.pdf_links)}')
+        if relative == 'index.html' and 'about' in doc.ids:
+            err('index.html: retired embedded contact section remains')
+        if len(controls) == 5:
+            contact_target = local(page, controls[-1][1].get('href', ''))
+            if not contact_target or contact_target != (root / 'contact/index.html', ''):
+                err(f'{relative}: contact navigation must open the standalone page')
         for anchor in doc.pdf_links:
             counts['pdf_links'] += 1
             parsed = urlsplit(anchor['href'])
