@@ -38,6 +38,7 @@ class Passages(HTMLParser):
         self.route, self.records = route, []
         self.main = False
         self.noscript = False
+        self.action_fold = False
         self.stack = []
         self.capture = None
         self.buffer = []
@@ -86,7 +87,9 @@ class Passages(HTMLParser):
         if 'case-facts' in attrs.get('class', '').split():
             self.facts_depth = len(self.stack)
             self.facts = []
-        if tag in ('h1', 'h2', 'h3', 'p', 'li') and self.capture is None:
+        if tag == 'details' and 'case-actions-fold' in attrs.get('class', '').split():
+            self.action_fold = True
+        if (tag in ('h1', 'h2', 'h3', 'p', 'li') or (tag == 'summary' and self.action_fold)) and self.capture is None:
             self.capture, self.buffer = tag, []
 
     def handle_data(self, value):
@@ -117,14 +120,16 @@ class Passages(HTMLParser):
             self.facts_depth, self.facts = None, []
         if tag == 'strong' and self.capture:
             self.buffer.append(' ')
+        if tag == 'details':
+            self.action_fold = False
         if tag == self.capture:
             value = re.sub(r'\s+', ' ', ''.join(self.buffer)).strip()
-            if tag.startswith('h'):
+            if tag in ('h1', 'h2', 'h3', 'summary'):
                 pending = self.parts[:] if not self.title else []
                 self.flush()
                 self.parts = pending
                 if tag == 'h2': self.section_title = value
-                self.title = (self.section_title+' · '+value) if tag == 'h3' and self.section_title else value
+                self.title = (self.section_title+' · '+value) if tag in ('h3', 'summary') and self.section_title else value
                 self.anchor = next((a for _, a in reversed(self.stack) if a), '')
             elif value: self.parts.append(value)
             self.capture = None
