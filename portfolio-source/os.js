@@ -239,7 +239,8 @@
     addEventListener('storage', updateContinue);
   }
 
-  if (!reduced() && !saveData() && 'IntersectionObserver' in window) {
+  addEventListener('portfolio:polish', () => {
+    if (reduced() || saveData() || !('IntersectionObserver' in window)) return;
     const observeStats = new IntersectionObserver(entries => {
       for (const { target, isIntersecting } of entries) {
         if (!isIntersecting) continue;
@@ -261,7 +262,7 @@
       }
     }, { threshold: .65 });
     document.querySelectorAll('[data-roll]').forEach(value => observeStats.observe(value));
-  }
+  }, { once: true });
 
   const splash = document.querySelector('[data-lockscreen]');
   if (splash && !reduced() && !saveData() && !location.hash) {

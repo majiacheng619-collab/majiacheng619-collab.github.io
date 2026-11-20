@@ -78,7 +78,13 @@ def audit(root):
                 errors.append('Game preview needs a valid content fingerprint: ' + relative)
         if retired.search(relative):
             errors.append('Retired visitor module remains: ' + relative)
-        if retired_films.search(relative):
+        if relative == 'projects/ai-content/index.html':
+            redirect = path.read_text()
+            if ('<meta http-equiv="refresh" content="0; url=/projects/">' not in redirect
+                    or retired_films.search(redirect)
+                    or re.search(r'<(?:script|img|video|audio|iframe)\b', redirect)):
+                errors.append('Legacy works URL must only redirect to the works landing page')
+        elif retired_films.search(relative):
             errors.append('Retired short-film asset remains: ' + relative)
         elif not relative.startswith('game/') and path.suffix in ('.html', '.js', '.xml', '.vtt', '.txt', '.json'):
             if retired_films.search(path.read_text()):
@@ -146,6 +152,12 @@ def audit(root):
                 exists(site_worker, value, 'sw.js')
                 if value.startswith(('/game/', '/assets/ice.')) or value.endswith(('.mp4', '.pdf', '.aac')):
                     errors.append('Large or game resource in the main offline shell: ' + value)
+        try:
+            state = json.loads((root / 'sw-state.json').read_text())
+        except (OSError, ValueError):
+            state = {}
+        if state.get('enabled') is not True or "prefix + '"+str(state.get('version'))+"'" not in data:
+            errors.append('Rollback switch must match the published service worker version')
         if not re.search(r"cacheName = prefix \+ '[a-f0-9]{16}'", data):
             errors.append('Main service worker cache must have a content version')
         manifest = root / 'manifest.webmanifest'
@@ -174,7 +186,7 @@ def audit(root):
         counts['portfolio_pages'] += 1
         relative = path.relative_to(root).as_posix()
         pdfs = [anchor for anchor in doc.anchors if '.pdf' in anchor.get('href', '').lower()]
-        expected = 1 if relative in ('index.html', 'contact/index.html', 'en/index.html', 'plain/index.html') else 0
+        expected = 1 if relative in ('index.html', 'contact/index.html', 'en/index.html', 'plain/index.html', '404.html') else 0
         if bool(pdfs) != bool(expected):
             errors.append(f'{relative}: expected {expected} resume download, found {len(pdfs)}')
         for capture, device in doc.capture_devices:

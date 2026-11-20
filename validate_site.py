@@ -64,7 +64,7 @@ class Document(HTMLParser):
             if not a.get('href', '').strip() or a.get('href') == '#': self.empty_links.append(a.get('href', ''))
         if tag == 'a' and self.nav_depth: self.nav_links.append(a.get('href', ''))
         if tag == 'a' and a.get('target') == '_blank': self.blank_links.append(a)
-        for key in ('href', 'src', 'poster', 'data-film-mobile-src', 'data-os-music', 'data-image-src'):
+        for key in ('href', 'src', 'poster', 'data-film-src', 'data-film-mobile-src', 'data-os-music', 'data-image-src'):
             if a.get(key): self.refs.append((tag, key, a[key]))
         if a.get('srcset'):
             for part in a['srcset'].split(','):
@@ -162,7 +162,7 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             if 'alt' not in image: err(f'{relative}: image lacks alt: {image.get("src", "")}')
         for anchor in doc.blank_links:
             if 'noopener' not in anchor.get('rel', '').split(): err(f'{relative}: new-window link lacks noopener')
-        expected_downloads = 1 if relative in ('index.html', 'contact/index.html') else 0
+        expected_downloads = 1 if relative in ('index.html', 'contact/index.html', '404.html') else 0
         if bool(doc.pdf_links) != bool(expected_downloads):
             err(f'{relative}: expected {expected_downloads} resume entry, found {len(doc.pdf_links)}')
         if relative == 'index.html' and 'about' in doc.ids:
@@ -188,6 +188,8 @@ def validate(root, archive=None, pdf=None, published=False, allow_unfingerprinte
             target, fragment = result
             counts['local_references'] += 1
             referenced.add(target)
+            if tag == 'a' and target == root / '404.html':
+                err(f'{page.relative_to(root)}: link points to the error page: {value}')
             # Source ZIP intentionally lacks the PDF inserted by the publishing workflow.
             if target.suffix.lower() == '.pdf' and not published: continue
             if not target.is_file(): err(f'{page.relative_to(root)}: missing {attr}: {value}'); continue

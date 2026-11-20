@@ -14,14 +14,16 @@ module.exports=async function auditGallery(page,origin,output){
 
   const material=await page.locator('.work-event .button.primary').evaluate(el=>({color:getComputedStyle(el).backgroundColor,backdrop:getComputedStyle(el).backdropFilter}));
   assert.equal(material.color,'rgba(0, 0, 0, 0)');
-  assert.ok(material.backdrop.includes('blur'),'Actions use the clear material');
+  assert.equal(material.backdrop,'none','Idle actions keep their glass tint without continuous backdrop work');
   const game=page.locator('.work-feature .work-art').getByRole('img',{name:'萌芽保卫队实际游戏画面'});
   await game.scrollIntoViewIfNeeded();
   assert.ok(await game.evaluate(async img=>{await img.decode();return img.naturalWidth>=1000;}),'The game preview uses its real screen capture');
   assert.match(await page.locator('.work-event .event-preview').textContent(),/19\.9/);
   if(output&&(width===390||width===1440))await page.screenshot({path:path.join(output,'gallery-'+width+'.png'),fullPage:true});
  }
- assert.equal((await page.request.get(origin+'/projects/ai-content/')).status(),404,'The retired works route is out of the release');
+ const legacy = await page.request.get(origin+'/projects/ai-content/');
+ assert.equal(legacy.status(),200,'The old works URL serves a redirect page');
+ assert.match(await legacy.text(),/http-equiv="refresh" content="0; url=\/projects\/"/);
  await page.setViewportSize({width:390,height:844});
  await page.goto(origin+'/poster/');
  const disclosure=page.locator('.proof-disclosure'),poster=disclosure.locator('img');

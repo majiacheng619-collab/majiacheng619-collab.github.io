@@ -27,7 +27,10 @@ def build_contact(img, cta, qr):
         '<div><p class="contact-eyebrow">2027 届本科 · 南昌理工学院</p><h2>马嘉程</h2></div></div>'
         '<p>运营与增长 · 产品与项目 · 内容与市场</p>'
         '<div class="actions">' + cta('resume.pdf', '下载简历') + '</div></div>'
-        '<div class="contact-back" id="contact-card-back" data-card-back>'
+        '<div class="contact-back" id="contact-card-back" data-card-back>' +
+        ('<noscript><details class="contact-methods"><summary>显示联系方式</summary>'
+         f'<ul><li><a href="mailto:{EMAIL}">{EMAIL}</a></li>'
+         f'<li><a href="tel:{PHONE}">{PHONE}</a></li></ul></details></noscript>') +
         '<dl class="contact-methods">' + contact_row('邮箱', 'email', EMAIL) +
         contact_row('手机', 'phone', PHONE) + '</dl>'
         f'<figure class="contact-qr"><img src="{qr}" alt="打开联系页的二维码" width="132" height="132" '

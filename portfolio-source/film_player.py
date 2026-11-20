@@ -44,9 +44,9 @@ def build_film(media, transcript):
  </div>
  <div class="premium-film-player" data-intro-player data-dock-tone="dark">
   <div class="film-stage">
-   <video id="intro-video" controls playsinline preload="none" width="{media['width']}" height="{media['height']}"
-    poster="{media['poster']}" aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
-    <source src="{media['streamVideo']}" data-film-mobile-src="{media['streamMobile']}" type="video/mp4">
+   <video id="intro-video" playsinline preload="none" width="{media['width']}" height="{media['height']}"
+    poster="{media['poster']}" data-film-src="{media['streamVideo']}" data-film-mobile-src="{media['streamMobile']}"
+    aria-label="冰之圣殿，马嘉程{duration}秒作品影片，含器乐、海浪与画面文字">
     <track src="{media['captions']}" kind="captions" srclang="zh" label="中文字幕">
     你的浏览器无法播放此视频，<a href="{media['video']}" download>下载观看</a>。
    </video>
@@ -55,6 +55,7 @@ def build_film(media, transcript):
    </button>
    <span class="film-loading" data-film-loading role="status" hidden>正在缓冲</span>
   </div>
+  <noscript><p><a class="film-live-link" href="{media['streamMobile']}">播放影片</a></p></noscript>
   <div class="film-transport" data-film-controls role="group" aria-label="播放控制" hidden>
    <input type="range" class="film-scrub" data-film-scrub min="0" max="{duration}" step="0.1" value="0"
     aria-label="播放进度" aria-valuetext="0 秒，共 {duration} 秒">

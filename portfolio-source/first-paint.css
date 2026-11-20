@@ -1,0 +1,52 @@
+:root:not([data-polish]) :is(
+  .glass-dock, .sprite-body, .sprite-panel, .practice-glass, .studio-workbench,
+  .work-card, .case-study, .detail-row-list, .detail-split>.detail-shell, .contact-identity,
+  .contact-methods, .detail-game-facts, .event-preview, .growth-demo, .button, .practice-link,
+  .film-button, .film-live-link, .image-dialog, .contact-copy, [data-control-glass]
+) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+:root:not([data-polish]) .sprite::before,
+:root:not([data-polish]) .image-dialog::backdrop,
+:root:not([data-polish]) .os-sheet::backdrop {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+:root:not([data-polish]) :is(.spatial-hero-art,.sprite-body,.sprite-ribbon,.sprite-face i,.sprite-shadow,.sprite-aura) {
+  animation: none !important;
+}
+:root:not([data-polish]) .spatial-hero-art { filter: none; }
+:root[data-scene-paused="true"] .spatial-hero-art { animation-play-state: paused; }
+.era-hero-content, .detail-hero>.detail-shell { animation: none !important; }
+
+.film-stage, .ice-screen { aspect-ratio: 16 / 9; }
+.film-stage video, .ice-screen :is(img,canvas) {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+.os-stats dd { min-height: 1.25em; }
+:root[data-motion="reduced"]::view-transition-old(root),
+:root[data-motion="reduced"]::view-transition-new(root) { animation: none !important; }
+
+/* Gradients and edge highlights carry the large surfaces. Sample the
+   backdrop only for the active controls and modal layers. */
+:is(.practice-glass,.studio-workbench,.work-card,.case-study,.detail-row-list,.detail-split>.detail-shell,
+    .contact-identity,.contact-methods,.detail-game-facts,.event-preview,.growth-demo,.sprite-body) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glass-dock:not(:focus-within):not([data-dragging]),
+body:is(.home-page,.inner-page) :is(.button,.practice-link):not(:focus-visible):not([data-glass-pressed="true"]) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-polish] .glass-dock:focus-within {
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+}
+.spatial-hero-art, .spatial-art::after, .sprite-aura, .sprite-shadow { filter: none; }
+.spatial-hero-art { animation: none; }
+:root[data-polish] .sprite-body, :root[data-polish] .sprite-ribbon,
+:root[data-polish] .sprite-shadow, :root[data-polish] .sprite-aura { animation-iteration-count: 1; }

@@ -4,7 +4,6 @@
   if (!player) return;
   const video = player.querySelector('video');
   if (typeof video.play !== 'function') return;
-  const source = video.querySelector('source');
   const find = name => player.querySelector('[data-film-' + name + ']');
   const play = find('play');
   const scrub = find('scrub');
@@ -77,11 +76,11 @@
   function selectSource() {
     if (sourceSelected) return;
     sourceSelected = true;
-    const compact = source.dataset.filmMobileSrc;
+    const { filmMobileSrc: compact, filmSrc: standard } = video.dataset;
     const phone = matchMedia('(max-width: 640px), (pointer: coarse) and (max-height: 640px)').matches;
     const connection = navigator.connection;
     const constrained = connection?.saveData || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType);
-    if (compact && (phone || constrained)) video.src = compact;
+    video.src = compact && (phone || constrained) ? compact : standard;
   }
   function start() {
     selectSource();
@@ -173,7 +172,6 @@
     captions.setAttribute('aria-pressed', String(track?.mode === 'showing'));
   });
   video.addEventListener('error', () => showError());
-  source.addEventListener('error', () => showError());
   document.addEventListener('fullscreenchange', updateFullscreen);
   video.addEventListener('webkitbeginfullscreen', () => { nativeFullscreen = true; updateFullscreen(); });
   video.addEventListener('webkitendfullscreen', () => { nativeFullscreen = false; updateFullscreen(); });

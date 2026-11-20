@@ -160,7 +160,7 @@ a.os-widget, .os-widget summary { display: flex; gap: 8px; align-items: center; 
     left: auto; right: -15%; width: 78%; top: 6%; height: 82%; opacity: .74;
     transform: translate3d(0,calc(var(--art-read,0) * -19px),0) rotateY(var(--art-rotate-y,0deg));
   }
-  .os-hero .era-hero-shade { background: linear-gradient(90deg,#070d19b0 3%,#070d194d 54%,transparent 90%),linear-gradient(0deg,#070d1980,transparent 32%); }
+
   .os-hero .hero-career { max-width: 330px; }
   .os-launch-grid { grid-template-columns: 1fr; }
   .os-app { flex-flow: column; justify-content: center; text-align: center; font-size: .86rem; }

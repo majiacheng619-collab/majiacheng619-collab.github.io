@@ -108,3 +108,58 @@ body .ambient-field::before, body .ambient-field::after { display: none; }
 
 :root[data-tone="dark"] :is(.detail-hero h1,.page-hero h1,.film-heading h1,.film-heading h2) { color: var(--headline); }
 :root[data-tone="dark"] :is(.ice-clock,.ice-status) { color: var(--muted); }
+
+/* Keep text readable when a bright scene or a specular reflection sits behind it. */
+.glass-dock[data-over-media] {
+  background: linear-gradient(150deg, #304b6aee, #102740f5 70%, #213650ee);
+  color: #eff8ff;
+}
+.os-widget-ice strong {
+  padding: .22em .55em;
+  border-radius: 9px;
+  color: #f6fbff;
+  background-color: #091d36e8;
+}
+.os-hero .era-hero-shade {
+  background: linear-gradient(90deg, #070d19f5 0%, #070d19da 50%, #070d1940 78%, transparent 100%),
+              linear-gradient(0deg, #070d19b0, transparent 34%);
+}
+:root[data-tone="dark"] :is(
+  .practice-stats dd,.case-facts strong,.detail-game-facts strong,.work-metrics dd,
+  .film-heading h2 span,.film-heading h2 bdi,.studio-tabs button,.case-jump a,
+  .sprite-facts dd,.sprite-answer-title,#sprite-title
+) { color: var(--ink); }
+:root[data-tone="dark"] :is(
+  .practice-stats dt,.case-facts span,.work-metrics dt,.practice-card .practice-period,
+  .sprite-answer-source,.sprite-facts dt,.contact-eyebrow,.sprite-panel p
+) { color: var(--muted); }
+
+:is(:root[data-tone="dark"] .glass-dock,.glass-dock[data-over-media]) .glass-dock__lens {
+  background: linear-gradient(150deg, #21456a, #152e4a);
+  border-color: #abdfff70;
+}
+:is(:root[data-tone="dark"] .glass-dock,.glass-dock[data-over-media]) .glass-dock__lens::after {
+  opacity: .32;
+}
+body:is(.home-page,.inner-page) .event-preview {
+  color: #f3f9ff;
+  background: radial-gradient(ellipse at 87% 107%, #688eed68, transparent 63%),
+              linear-gradient(142deg, #111d37 16%, #20416e 65%, #293b6d);
+}
+:root:not([data-tone="dark"]) :is(.film-kicker,.film-heading h2 span,.practice-period) { color: #2a4563; }
+:root[data-tone="dark"] :is(.film-heading h1 span,.studio-product-facts strong) { color: var(--ink); }
+:root[data-tone="dark"] .home-page .premium-home .studio-tabs {
+  --control-shell: linear-gradient(145deg, #dceaf7, #aac3dd);
+  --control-ink: #152b43;
+  --control-selected: #112c46;
+}
+:root[data-tone="dark"] .home-page .premium-home .studio-tabs button { color: var(--control-ink); }
+:is(:root[data-tone="dark"] .sprite,.sprite[data-sprite-tone="dark"]) .sprite-panel
+  :is(.sprite-answer-source,.sprite-resume,.sprite-form button[type="submit"]) {
+  background: #d5e9fc;
+  color: #123452;
+}
+.sprite:not([data-sprite-tone="dark"]) .sprite-panel { background-color: #e7f1fc; }
+:root:not([data-tone="dark"]) .sprite:not([data-sprite-tone="dark"]) .sprite-facts dt { color: #354e69; }
+.sprite[data-sprite-tone="dark"] .sprite-panel .sprite-facts > div { background: #142c45; }
+.sprite[data-sprite-tone="dark"] .sprite-panel .sprite-facts :is(dt,dd) { color: #edf7ff; }

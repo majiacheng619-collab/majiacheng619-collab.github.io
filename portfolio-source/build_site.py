@@ -16,8 +16,8 @@ media['siteMusic'] = site_music(ROOT, media['video'])
 media.update(poster=artwork['filmPoster']['src'], streamVideo=streams['standard'], streamMobile=streams['compact'])
 (ROOT/ribbon).unlink(missing_ok=True)
 (ROOT/'assets/ipad-pro-m5.d67558d91a2d.jpg').unlink(missing_ok=True)
-STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css','secondary.css')
-SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','control-glass.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js','pwa-client.js','extras.js')
+STYLE_SOURCES = ('glass-dock.css','sprite.css','control-glass.css','portfolio.css','appearance.css','os.css','secondary.css','first-paint.css')
+SCRIPT_SOURCES = ('interactions.js','glass-dock.js','portfolio-interactions.js','portfolio-studio.js','sprite.js','portfolio-material.js','appearance.js','os.js','shared-navigation.js','profile-lenses.js','pwa-client.js','extras.js','idle-polish.js')
 css='\n'.join((Path(__file__).parent/name).read_text() for name in STYLE_SOURCES)
 resume_sha=hashlib.sha256((Path(__file__).resolve().parent.parent/'resume.pdf').read_bytes()).hexdigest()
 resume_asset='resume-'+resume_sha[:12]+'.pdf'
@@ -34,8 +34,9 @@ optical_asset=optical_manifest['fallback']
 css=css.replace('GLASS_FIELD_ASSET',optical_asset)
 CSS=asset(css,'portfolio','css'); JS=asset(js,'portfolio','js')
 capture_css = asset(Path(__file__).with_name('device-frame.css').read_text(), 'capture', 'css')
-home_js = asset('\n'.join(Path(__file__).with_name(name).read_text()
-                         for name in ('film-player.js', 'portfolio-sculpture.js')), 'home-media', 'js')
+home_js = asset(Path(__file__).with_name('film-player.js').read_text(), 'home-media', 'js')
+polish_art = asset(Path(__file__).with_name('portfolio-sculpture.js').read_text(), 'polish-art', 'mjs')
+control_js = asset(Path(__file__).with_name('control-glass.js').read_text(), 'control-input', 'js')
 gallery_js = asset(Path(__file__).with_name('editorial-gallery.js').read_text(), 'gallery', 'js')
 contact_js = asset('\n'.join(Path(__file__).with_name(name).read_text()
                             for name in ('contact-reveal.js', 'contact-card.js')), 'contact-reveal', 'js')
@@ -47,8 +48,8 @@ page_styles = dict.fromkeys(('index.html', 'projects/index.html', 'projects/spro
 for route in ('projects/sprout-patrol/index.html', 'contact/index.html', 'experience/index.html',
               'story/index.html', 'poster/index.html', 'honor/index.html', 'ice/index.html'):
  page_styles[route] = (*page_styles.get(route, ()), app_css)
-page_scripts = {'index.html': (home_js,), 'projects/index.html': (gallery_js,),
-                'contact/index.html': (contact_js,), 'honor/index.html': (viewer_js,), 'poster/index.html': (viewer_js,), 'experience/index.html': (case_js,), 'story/index.html': (story_js,)}
+page_scripts = {'index.html': (home_js, control_js), 'projects/sprout-patrol/index.html': (control_js,), 'projects/index.html': (gallery_js,),
+                'contact/index.html': (contact_js,), 'honor/index.html': (viewer_js,), 'poster/index.html': (viewer_js,), 'experience/index.html': (case_js, control_js), 'story/index.html': (story_js,)}
 def img(src,alt,classes='',eager=False):
  width,height=dimensions.get(src,(1280,720))
  return f'<img class="{classes}" src="{src}" alt="{alt}" width="{width}" height="{height}" decoding="async" '+('fetchpriority="high"' if eager else 'loading="lazy"')+'/>'
@@ -159,13 +160,22 @@ print('Rebuilt portfolio pages with standalone contact and a shared minimal layo
 
 
 # Stable entry points, crawl metadata and a useful destination for retired links.
-not_found = '<section class="page-hero"><h1>换个入口，<br>继续探索。</h1><p class="lead">这个地址可能已更新。我的作品与经历都在这里。</p><div class="actions" style="margin-top:30px">'+cta('index.html','返回首页')+cta('projects/index.html','浏览作品',True)+'</div></section>'
+not_found = '<section class="page-hero"><h1>换个入口，<br>继续探索。</h1><p class="lead">这个地址可能已更新。我的作品与经历都在这里。</p><div class="actions" style="margin-top:30px">'+cta('/','返回首页')+cta('/projects/','浏览作品',True)+cta('resume.pdf','下载简历',True)+'</div></section>'
 render('404.html', '页面未找到', '返回马嘉程的个人网站，继续浏览作品与实践经历。', not_found)
 page = ROOT/'404.html'
 # Absolute site-root URLs remain valid for any missing multi-level route.
 text = page.read_text()
-text = re.sub(r'(href|src|poster)="(?!https?:|mailto:|tel:|#|data:|/)([^"]+)"', r'\1="/\2"', text)
+text = re.sub(r'(href|src|poster|data-os-music)="(?!https?:|mailto:|tel:|#|data:|/)([^"]+)"', r'\1="/\2"', text)
 page.write_text(text)
+legacy = ROOT/'projects/ai-content/index.html'
+legacy.parent.mkdir(parents=True, exist_ok=True)
+legacy.write_text('''<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="refresh" content="0; url=/projects/">
+<link rel="canonical" href="https://majiacheng619-collab.github.io/projects/">
+<title>作品入口</title><main><h1>作品入口</h1><p><a href="/projects/">浏览作品</a></p></main></html>
+''')
 (ROOT/'sitemap.xml').unlink(missing_ok=True)
 (ROOT/'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /game/\nDisallow: /resume-beb4a3432690.pdf\n')
 
@@ -185,7 +195,7 @@ for record in records:
  record['romanized'] = sorted(aliases)
 index = asset(json.dumps(records, ensure_ascii=False, separators=(',', ':')), 'spotlight', 'json')
 engine = asset(Path(__file__).with_name('sprite-brain.js').read_text(), 'spotlight-engine', 'mjs')
-companion_js = js.replace('SPOTLIGHT_INDEX_ASSET', index).replace('SPOTLIGHT_ENGINE_ASSET', engine)
+companion_js = js.replace('SPOTLIGHT_INDEX_ASSET', index).replace('SPOTLIGHT_ENGINE_ASSET', engine).replace('POLISH_ART_ASSET', './' + Path(polish_art).name)
 companion_asset = asset(companion_js, 'portfolio', 'js')
 for page in ROOT.rglob('*.html'):
  if not page.is_relative_to(ROOT / 'game'):
